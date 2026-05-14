@@ -90,6 +90,67 @@ public class JdbcReportRepository implements ReportRepository {
   }
 
   @Override
+  public boolean reportCustomerOrgMatches(UUID reportId, UUID customerOrgId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report r
+        join project p on p.id = r.project_id
+        where r.id = ?
+          and p.customer_org_id = ?
+          and r.deleted_at is null
+          and p.deleted_at is null
+        """,
+        Integer.class,
+        reportId,
+        customerOrgId
+    );
+    return count != null && count > 0;
+  }
+
+  @Override
+  public boolean reportApplicantMatches(UUID reportId, UUID userId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report r
+        join project p on p.id = r.project_id
+        join submission s on s.id = p.submission_id
+        where r.id = ?
+          and s.applicant_user_id = ?
+          and r.deleted_at is null
+          and p.deleted_at is null
+          and s.deleted_at is null
+        """,
+        Integer.class,
+        reportId,
+        userId
+    );
+    return count != null && count > 0;
+  }
+
+  @Override
+  public boolean reportAssignedSales(UUID reportId, UUID userId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report r
+        join project p on p.id = r.project_id
+        join submission s on s.id = p.submission_id
+        where r.id = ?
+          and s.assigned_sales_user_id = ?
+          and r.deleted_at is null
+          and p.deleted_at is null
+          and s.deleted_at is null
+        """,
+        Integer.class,
+        reportId,
+        userId
+    );
+    return count != null && count > 0;
+  }
+
+  @Override
   public List<ReportRecord> list(int limit, int offset) {
     return jdbcTemplate.query(
         "select " + SELECT_COLUMNS + """

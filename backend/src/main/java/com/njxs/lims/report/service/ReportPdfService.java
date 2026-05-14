@@ -3,6 +3,8 @@ package com.njxs.lims.report.service;
 import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.common.exception.BusinessException;
 import com.njxs.lims.file.domain.StoredFile;
+import com.njxs.lims.payment.service.PaymentGateService;
+import com.njxs.lims.payment.service.PaymentGateStatus;
 import com.njxs.lims.report.conversion.DocumentConversionService;
 import com.njxs.lims.report.domain.ReportRecord;
 import com.njxs.lims.report.domain.ReportVersionRecord;
@@ -27,13 +29,25 @@ public class ReportPdfService {
 
   private final ReportRepository reportRepository;
   private final DocumentConversionService documentConversionService;
+  private final PaymentGateService paymentGateService;
 
   public ReportPdfService(
       ReportRepository reportRepository,
-      DocumentConversionService documentConversionService
+      DocumentConversionService documentConversionService,
+      PaymentGateService paymentGateService
   ) {
     this.reportRepository = reportRepository;
     this.documentConversionService = documentConversionService;
+    this.paymentGateService = paymentGateService;
+  }
+
+  @Transactional
+  public StoredFile downloadOfficialPdf(UUID reportId, AuthPrincipal principal) {
+    PaymentGateStatus gateStatus = paymentGateService.gateForReport(reportId);
+    if (gateStatus == PaymentGateStatus.LOCKED) {
+      throw new BusinessException("PAYMENT_GATE_LOCKED");
+    }
+    return generateOfficialPdf(reportId, principal);
   }
 
   @Transactional

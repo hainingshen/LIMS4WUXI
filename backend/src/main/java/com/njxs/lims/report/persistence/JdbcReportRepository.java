@@ -80,6 +80,16 @@ public class JdbcReportRepository implements ReportRepository {
   }
 
   @Override
+  public boolean existsById(UUID id) {
+    Integer count = jdbcTemplate.queryForObject(
+        "select count(*) from report where id = ? and deleted_at is null",
+        Integer.class,
+        id
+    );
+    return count != null && count > 0;
+  }
+
+  @Override
   public List<ReportRecord> list(int limit, int offset) {
     return jdbcTemplate.query(
         "select " + SELECT_COLUMNS + """
@@ -257,6 +267,67 @@ public class JdbcReportRepository implements ReportRepository {
         actorUserId
     );
     return version;
+  }
+
+  @Override
+  public ReportRecord updateStatus(UUID id, String status, UUID actorUserId) {
+    return jdbcTemplate.queryForObject(
+        "update report " + """
+        set status = ?,
+            updated_at = now(),
+            updated_by = ?,
+            version = version + 1
+        where id = ? and deleted_at is null
+        returning
+        """ + SELECT_COLUMNS,
+        (rs, rowNum) -> report(rs),
+        status,
+        actorUserId,
+        id
+    );
+  }
+
+  @Override
+  public ReportRecord issue(UUID id, UUID actorUserId) {
+    return jdbcTemplate.queryForObject(
+        "update report " + """
+        set status = 'ISSUED_PAYMENT_LOCKED',
+            is_official = true,
+            watermark_type = 'NONE',
+            payment_gate_status = 'LOCKED',
+            issued_at = now(),
+            updated_at = now(),
+            updated_by = ?,
+            version = version + 1
+        where id = ? and deleted_at is null
+        returning
+        """ + SELECT_COLUMNS,
+        (rs, rowNum) -> report(rs),
+        actorUserId,
+        id
+    );
+  }
+
+  @Override
+  public void updateCurrentVersionStatus(UUID reportId, int versionNo, String status, UUID actorUserId) {
+    jdbcTemplate.update(
+        """
+        update report_version
+        set status = ?,
+            issued_at = case when ? = 'ISSUED' then now() else issued_at end,
+            updated_at = now(),
+            updated_by = ?,
+            version = version + 1
+        where report_id = ?
+          and version_no = ?
+          and deleted_at is null
+        """,
+        status,
+        status,
+        actorUserId,
+        reportId,
+        versionNo
+    );
   }
 
   private ReportRecord report(ResultSet rs) throws SQLException {

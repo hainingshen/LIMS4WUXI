@@ -6,9 +6,11 @@ import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.permission.RequiresAction;
 import com.njxs.lims.report.service.ReportService;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,5 +43,28 @@ public class ReportController {
   @RequiresAction("REPORT_DRAFT_CREATE")
   public ReportResponse generateDraft(@Valid @RequestBody ReportGenerateDraftRequest request) {
     return reportService.generateDraft(request, AuthContext.require());
+  }
+
+  @PostMapping("/{id}/submit-qc")
+  @Audited(actionCode = "REPORT_DRAFT_SUBMIT_QC", entityType = "report")
+  @RequiresAction("REPORT_DRAFT_CREATE")
+  public ReportResponse submitQc(@PathVariable UUID id) {
+    return reportService.submitQc(id, AuthContext.require());
+  }
+
+  @PostMapping("/{id}/issue")
+  @Audited(actionCode = "REPORT_ISSUE", entityType = "report")
+  @RequiresAction("REPORT_ISSUE")
+  public ReportResponse issue(@PathVariable UUID id) {
+    return reportService.issue(id, AuthContext.require());
+  }
+
+  @PostMapping("/{reportId}/review")
+  @Audited(actionCode = "REPORT_REVIEW", entityType = "report")
+  public ReportResponse review(
+      @PathVariable UUID reportId,
+      @Valid @RequestBody ReportReviewRequest request
+  ) {
+    return reportService.review(reportId, request, AuthContext.require());
   }
 }

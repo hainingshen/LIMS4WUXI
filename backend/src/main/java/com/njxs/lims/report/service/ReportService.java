@@ -2,11 +2,14 @@ package com.njxs.lims.report.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.njxs.lims.approval.domain.ApprovalOutcome;
+import com.njxs.lims.approval.service.ApprovalRecordService;
 import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
 import com.njxs.lims.report.api.ReportGenerateDraftRequest;
 import com.njxs.lims.report.api.ReportResponse;
+import com.njxs.lims.report.api.ReportReviewRequest;
 import com.njxs.lims.report.domain.ReportRecord;
 import com.njxs.lims.report.domain.ReportVersionRecord;
 import com.njxs.lims.report.domain.ReportWorkOrderRecord;
@@ -14,6 +17,7 @@ import com.njxs.lims.report.persistence.ReportRepository;
 import com.njxs.lims.report.snapshot.service.ReportSnapshotService;
 import com.njxs.lims.report.template.domain.ReportTemplateRecord;
 import com.njxs.lims.report.template.persistence.ReportTemplateRepository;
+import com.njxs.lims.permission.PermissionService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -36,17 +40,26 @@ public class ReportService {
   private final ReportRepository reportRepository;
   private final ReportTemplateRepository reportTemplateRepository;
   private final ReportSnapshotService reportSnapshotService;
+  private final ApprovalRecordService approvalRecordService;
+  private final PermissionService permissionService;
+  private final ReportStateMachine reportStateMachine;
   private final ObjectMapper objectMapper;
 
   public ReportService(
       ReportRepository reportRepository,
       ReportTemplateRepository reportTemplateRepository,
       ReportSnapshotService reportSnapshotService,
+      ApprovalRecordService approvalRecordService,
+      PermissionService permissionService,
+      ReportStateMachine reportStateMachine,
       ObjectMapper objectMapper
   ) {
     this.reportRepository = reportRepository;
     this.reportTemplateRepository = reportTemplateRepository;
     this.reportSnapshotService = reportSnapshotService;
+    this.approvalRecordService = approvalRecordService;
+    this.permissionService = permissionService;
+    this.reportStateMachine = reportStateMachine;
     this.objectMapper = objectMapper;
   }
 
@@ -145,6 +158,59 @@ public class ReportService {
     return ReportResponse.from(saved);
   }
 
+  @Transactional
+  public ReportResponse submitQc(UUID id, AuthPrincipal principal) {
+    ReportRecord report = report(id);
+    String nextStatus = reportStateMachine.afterSubmitQc(report);
+    return ReportResponse.from(reportRepository.updateStatus(id, nextStatus, principal.userId()));
+  }
+
+  @Transactional
+  public ReportResponse review(UUID id, ReportReviewRequest request, AuthPrincipal principal) {
+    String stage = requireText("stage", normalize(request.stage()));
+    String actionCode = reviewActionCode(stage);
+    permissionService.assertAllowed(principal, actionCode, new Object[] {id, request});
+
+    ApprovalOutcome outcome = ApprovalOutcome.require(normalize(request.outcome()));
+    ReportRecord report = report(id);
+    String nextStatus = reportStateMachine.afterReview(report, stage, outcome);
+    approvalRecordService.record(
+        "report",
+        report.id(),
+        report.bizNo(),
+        stage,
+        outcome.name(),
+        request.comment(),
+        principal,
+        null
+    );
+    return ReportResponse.from(reportRepository.updateStatus(id, nextStatus, principal.userId()));
+  }
+
+  @Transactional
+  public ReportResponse issue(UUID id, AuthPrincipal principal) {
+    ReportRecord report = report(id);
+    reportStateMachine.afterIssue(report);
+    approvalRecordService.record(
+        "report",
+        report.id(),
+        report.bizNo(),
+        "ISSUE",
+        ApprovalOutcome.APPROVED.name(),
+        null,
+        principal,
+        null
+    );
+    ReportRecord issued = reportRepository.issue(id, principal.userId());
+    reportRepository.updateCurrentVersionStatus(
+        issued.id(),
+        issued.currentVersionNo(),
+        "ISSUED",
+        principal.userId()
+    );
+    return ReportResponse.from(issued);
+  }
+
   private Map<UUID, UUID> rawRecordIds(List<ReportWorkOrderRecord> workOrders) {
     Map<UUID, UUID> rawRecordIds = new LinkedHashMap<>();
     for (ReportWorkOrderRecord workOrder : workOrders) {
@@ -192,6 +258,34 @@ public class ReportService {
       );
     }
     return value.trim();
+  }
+
+  private ReportRecord report(UUID id) {
+    return reportRepository.findById(id)
+        .orElseThrow(() -> new BusinessException(
+            "NOT_FOUND",
+            "资源不存在",
+            HttpStatus.NOT_FOUND,
+            Map.of("entityType", "report", "entityId", id)
+        ));
+  }
+
+  private String reviewActionCode(String stage) {
+    return switch (stage) {
+      case "QC" -> "REPORT_QC_REVIEW";
+      case "QA" -> "REPORT_QA_REVIEW";
+      case "SD" -> "REPORT_SD_REVIEW";
+      default -> throw new BusinessException(
+          "REPORT_REVIEW_STAGE_INVALID",
+          "报告审核阶段不合法",
+          HttpStatus.BAD_REQUEST,
+          Map.of("stage", stage)
+      );
+    };
+  }
+
+  private String normalize(String value) {
+    return value == null ? null : value.trim().toUpperCase(Locale.ROOT);
   }
 
   private String json(Map<String, Object> snapshot) {

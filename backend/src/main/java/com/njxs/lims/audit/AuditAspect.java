@@ -55,7 +55,7 @@ public class AuditAspect {
         principal.map(AuthPrincipal::userId).orElse(null),
         principal.flatMap(this::firstRole).orElse(null),
         principal.map(AuthPrincipal::clientType).orElse(ClientType.SYSTEM),
-        audited.actionCode(),
+        actionCode(args, audited),
         audited.entityType(),
         firstUuid(args).orElse(null),
         null,
@@ -72,6 +72,16 @@ public class AuditAspect {
         .filter(UUID.class::isInstance)
         .map(UUID.class::cast)
         .findFirst();
+  }
+
+  private String actionCode(Object[] args, Audited audited) {
+    return Arrays.stream(args)
+        .filter(AuditActionProvider.class::isInstance)
+        .map(AuditActionProvider.class::cast)
+        .map(AuditActionProvider::auditActionCode)
+        .filter(actionCode -> actionCode != null && !actionCode.isBlank())
+        .findFirst()
+        .orElse(audited.actionCode());
   }
 
   private Optional<String> firstRole(AuthPrincipal principal) {

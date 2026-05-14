@@ -99,8 +99,8 @@ public class ProjectSplitService {
     project.setRequiresAnimalTest(requiresAnimalTest);
     project.setRequiresEthicsReview(requiresEthicsReview);
     project.setRequiresNonstandardReview(requiresNonstandardReview);
-    project.setBusinessOwnerId(actorUserId);
-    project.setTechnicalOwnerId(actorUserId);
+    project.setBusinessOwnerId(defaultOwner("BUSINESS_OWNER", actorUserId));
+    project.setTechnicalOwnerId(defaultOwner("TECHNICAL_LEADER", actorUserId));
     project.setSdUserId(actorUserId);
     project.setStatus(ProjectStatus.ACCEPTED.name());
     project.setHealthStatus("NORMAL");
@@ -114,6 +114,10 @@ public class ProjectSplitService {
       return List.of(Map.of());
     }
     return request.projectDrafts();
+  }
+
+  private UUID defaultOwner(String roleCode, UUID fallbackUserId) {
+    return projectRepository.findFirstActiveUserIdByRole(roleCode).orElse(fallbackUserId);
   }
 
   private void base(BaseEntity entity, UUID id, String bizNo, UUID actorUserId, UUID tenantOrgId, Instant now) {

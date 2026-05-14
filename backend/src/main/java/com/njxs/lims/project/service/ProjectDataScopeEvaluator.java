@@ -16,6 +16,7 @@ public class ProjectDataScopeEvaluator implements DataScopeEvaluator {
   private static final String ACTION_NONSTANDARD_REVIEW_START = "NONSTANDARD_REVIEW_START";
   private static final String ACTION_NONSTANDARD_TECH_APPROVE = "NONSTANDARD_TECH_APPROVE";
   private static final String ACTION_NONSTANDARD_BUSINESS_APPROVE = "NONSTANDARD_BUSINESS_APPROVE";
+  private static final String ACTION_QUOTATION_CREATE = "QUOTATION_CREATE";
 
   private final ProjectRepository projectRepository;
 
@@ -27,7 +28,8 @@ public class ProjectDataScopeEvaluator implements DataScopeEvaluator {
   public boolean supports(String actionCode, String scope) {
     return (ACTION_NONSTANDARD_REVIEW_START.equals(actionCode) && "ASSIGNED_PROJECT".equals(scope))
         || (ACTION_NONSTANDARD_TECH_APPROVE.equals(actionCode) && "TASK".equals(scope))
-        || (ACTION_NONSTANDARD_BUSINESS_APPROVE.equals(actionCode) && "TASK".equals(scope));
+        || (ACTION_NONSTANDARD_BUSINESS_APPROVE.equals(actionCode) && "TASK".equals(scope))
+        || (ACTION_QUOTATION_CREATE.equals(actionCode) && "AFTER_REVIEW".equals(scope));
   }
 
   @Override
@@ -36,7 +38,7 @@ public class ProjectDataScopeEvaluator implements DataScopeEvaluator {
     if (projectId.isEmpty()) {
       return false;
     }
-    if (ACTION_NONSTANDARD_REVIEW_START.equals(actionCode)) {
+    if (ACTION_NONSTANDARD_REVIEW_START.equals(actionCode) || ACTION_QUOTATION_CREATE.equals(actionCode)) {
       return projectRepository.existsByAssignedSales(projectId.get(), principal.userId());
     }
     if (ACTION_NONSTANDARD_TECH_APPROVE.equals(actionCode)) {

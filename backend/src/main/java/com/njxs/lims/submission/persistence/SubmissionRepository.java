@@ -33,4 +33,6 @@ public interface SubmissionRepository {
   SubmissionRecord markSubmitted(UUID id, UUID actorUserId);
 
   SubmissionRecord markAccepted(UUID id, UUID actorUserId);
+
+  SubmissionRecord markProjectSplit(UUID id, UUID actorUserId);
 }

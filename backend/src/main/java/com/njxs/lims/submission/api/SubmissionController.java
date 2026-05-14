@@ -4,8 +4,11 @@ import com.njxs.lims.audit.Audited;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.permission.RequiresAction;
+import com.njxs.lims.project.api.ProjectResponse;
+import com.njxs.lims.project.service.ProjectSplitService;
 import com.njxs.lims.submission.service.SubmissionApplicationService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -24,9 +27,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class SubmissionController {
 
   private final SubmissionApplicationService submissionApplicationService;
+  private final ProjectSplitService projectSplitService;
 
-  public SubmissionController(SubmissionApplicationService submissionApplicationService) {
+  public SubmissionController(
+      SubmissionApplicationService submissionApplicationService,
+      ProjectSplitService projectSplitService
+  ) {
     this.submissionApplicationService = submissionApplicationService;
+    this.projectSplitService = projectSplitService;
   }
 
   @GetMapping
@@ -57,5 +65,16 @@ public class SubmissionController {
   @RequiresAction("SUBMISSION_ACCEPT")
   public SubmissionResponse accept(@PathVariable UUID id) {
     return submissionApplicationService.accept(id, AuthContext.require());
+  }
+
+  @PostMapping("/{id}/split-projects")
+  @ResponseStatus(HttpStatus.CREATED)
+  @Audited(actionCode = "PROJECT_TYPE_DECIDE", entityType = "project")
+  @RequiresAction("PROJECT_TYPE_DECIDE")
+  public List<ProjectResponse> splitProjects(
+      @PathVariable UUID id,
+      @RequestBody(required = false) SubmissionSplitProjectsRequest request
+  ) {
+    return projectSplitService.splitFromSubmission(id, request, AuthContext.require());
   }
 }

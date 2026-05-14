@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Card,
+  ConfigProvider,
   Form,
   Grid,
   Input,
@@ -23,7 +24,9 @@ import {
   useAuthStore,
   usePermission,
   type AuthSession,
+  limsAntdTheme,
 } from "@lims4wuxi/shared";
+import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
 import { WorkCenterPage } from "./WorkCenterPage";
@@ -68,11 +71,9 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
 ];
 
 function InternalApp() {
-  const session = useAuthStore((state) => ({
-    accessToken: state.accessToken,
-    clientType: state.clientType,
-  }));
-  if (!session.accessToken || session.clientType !== "INTERNAL") {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const clientType = useAuthStore((state) => state.clientType);
+  if (!accessToken || clientType !== "INTERNAL") {
     return <LoginScreen />;
   }
   return <InternalShell />;
@@ -99,6 +100,18 @@ function DesktopLogin() {
 
   return (
     <main className="loginSurface">
+      <section className="loginHero">
+        <div className="brandMark">NJU</div>
+        <Typography.Title level={2}>无锡锡山 LIMS 内部工作台</Typography.Title>
+        <Typography.Text>
+          面向业务、样品、检测、质量和管理角色的实验室全流程工作台。
+        </Typography.Text>
+        <div className="credentialRow">
+          <span>CNAS</span>
+          <span>CMA</span>
+          <span>GLP</span>
+        </div>
+      </section>
       <Card className="loginPanel" title="内部工作台">
         <Form layout="vertical" initialValues={{ username: "internal.sales", password: "Sales123!" }} onFinish={submit}>
           <Form.Item name="username" label="账号" rules={[{ required: true }]}>
@@ -187,7 +200,13 @@ function InternalShell() {
   return (
     <Layout className="appShell">
       <Layout.Sider width={232} theme="light" className="sidebar">
-        <Typography.Title level={4}>LIMS4WUXI</Typography.Title>
+        <div className="sideBrand">
+          <div className="sideLogo">NJU</div>
+          <div>
+            <Typography.Title level={4}>LIMS4WUXI</Typography.Title>
+            <Typography.Text>Internal Workspace</Typography.Text>
+          </div>
+        </div>
         <Menu
           mode="inline"
           selectedKeys={activeRoute ? [activeRoute.key] : []}
@@ -256,6 +275,8 @@ function toSession(token: AuthSession): AuthSession {
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <InternalApp />
+    <ConfigProvider theme={limsAntdTheme}>
+      <InternalApp />
+    </ConfigProvider>
   </React.StrictMode>,
 );

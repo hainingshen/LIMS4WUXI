@@ -64,8 +64,11 @@ export function SubmissionFormPage() {
     <section className="formWorkspace">
       <header className="pageHeader">
         <div>
+          <Typography.Text className="pageEyebrow">SUBMISSION VER.15</Typography.Text>
           <Typography.Title level={3}>新建送检单</Typography.Title>
-          <Typography.Text type="secondary">{schema.formCode}</Typography.Text>
+          <Typography.Text type="secondary">
+            运行时加载表单 schema 和字典，字段保存为结构化数据
+          </Typography.Text>
         </div>
         <Tag color="blue">v{schema.versionNo}</Tag>
       </header>
@@ -121,7 +124,7 @@ function SchemaForm({
                 <Col key={field.fieldKey} xs={24} md={columnSpan(field)} xl={columnSpan(field)}>
                   <Form.Item
                     name={field.fieldKey}
-                    label={field.labelZh}
+                    label={fieldLabel(field)}
                     rules={field.required ? [{ required: true, message: `${field.labelZh}必填` }] : undefined}
                   >
                     {renderFieldControl(field, dictionaries)}
@@ -145,6 +148,15 @@ function SchemaForm({
         </div>
       </Form>
     </Card>
+  );
+}
+
+function fieldLabel(field: SubmissionFormField) {
+  return (
+    <span className="fieldLabel">
+      <span>{field.labelZh}</span>
+      {field.labelEn ? <small>{field.labelEn}</small> : null}
+    </span>
   );
 }
 

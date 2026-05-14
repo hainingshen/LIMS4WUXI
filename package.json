@@ -5,9 +5,11 @@
   "scripts": {
     "gen:api": "openapi-typescript docs/development/specs/openapi.yaml -o web-shared/src/generated/api-types.ts",
     "gen:seeds": "python3 scripts/dev/generate-seeds.py",
+    "test:ui:local": "playwright test tests/e2e/local-ui.spec.ts",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
+    "@playwright/test": "1.60.0",
     "openapi-typescript": "^7.6.1",
     "typescript": "^5.8.3"
   }

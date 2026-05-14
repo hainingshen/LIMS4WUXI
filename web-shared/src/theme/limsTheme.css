@@ -1,0 +1,50 @@
+:root {
+  --lims-primary: #1A5FB4;
+  --lims-primary-700: #144A8E;
+  --lims-primary-50: #EEF4FB;
+  --lims-primary-deep: #0E3A6E;
+  --lims-accent: #00A8A8;
+  --lims-accent-50: #E6F6F6;
+  --lims-accent-700: #0E7A7A;
+  --lims-success: #10B981;
+  --lims-success-700: #047857;
+  --lims-success-50: #ECFDF5;
+  --lims-warning: #F59E0B;
+  --lims-warning-700: #92400E;
+  --lims-warning-50: #FEF3C7;
+  --lims-danger: #EF4444;
+  --lims-danger-700: #991B1B;
+  --lims-danger-50: #FEE2E2;
+  --lims-ink-900: #0F172A;
+  --lims-ink-700: #334155;
+  --lims-ink-600: #475569;
+  --lims-ink-400: #94A3B8;
+  --lims-ink-300: #CBD5E1;
+  --lims-line: #E2E8F0;
+  --lims-line-soft: #F1F5F9;
+  --lims-bg: #F8FAFC;
+  --lims-card-bg: #FFFFFF;
+  --lims-card-shadow: 0 1px 3px rgba(15,23,42,.06);
+  --lims-card-shadow-hi: 0 8px 28px rgba(15,23,42,.10);
+  --lims-radius: 8px;
+  --lims-font-family: Noto Sans SC, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --adm-color-primary: var(--lims-primary);
+  --adm-color-success: var(--lims-success);
+  --adm-color-warning: var(--lims-warning);
+  --adm-color-danger: var(--lims-danger);
+  --adm-font-family: var(--lims-font-family);
+}
+
+body {
+  background: var(--lims-bg);
+  color: var(--lims-ink-900);
+  font-family: var(--lims-font-family);
+  -webkit-font-smoothing: antialiased;
+}
+
+.lims-card-surface {
+  background: var(--lims-card-bg);
+  border: 1px solid var(--lims-line);
+  border-radius: var(--lims-radius);
+  box-shadow: var(--lims-card-shadow);
+}

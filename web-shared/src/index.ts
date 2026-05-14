@@ -3,6 +3,7 @@ export { http } from "./api/http";
 export * from "./auth";
 export * from "./forms";
 export * from "./samples";
+export * from "./theme/limsTheme";
 export * from "./workCenter";
 export * from "./generated/dictionaries";
 export type { components, operations, paths } from "./generated/api-types";

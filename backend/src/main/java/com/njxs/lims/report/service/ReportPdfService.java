@@ -6,6 +6,7 @@ import com.njxs.lims.file.domain.StoredFile;
 import com.njxs.lims.payment.service.PaymentGateService;
 import com.njxs.lims.payment.service.PaymentGateStatus;
 import com.njxs.lims.report.conversion.DocumentConversionService;
+import com.njxs.lims.report.delivery.service.ReportDeliveryLogService;
 import com.njxs.lims.report.domain.ReportRecord;
 import com.njxs.lims.report.domain.ReportVersionRecord;
 import com.njxs.lims.report.persistence.ReportRepository;
@@ -30,15 +31,18 @@ public class ReportPdfService {
   private final ReportRepository reportRepository;
   private final DocumentConversionService documentConversionService;
   private final PaymentGateService paymentGateService;
+  private final ReportDeliveryLogService reportDeliveryLogService;
 
   public ReportPdfService(
       ReportRepository reportRepository,
       DocumentConversionService documentConversionService,
-      PaymentGateService paymentGateService
+      PaymentGateService paymentGateService,
+      ReportDeliveryLogService reportDeliveryLogService
   ) {
     this.reportRepository = reportRepository;
     this.documentConversionService = documentConversionService;
     this.paymentGateService = paymentGateService;
+    this.reportDeliveryLogService = reportDeliveryLogService;
   }
 
   @Transactional
@@ -47,7 +51,15 @@ public class ReportPdfService {
     if (gateStatus == PaymentGateStatus.LOCKED) {
       throw new BusinessException("PAYMENT_GATE_LOCKED");
     }
-    return generateOfficialPdf(reportId, principal);
+    StoredFile pdf = generateOfficialPdf(reportId, principal);
+    reportDeliveryLogService.recordForCurrentVersion(
+        reportId,
+        "DOWNLOAD",
+        principal,
+        gateStatus,
+        pdf.fileId()
+    );
+    return pdf;
   }
 
   @Transactional

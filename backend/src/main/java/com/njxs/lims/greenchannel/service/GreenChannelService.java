@@ -10,7 +10,9 @@ import com.njxs.lims.greenchannel.api.GreenChannelCreateRequest;
 import com.njxs.lims.greenchannel.api.GreenChannelResponse;
 import com.njxs.lims.greenchannel.domain.GreenChannelRequestRecord;
 import com.njxs.lims.greenchannel.persistence.GreenChannelRepository;
+import com.njxs.lims.payment.service.PaymentGateStatus;
 import com.njxs.lims.permission.PermissionService;
+import com.njxs.lims.report.delivery.service.ReportDeliveryLogService;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Locale;
@@ -28,15 +30,18 @@ public class GreenChannelService {
   private final GreenChannelRepository greenChannelRepository;
   private final ApprovalRecordService approvalRecordService;
   private final PermissionService permissionService;
+  private final ReportDeliveryLogService reportDeliveryLogService;
 
   public GreenChannelService(
       GreenChannelRepository greenChannelRepository,
       ApprovalRecordService approvalRecordService,
-      PermissionService permissionService
+      PermissionService permissionService,
+      ReportDeliveryLogService reportDeliveryLogService
   ) {
     this.greenChannelRepository = greenChannelRepository;
     this.approvalRecordService = approvalRecordService;
     this.permissionService = permissionService;
+    this.reportDeliveryLogService = reportDeliveryLogService;
   }
 
   public PageResponse<GreenChannelResponse> list(UUID projectId, int page, int pageSize) {
@@ -107,6 +112,13 @@ public class GreenChannelService {
     greenChannelRepository.updateStatus(id, nextStatus, principal.userId());
     if ("APPROVED".equals(nextStatus)) {
       greenChannelRepository.greenUnlockReport(record.reportId(), principal.userId());
+      reportDeliveryLogService.recordForCurrentVersion(
+          record.reportId(),
+          "GREEN_CHANNEL",
+          principal,
+          PaymentGateStatus.GREEN_UNLOCKED,
+          null
+      );
     }
   }
 

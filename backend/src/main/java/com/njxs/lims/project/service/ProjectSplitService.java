@@ -5,6 +5,7 @@ import com.njxs.lims.common.domain.BaseEntity;
 import com.njxs.lims.common.exception.BusinessException;
 import com.njxs.lims.project.api.ProjectResponse;
 import com.njxs.lims.project.domain.Project;
+import com.njxs.lims.project.domain.ProjectStatus;
 import com.njxs.lims.project.persistence.ProjectRepository;
 import com.njxs.lims.submission.api.SubmissionSplitProjectsRequest;
 import com.njxs.lims.submission.persistence.SubmissionRecord;
@@ -101,7 +102,7 @@ public class ProjectSplitService {
     project.setBusinessOwnerId(actorUserId);
     project.setTechnicalOwnerId(actorUserId);
     project.setSdUserId(actorUserId);
-    project.setStatus("ACCEPTED");
+    project.setStatus(ProjectStatus.ACCEPTED.name());
     project.setHealthStatus("NORMAL");
     project.setHealthScore(100);
     project.setPaymentStatus("UNPAID");

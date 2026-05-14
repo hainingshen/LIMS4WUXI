@@ -152,6 +152,7 @@ public class ReportService {
         1,
         "DRAFT",
         docxFileId,
+        null,
         snapshotFileId,
         "SNAPSHOT_BUILT;DOCX_DRAFT_PLACEHOLDER"
     ), principal.userId());

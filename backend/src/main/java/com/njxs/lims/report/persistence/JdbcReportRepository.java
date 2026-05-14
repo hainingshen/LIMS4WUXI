@@ -251,22 +251,40 @@ public class JdbcReportRepository implements ReportRepository {
     jdbcTemplate.update(
         """
         insert into report_version (
-          id, report_id, version_no, status, docx_file_id, data_snapshot_file_id,
+          id, report_id, version_no, status, docx_file_id, pdf_file_id, data_snapshot_file_id,
           render_log, created_at, created_by, updated_at, updated_by, version,
           source_type, data_quality_score
-        ) values (?, ?, ?, ?, ?, ?, ?, now(), ?, now(), ?, 0, 'NEW', 100)
+        ) values (?, ?, ?, ?, ?, ?, ?, ?, now(), ?, now(), ?, 0, 'NEW', 100)
         """,
         version.id(),
         version.reportId(),
         version.versionNo(),
         version.status(),
         version.docxFileId(),
+        version.pdfFileId(),
         version.dataSnapshotFileId(),
         version.renderLog(),
         actorUserId,
         actorUserId
     );
     return version;
+  }
+
+  @Override
+  public Optional<ReportVersionRecord> findVersion(UUID reportId, int versionNo) {
+    return jdbcTemplate.query(
+        """
+        select id, report_id, version_no, status, docx_file_id, pdf_file_id,
+               data_snapshot_file_id, render_log
+        from report_version
+        where report_id = ?
+          and version_no = ?
+          and deleted_at is null
+        """,
+        (rs, rowNum) -> version(rs),
+        reportId,
+        versionNo
+    ).stream().findFirst();
   }
 
   @Override
@@ -330,6 +348,27 @@ public class JdbcReportRepository implements ReportRepository {
     );
   }
 
+  @Override
+  public void updateCurrentVersionPdfFile(UUID reportId, int versionNo, UUID pdfFileId, UUID actorUserId) {
+    jdbcTemplate.update(
+        """
+        update report_version
+        set pdf_file_id = ?,
+            render_log = concat_ws(';', nullif(render_log, ''), 'PDF_CONVERTED'),
+            updated_at = now(),
+            updated_by = ?,
+            version = version + 1
+        where report_id = ?
+          and version_no = ?
+          and deleted_at is null
+        """,
+        pdfFileId,
+        actorUserId,
+        reportId,
+        versionNo
+    );
+  }
+
   private ReportRecord report(ResultSet rs) throws SQLException {
     return new ReportRecord(
         rs.getObject("id", UUID.class),
@@ -343,6 +382,19 @@ public class JdbcReportRepository implements ReportRepository {
         rs.getBoolean("is_official"),
         rs.getString("watermark_type"),
         rs.getString("payment_gate_status")
+    );
+  }
+
+  private ReportVersionRecord version(ResultSet rs) throws SQLException {
+    return new ReportVersionRecord(
+        rs.getObject("id", UUID.class),
+        rs.getObject("report_id", UUID.class),
+        rs.getInt("version_no"),
+        rs.getString("status"),
+        rs.getObject("docx_file_id", UUID.class),
+        rs.getObject("pdf_file_id", UUID.class),
+        rs.getObject("data_snapshot_file_id", UUID.class),
+        rs.getString("render_log")
     );
   }
 

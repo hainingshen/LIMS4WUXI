@@ -8,6 +8,7 @@ public record ReportVersionRecord(
     int versionNo,
     String status,
     UUID docxFileId,
+    UUID pdfFileId,
     UUID dataSnapshotFileId,
     String renderLog
 ) {

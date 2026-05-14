@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Alert,
@@ -25,6 +25,7 @@ import {
   type AuthSession,
 } from "@lims4wuxi/shared";
 
+import { SampleReceivingDesk } from "./SampleReceivingDesk";
 import "./styles.css";
 
 type InternalRoute = {
@@ -54,6 +55,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     label: "项目详情",
     detail: "评审、方案和报告进度",
     roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "SAMPLE_MANAGER", "REPORT_PREPARER"],
+  },
+  {
+    key: "samples-receiving",
+    label: "样品收样台",
+    detail: "到达核验、拍照和入库",
+    roles: ["SAMPLE_MANAGER"],
+    actionCode: "SAMPLE_RECEIVE",
   },
 ];
 
@@ -144,6 +152,15 @@ function InternalShell() {
   const roles = useAuthStore((state) => state.roles);
   const clearSession = useAuthStore((state) => state.clearSession);
   const entries = useMemo(() => INTERNAL_ROUTES.filter((item) => hasAnyRole(roles, item.roles)), [roles]);
+  const [activeKey, setActiveKey] = useState(entries[0]?.key);
+
+  useEffect(() => {
+    if (!entries.some((item) => item.key === activeKey)) {
+      setActiveKey(entries[0]?.key);
+    }
+  }, [activeKey, entries]);
+
+  const activeRoute = entries.find((item) => item.key === activeKey) ?? entries[0];
 
   if (screens.xs) {
     return (
@@ -153,13 +170,14 @@ function InternalShell() {
         </NavBar>
         <List header="入口">
           {entries.map((item) => (
-            <List.Item key={item.key} description={item.detail}>
+            <List.Item key={item.key} description={item.detail} onClick={() => setActiveKey(item.key)}>
               {item.actionCode ? (
                 <RequireAction action={item.actionCode}>{item.label}</RequireAction>
               ) : item.label}
             </List.Item>
           ))}
         </List>
+        <div className="mobileContent">{renderRoute(activeRoute, entries, setActiveKey)}</div>
       </main>
     );
   }
@@ -168,7 +186,12 @@ function InternalShell() {
     <Layout className="appShell">
       <Layout.Sider width={232} theme="light" className="sidebar">
         <Typography.Title level={4}>LIMS4WUXI</Typography.Title>
-        <Menu mode="inline" selectedKeys={entries[0] ? [entries[0].key] : []} items={entries.map((item) => ({ key: item.key, label: item.label }))} />
+        <Menu
+          mode="inline"
+          selectedKeys={activeRoute ? [activeRoute.key] : []}
+          onClick={({ key }) => setActiveKey(String(key))}
+          items={entries.map((item) => ({ key: item.key, label: item.label }))}
+        />
       </Layout.Sider>
       <Layout.Content className="content">
         <header className="topbar">
@@ -177,22 +200,39 @@ function InternalShell() {
           </Space>
           <Button onClick={clearSession}>退出</Button>
         </header>
-        <section className="entryGrid">
-          {entries.map((item) => (
-            <Card key={item.key} title={item.label} className="entryCard">
-              <Typography.Text>{item.detail}</Typography.Text>
-              {item.actionCode ? (
-                <div className="entryAction">
-                  <RequireAction action={item.actionCode}>
-                    <Button type="primary">进入</Button>
-                  </RequireAction>
-                </div>
-              ) : null}
-            </Card>
-          ))}
-        </section>
+        {renderRoute(activeRoute, entries, setActiveKey)}
       </Layout.Content>
     </Layout>
+  );
+}
+
+function renderRoute(
+  activeRoute: InternalRoute | undefined,
+  entries: readonly InternalRoute[],
+  setActiveKey: (key: string) => void,
+) {
+  if (activeRoute?.key === "samples-receiving") {
+    return (
+      <RequireAction action="SAMPLE_RECEIVE">
+        <SampleReceivingDesk />
+      </RequireAction>
+    );
+  }
+  return (
+    <section className="entryGrid">
+      {entries.map((item) => (
+        <Card key={item.key} title={item.label} className="entryCard">
+          <Typography.Text>{item.detail}</Typography.Text>
+          {item.actionCode ? (
+            <div className="entryAction">
+              <RequireAction action={item.actionCode}>
+                <Button type="primary" onClick={() => setActiveKey(item.key)}>进入</Button>
+              </RequireAction>
+            </div>
+          ) : null}
+        </Card>
+      ))}
+    </section>
   );
 }
 

@@ -68,3 +68,84 @@ body {
   min-height: 100vh;
   background: #f5f7f8;
 }
+
+.mobileContent {
+  padding: 12px;
+}
+
+.sampleDesk {
+  display: grid;
+  gap: 16px;
+}
+
+.sampleDeskHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sampleDeskHeader h3 {
+  margin: 0 0 4px;
+}
+
+.sampleDeskSearch {
+  width: min(420px, 100%);
+}
+
+.sampleDeskGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  gap: 16px;
+  align-items: start;
+}
+
+.deskPanel {
+  min-width: 0;
+  background: #ffffff;
+  border: 1px solid #d9e2e8;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.sampleDetailPanel {
+  display: grid;
+  gap: 16px;
+}
+
+.detailTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+
+.sampleActions,
+.photoUpload {
+  display: flex;
+  gap: 10px;
+}
+
+.sampleActions {
+  padding-top: 4px;
+}
+
+.photoUpload {
+  flex-direction: column;
+}
+
+.selectedRow > td {
+  background: #eef7f3 !important;
+}
+
+@media (max-width: 900px) {
+  .sampleDeskHeader,
+  .sampleDeskGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sampleDeskHeader {
+    display: grid;
+    align-items: stretch;
+  }
+}

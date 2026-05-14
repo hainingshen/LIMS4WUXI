@@ -9,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,14 +21,17 @@ import org.springframework.stereotype.Repository;
 @ConditionalOnProperty(prefix = "lims.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class JdbcSampleRepository implements SampleRepository {
 
-  private static final String SELECT_COLUMNS = """
-      id, biz_no, project_id, submission_id, sample_name_zh, sample_name_en, sterilization_state,
-      cas_code, model_ref, size_spec, lot_batch, raw_material, packaging_material, physical_state,
-      color, density, stability, solubility, storage_condition, intended_use, additional_info,
-      quantity, quantity_unit, status, received_at, received_by, recipient_name, received_date,
-      inventory_location, created_at, created_by, updated_at, updated_by, deleted_at, version,
-      tenant_org_id, legacy_id, source_type, migration_batch, data_quality_score
-      """;
+  private static final List<String> COLUMNS = List.of(
+      "id", "biz_no", "project_id", "submission_id", "sample_name_zh", "sample_name_en",
+      "sterilization_state", "cas_code", "model_ref", "size_spec", "lot_batch", "raw_material",
+      "packaging_material", "physical_state", "color", "density", "stability", "solubility",
+      "storage_condition", "intended_use", "additional_info", "quantity", "quantity_unit",
+      "status", "received_at", "received_by", "recipient_name", "received_date",
+      "inventory_location", "created_at", "created_by", "updated_at", "updated_by",
+      "deleted_at", "version", "tenant_org_id", "legacy_id", "source_type", "migration_batch",
+      "data_quality_score"
+  );
+  private static final String SELECT_COLUMNS = String.join(", ", COLUMNS);
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -108,13 +113,37 @@ public class JdbcSampleRepository implements SampleRepository {
   @Override
   public Optional<Sample> findById(UUID id) {
     return jdbcTemplate.query(
-        "select " + SELECT_COLUMNS + """
-        from sample
-        where id = ? and deleted_at is null
-        """,
+        "select " + SELECT_COLUMNS + " from sample where id = ? and deleted_at is null",
         (rs, rowNum) -> sample(rs),
         id
     ).stream().findFirst();
+  }
+
+  @Override
+  public List<Sample> list(String keyword, String status, int limit, int offset) {
+    QueryParts query = queryParts(keyword, status);
+    List<Object> args = new ArrayList<>(query.args());
+    args.add(limit);
+    args.add(offset);
+    return jdbcTemplate.query(
+        "select " + selectColumns("s") + " " + query.fromWhere() + """
+        order by s.updated_at desc, s.biz_no desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> sample(rs),
+        args.toArray()
+    );
+  }
+
+  @Override
+  public int count(String keyword, String status) {
+    QueryParts query = queryParts(keyword, status);
+    Integer count = jdbcTemplate.queryForObject(
+        "select count(*) " + query.fromWhere(),
+        Integer.class,
+        query.args().toArray()
+    );
+    return count == null ? 0 : count;
   }
 
   @Override
@@ -132,7 +161,7 @@ public class JdbcSampleRepository implements SampleRepository {
             version = version + 1
         where id = ? and deleted_at is null
         returning
-        """ + SELECT_COLUMNS,
+        """ + " " + SELECT_COLUMNS,
         (rs, rowNum) -> sample(rs),
         sample.getStatus(),
         timestamp(sample.getReceivedAt()),
@@ -215,5 +244,52 @@ public class JdbcSampleRepository implements SampleRepository {
       return null;
     }
     return timestamp.toInstant();
+  }
+
+  private QueryParts queryParts(String keyword, String status) {
+    StringBuilder sql = new StringBuilder("""
+        from sample s
+        join project p on p.id = s.project_id
+        join submission sub on sub.id = s.submission_id
+        where s.deleted_at is null
+        """);
+    List<Object> args = new ArrayList<>();
+    if (hasText(status)) {
+      sql.append("and s.status = ?\n");
+      args.add(status);
+    }
+    if (hasText(keyword)) {
+      String like = "%" + keyword.trim().toLowerCase() + "%";
+      sql.append("""
+          and (
+            lower(s.biz_no) like ?
+            or lower(s.sample_name_zh) like ?
+            or lower(s.sample_name_en) like ?
+            or lower(s.model_ref) like ?
+            or lower(s.lot_batch) like ?
+            or lower(p.biz_no) like ?
+            or lower(sub.biz_no) like ?
+          )
+          """);
+      args.add(like);
+      args.add(like);
+      args.add(like);
+      args.add(like);
+      args.add(like);
+      args.add(like);
+      args.add(like);
+    }
+    return new QueryParts(sql.toString(), args);
+  }
+
+  private String selectColumns(String alias) {
+    return String.join(", ", COLUMNS.stream().map(column -> alias + "." + column).toList());
+  }
+
+  private boolean hasText(String value) {
+    return value != null && !value.isBlank();
+  }
+
+  private record QueryParts(String fromWhere, List<Object> args) {
   }
 }

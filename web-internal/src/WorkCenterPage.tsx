@@ -171,8 +171,12 @@ export function WorkCenterPage() {
     <section className="workCenter">
       <header className="workCenterHeader">
         <div>
+          <Typography.Text className="pageEyebrow">PROJECT WORK CENTER</Typography.Text>
           <Typography.Title level={3}>工作中心</Typography.Title>
-          <Typography.Text type="secondary">{summary?.generatedAt ? formatTime(summary.generatedAt) : ""}</Typography.Text>
+          <Typography.Text type="secondary">
+            健康度、阻塞、待办和人员负荷统一入口
+            {summary?.generatedAt ? ` · ${formatTime(summary.generatedAt)}` : ""}
+          </Typography.Text>
         </div>
         <Segmented
           options={FILTER_OPTIONS}
@@ -184,11 +188,11 @@ export function WorkCenterPage() {
       {error ? <Alert type="error" message={error} showIcon closable onClose={() => setError(undefined)} /> : null}
 
       <div className="workCenterSummary">
-        <MetricCard label="正常项目" value={summary?.normalProjects ?? 0} tone="normal" />
-        <MetricCard label="预警项目" value={summary?.warningProjects ?? 0} tone="warning" />
-        <MetricCard label="风险项目" value={summary?.riskProjects ?? 0} tone="risk" />
-        <MetricCard label="我的待办" value={summary?.myTodos ?? 0} tone="todo" />
-        <MetricCard label="超期任务" value={summary?.overdueTasks ?? 0} tone="overdue" />
+        <MetricCard label="正常项目" helper="80-100" value={summary?.normalProjects ?? 0} tone="normal" />
+        <MetricCard label="预警项目" helper="60-79" value={summary?.warningProjects ?? 0} tone="warning" />
+        <MetricCard label="风险项目" helper="<60" value={summary?.riskProjects ?? 0} tone="risk" />
+        <MetricCard label="我的待办" helper="Today" value={summary?.myTodos ?? 0} tone="todo" />
+        <MetricCard label="超期任务" helper="Overdue" value={summary?.overdueTasks ?? 0} tone="overdue" />
       </div>
 
       <div className="workCenterGrid">
@@ -245,10 +249,14 @@ export function WorkCenterPage() {
   );
 }
 
-function MetricCard({ label, value, tone }: { label: string; value: number; tone: string }) {
+function MetricCard({ label, helper, value, tone }: { label: string; helper: string; value: number; tone: string }) {
   return (
     <Card className={`metricCard metric-${tone}`}>
-      <Typography.Text type="secondary">{label}</Typography.Text>
+      <span className="metricAccent" />
+      <div className="metricLabel">
+        <Typography.Text type="secondary">{label}</Typography.Text>
+        <Typography.Text type="secondary">{helper}</Typography.Text>
+      </div>
       <Typography.Title level={3}>{value}</Typography.Title>
     </Card>
   );

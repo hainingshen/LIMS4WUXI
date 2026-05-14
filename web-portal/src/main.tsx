@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Card,
+  ConfigProvider,
   Form,
   Grid,
   Input,
@@ -19,10 +20,12 @@ import "antd-mobile/es/global";
 import {
   hasAnyRole,
   loginForClient,
+  limsAntdTheme,
   roleLabel,
   useAuthStore,
   type AuthSession,
 } from "@lims4wuxi/shared";
+import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { SubmissionFormPage } from "./SubmissionFormPage";
 import "./styles.css";
@@ -51,11 +54,9 @@ const PORTAL_ROUTES = [
 type PortalRouteKey = (typeof PORTAL_ROUTES)[number]["key"];
 
 function PortalApp() {
-  const session = useAuthStore((state) => ({
-    accessToken: state.accessToken,
-    clientType: state.clientType,
-  }));
-  if (!session.accessToken || session.clientType !== "PORTAL") {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const clientType = useAuthStore((state) => state.clientType);
+  if (!accessToken || clientType !== "PORTAL") {
     return <LoginScreen />;
   }
   return <PortalShell />;
@@ -82,6 +83,18 @@ function DesktopLogin() {
 
   return (
     <main className="loginSurface">
+      <section className="loginHero">
+        <div className="brandMark">NJU</div>
+        <Typography.Title level={2}>南京大学锡山应用生物技术研究所</Typography.Title>
+        <Typography.Text>
+          医疗器械检测客户门户，支持送检、进度跟踪、报告预览与发放。
+        </Typography.Text>
+        <div className="credentialRow">
+          <span>CNAS</span>
+          <span>CMA</span>
+          <span>GLP</span>
+        </div>
+      </section>
       <Card className="loginPanel" title="客户门户">
         <Form layout="vertical" initialValues={{ username: "portal.applicant", password: "Applicant123!" }} onFinish={submit}>
           <Form.Item name="username" label="账号" rules={[{ required: true }]}>
@@ -170,7 +183,13 @@ function PortalShell() {
   return (
     <Layout className="appShell">
       <Layout.Sider width={232} theme="light" className="sidebar">
-        <Typography.Title level={4}>客户门户</Typography.Title>
+        <div className="sideBrand">
+          <div className="sideLogo">NJU</div>
+          <div>
+            <Typography.Title level={4}>客户门户</Typography.Title>
+            <Typography.Text>Customer Portal</Typography.Text>
+          </div>
+        </div>
         <Menu
           mode="inline"
           selectedKeys={activeKey ? [activeKey] : []}
@@ -227,6 +246,8 @@ function toSession(token: AuthSession): AuthSession {
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <PortalApp />
+    <ConfigProvider theme={limsAntdTheme}>
+      <PortalApp />
+    </ConfigProvider>
   </React.StrictMode>,
 );

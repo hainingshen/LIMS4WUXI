@@ -7,6 +7,20 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+Preferred local workflow:
+
+```bash
+scripts/local/preflight.sh
+scripts/local/up.sh
+scripts/local/down.sh
+```
+
+To reset local data volumes:
+
+```bash
+LIMS_CONFIRM_RESET=1 scripts/local/reset.sh
+```
+
 Services:
 
 - `http://localhost:8080/internal/` internal PWA through Nginx.

@@ -7,6 +7,8 @@
     ".": "./src/index.ts",
     "./api/http": "./src/api/http.ts",
     "./auth": "./src/auth.ts",
+    "./theme/limsTheme": "./src/theme/limsTheme.ts",
+    "./theme/limsTheme.css": "./src/theme/limsTheme.css",
     "./generated/api-types": "./src/generated/api-types.ts"
   },
   "scripts": {

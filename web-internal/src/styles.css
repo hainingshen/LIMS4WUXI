@@ -6,22 +6,78 @@ body,
 }
 
 body {
-  background: #f5f7f8;
-  color: #172026;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--lims-bg);
+  color: var(--lims-ink-900);
+  font-family: var(--lims-font-family);
 }
 
 .loginSurface {
   min-height: 100vh;
   display: grid;
-  place-items: center;
+  grid-template-columns: minmax(320px, 520px) minmax(320px, 420px);
+  place-content: center;
+  align-items: center;
+  gap: 48px;
   padding: 24px;
-  background: linear-gradient(145deg, #eef3f7 0%, #f7f8f5 54%, #edf6f4 100%);
+  background: linear-gradient(145deg, var(--lims-primary-50) 0%, var(--lims-bg) 54%, var(--lims-accent-50) 100%);
+}
+
+.loginHero {
+  display: grid;
+  gap: 16px;
+}
+
+.loginHero h2 {
+  max-width: 520px;
+  margin: 0;
+  color: var(--lims-ink-900);
+}
+
+.loginHero .ant-typography {
+  max-width: 520px;
+  color: var(--lims-ink-600);
+}
+
+.brandMark,
+.sideLogo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--lims-primary), var(--lims-accent));
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.brandMark {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.credentialRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.credentialRow span {
+  border: 1px solid var(--lims-line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--lims-primary);
+  font-family: Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
 }
 
 .loginPanel {
   width: min(420px, 100%);
-  border-radius: 8px;
+  border-radius: var(--lims-radius);
+  border-color: var(--lims-line);
+  box-shadow: var(--lims-card-shadow-hi);
 }
 
 .formMessage {
@@ -33,8 +89,50 @@ body {
 }
 
 .sidebar {
-  border-right: 1px solid #e2e8ee;
+  background: var(--lims-primary-deep) !important;
+  border-right: 1px solid var(--lims-line);
   padding: 20px 12px;
+}
+
+.sideBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 18px;
+}
+
+.sideLogo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.sideBrand h4 {
+  margin: 0;
+  color: #fff;
+  font-size: 15px;
+}
+
+.sideBrand .ant-typography {
+  color: rgba(255,255,255,.58);
+  font-size: 11px;
+}
+
+.sidebar .ant-menu {
+  background: transparent;
+  color: rgba(255,255,255,.74);
+  border-inline-end: 0 !important;
+}
+
+.sidebar .ant-menu-item {
+  color: rgba(255,255,255,.74);
+}
+
+.sidebar .ant-menu-item-selected {
+  background: rgba(0,168,168,.18) !important;
+  color: #fff !important;
 }
 
 .content {
@@ -66,7 +164,7 @@ body {
 
 .mobileSurface {
   min-height: 100vh;
-  background: #f5f7f8;
+  background: var(--lims-bg);
 }
 
 .mobileContent {
@@ -89,6 +187,16 @@ body {
   margin: 0 0 4px;
 }
 
+.pageEyebrow {
+  display: block;
+  color: var(--lims-accent) !important;
+  font-family: Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  margin-bottom: 4px;
+}
+
 .sampleDeskSearch {
   width: min(420px, 100%);
 }
@@ -102,15 +210,23 @@ body {
 
 .deskPanel {
   min-width: 0;
-  background: #ffffff;
-  border: 1px solid #d9e2e8;
-  border-radius: 8px;
+  background: var(--lims-card-bg);
+  border: 1px solid var(--lims-line);
+  border-radius: var(--lims-radius);
+  box-shadow: var(--lims-card-shadow);
   padding: 16px;
 }
 
 .sampleDetailPanel {
   display: grid;
   gap: 16px;
+}
+
+.deskPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .detailTitle {
@@ -135,7 +251,7 @@ body {
 }
 
 .selectedRow > td {
-  background: #eef7f3 !important;
+  background: var(--lims-accent-50) !important;
 }
 
 .workCenter {
@@ -161,7 +277,10 @@ body {
 }
 
 .metricCard {
-  border-radius: 8px;
+  border-radius: var(--lims-radius);
+  box-shadow: var(--lims-card-shadow);
+  position: relative;
+  overflow: hidden;
 }
 
 .metricCard h3,
@@ -169,24 +288,38 @@ body {
   margin: 4px 0 0;
 }
 
-.metric-normal {
-  border-top: 3px solid #2f855a;
+.metricAccent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
 }
 
-.metric-warning {
-  border-top: 3px solid #d69e2e;
+.metricLabel {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.metric-risk {
-  border-top: 3px solid #c53030;
+.metric-normal .metricAccent {
+  background: var(--lims-success);
 }
 
-.metric-todo {
-  border-top: 3px solid #2b6cb0;
+.metric-warning .metricAccent {
+  background: var(--lims-warning);
 }
 
-.metric-overdue {
-  border-top: 3px solid #6b46c1;
+.metric-risk .metricAccent {
+  background: var(--lims-danger);
+}
+
+.metric-todo .metricAccent {
+  background: var(--lims-primary);
+}
+
+.metric-overdue .metricAccent {
+  background: var(--lims-accent);
 }
 
 .workCenterGrid {
@@ -198,7 +331,8 @@ body {
 
 .workCenterPanel {
   min-width: 0;
-  border-radius: 8px;
+  border-radius: var(--lims-radius);
+  box-shadow: var(--lims-card-shadow);
 }
 
 .trendGrid {
@@ -209,10 +343,10 @@ body {
 
 .trendItem {
   min-height: 78px;
-  border: 1px solid #d9e2e8;
-  border-radius: 8px;
+  border: 1px solid var(--lims-line);
+  border-radius: var(--lims-radius);
   padding: 12px;
-  background: #fbfcfd;
+  background: var(--lims-card-bg);
 }
 
 @media (max-width: 900px) {
@@ -228,5 +362,10 @@ body {
   .workCenterHeader {
     display: grid;
     align-items: stretch;
+  }
+
+  .loginSurface {
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 }

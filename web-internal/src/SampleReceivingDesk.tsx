@@ -224,7 +224,11 @@ export function SampleReceivingDesk() {
     <section className="sampleDesk">
       <header className="sampleDeskHeader">
         <div>
+          <Typography.Text className="pageEyebrow">SAMPLE RECEIVING DESK</Typography.Text>
           <Typography.Title level={3}>样品收样台</Typography.Title>
+          <Typography.Text type="secondary">
+            扫码检索、到达核验、照片留痕和正式入库
+          </Typography.Text>
         </div>
         <Input.Search
           className="sampleDeskSearch"
@@ -241,6 +245,10 @@ export function SampleReceivingDesk() {
 
       <div className="sampleDeskGrid">
         <div className="deskPanel">
+          <div className="deskPanelHeader">
+            <Typography.Text strong>待处理样品</Typography.Text>
+            <Tag color="blue">{samples.length} 条</Tag>
+          </div>
           <Table
             rowKey="id"
             size="middle"
@@ -259,6 +267,7 @@ export function SampleReceivingDesk() {
             <>
               <div className="detailTitle">
                 <Space direction="vertical" size={2}>
+                  <Typography.Text type="secondary">当前选中</Typography.Text>
                   <Typography.Text strong>{selectedSample.bizNo}</Typography.Text>
                   <Typography.Text>{selectedSample.sampleNameZh}</Typography.Text>
                 </Space>

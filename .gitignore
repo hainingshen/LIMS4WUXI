@@ -23,6 +23,7 @@ target/
 
 # Logs and local env
 *.log
+test-results/
 .env
 .env.*
 !.env.example

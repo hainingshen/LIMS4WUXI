@@ -7,7 +7,8 @@ import org.springframework.boot.test.context.SpringBootTest;
     "spring.autoconfigure.exclude="
         + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
         + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration",
-    "lims.auth.enabled=false"
+    "lims.auth.enabled=false",
+    "lims.persistence.enabled=false"
 })
 class LimsApplicationTests {
 

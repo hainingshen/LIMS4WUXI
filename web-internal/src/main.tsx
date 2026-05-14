@@ -1,14 +1,208 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { API_BASE_PATH } from "@lims4wuxi/shared";
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Grid,
+  Input,
+  Layout,
+  Menu,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
+import "antd/dist/reset.css";
+import { Button as MobileButton, Form as MobileForm, Input as MobileInput, List, NavBar, NoticeBar } from "antd-mobile";
+import "antd-mobile/es/global";
+import {
+  hasAnyRole,
+  loginForClient,
+  roleLabel,
+  useAuthStore,
+  usePermission,
+  type AuthSession,
+} from "@lims4wuxi/shared";
+
+import "./styles.css";
+
+type InternalRoute = {
+  key: string;
+  label: string;
+  detail: string;
+  roles: readonly string[];
+  actionCode?: string;
+};
+
+const INTERNAL_ROUTES: readonly InternalRoute[] = [
+  {
+    key: "work-center",
+    label: "工作中心",
+    detail: "待办、风险和负荷",
+    roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "DEPT_MANAGER", "GENERAL_MANAGER"],
+  },
+  {
+    key: "submissions",
+    label: "送检受理",
+    detail: "提交审核、受理和拆分",
+    roles: ["SALES_REP", "SAMPLE_MANAGER", "TECHNICAL_LEADER"],
+    actionCode: "SUBMISSION_ACCEPT",
+  },
+  {
+    key: "projects",
+    label: "项目详情",
+    detail: "评审、方案和报告进度",
+    roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "SAMPLE_MANAGER", "REPORT_PREPARER"],
+  },
+];
 
 function InternalApp() {
+  const session = useAuthStore((state) => ({
+    accessToken: state.accessToken,
+    clientType: state.clientType,
+  }));
+  if (!session.accessToken || session.clientType !== "INTERNAL") {
+    return <LoginScreen />;
+  }
+  return <InternalShell />;
+}
+
+function LoginScreen() {
+  const screens = Grid.useBreakpoint();
+  return screens.xs ? <MobileLogin /> : <DesktopLogin />;
+}
+
+function DesktopLogin() {
+  const [error, setError] = useState<string>();
+  const setSession = useAuthStore((state) => state.setSession);
+
+  async function submit(values: { username: string; password: string }) {
+    setError(undefined);
+    try {
+      const token = await loginForClient("INTERNAL", values);
+      setSession(toSession(token));
+    } catch {
+      setError("登录失败");
+    }
+  }
+
   return (
-    <main>
-      <h1>LIMS4WUXI Internal</h1>
-      <p>API base path: {API_BASE_PATH}</p>
+    <main className="loginSurface">
+      <Card className="loginPanel" title="内部工作台">
+        <Form layout="vertical" initialValues={{ username: "internal.sales", password: "Sales123!" }} onFinish={submit}>
+          <Form.Item name="username" label="账号" rules={[{ required: true }]}>
+            <Input autoComplete="username" />
+          </Form.Item>
+          <Form.Item name="password" label="密码" rules={[{ required: true }]}>
+            <Input.Password autoComplete="current-password" />
+          </Form.Item>
+          {error ? <Alert type="error" message={error} showIcon className="formMessage" /> : null}
+          <Button type="primary" htmlType="submit" block>
+            登录
+          </Button>
+        </Form>
+      </Card>
     </main>
   );
+}
+
+function MobileLogin() {
+  const [username, setUsername] = useState("internal.sales");
+  const [password, setPassword] = useState("Sales123!");
+  const [error, setError] = useState<string>();
+  const setSession = useAuthStore((state) => state.setSession);
+
+  async function submit() {
+    setError(undefined);
+    try {
+      const token = await loginForClient("INTERNAL", { username, password });
+      setSession(toSession(token));
+    } catch {
+      setError("登录失败");
+    }
+  }
+
+  return (
+    <main className="mobileSurface">
+      <NavBar backArrow={false}>内部工作台</NavBar>
+      {error ? <NoticeBar color="alert" content={error} /> : null}
+      <MobileForm layout="vertical" footer={<MobileButton color="primary" block onClick={submit}>登录</MobileButton>}>
+        <MobileForm.Item label="账号">
+          <MobileInput value={username} onChange={setUsername} />
+        </MobileForm.Item>
+        <MobileForm.Item label="密码">
+          <MobileInput type="password" value={password} onChange={setPassword} />
+        </MobileForm.Item>
+      </MobileForm>
+    </main>
+  );
+}
+
+function InternalShell() {
+  const screens = Grid.useBreakpoint();
+  const roles = useAuthStore((state) => state.roles);
+  const clearSession = useAuthStore((state) => state.clearSession);
+  const entries = useMemo(() => INTERNAL_ROUTES.filter((item) => hasAnyRole(roles, item.roles)), [roles]);
+
+  if (screens.xs) {
+    return (
+      <main className="mobileSurface">
+        <NavBar backArrow={false} right={<MobileButton size="mini" onClick={clearSession}>退出</MobileButton>}>
+          内部工作台
+        </NavBar>
+        <List header="入口">
+          {entries.map((item) => (
+            <List.Item key={item.key} description={item.detail}>
+              {item.actionCode ? (
+                <RequireAction action={item.actionCode}>{item.label}</RequireAction>
+              ) : item.label}
+            </List.Item>
+          ))}
+        </List>
+      </main>
+    );
+  }
+
+  return (
+    <Layout className="appShell">
+      <Layout.Sider width={232} theme="light" className="sidebar">
+        <Typography.Title level={4}>LIMS4WUXI</Typography.Title>
+        <Menu mode="inline" selectedKeys={entries[0] ? [entries[0].key] : []} items={entries.map((item) => ({ key: item.key, label: item.label }))} />
+      </Layout.Sider>
+      <Layout.Content className="content">
+        <header className="topbar">
+          <Space wrap>
+            {roles.map((role) => <Tag key={role}>{roleLabel(role)}</Tag>)}
+          </Space>
+          <Button onClick={clearSession}>退出</Button>
+        </header>
+        <section className="entryGrid">
+          {entries.map((item) => (
+            <Card key={item.key} title={item.label} className="entryCard">
+              <Typography.Text>{item.detail}</Typography.Text>
+              {item.actionCode ? (
+                <div className="entryAction">
+                  <RequireAction action={item.actionCode}>
+                    <Button type="primary">进入</Button>
+                  </RequireAction>
+                </div>
+              ) : null}
+            </Card>
+          ))}
+        </section>
+      </Layout.Content>
+    </Layout>
+  );
+}
+
+function RequireAction({ action, children }: React.PropsWithChildren<{ action: string }>) {
+  const allowed = usePermission(action);
+  return allowed ? <>{children}</> : null;
+}
+
+function toSession(token: AuthSession): AuthSession {
+  return token;
 }
 
 createRoot(document.getElementById("root")!).render(

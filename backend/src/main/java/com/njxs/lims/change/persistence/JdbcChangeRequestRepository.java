@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -85,6 +86,36 @@ public class JdbcChangeRequestRepository implements ChangeRequestRepository {
   }
 
   @Override
+  public Optional<ChangeRequestRecord> findById(UUID id) {
+    return jdbcTemplate.query(
+        """
+        select id, biz_no, target_type, target_id, target_biz_no, change_type, reason, status,
+               requested_by, requested_at, effective_at, attachment_file_id
+        from change_request
+        where id = ? and deleted_at is null
+        """,
+        (rs, rowNum) -> record(rs, List.of()),
+        id
+    ).stream()
+        .findFirst()
+        .map(record -> new ChangeRequestRecord(
+            record.id(),
+            record.bizNo(),
+            record.targetType(),
+            record.targetId(),
+            record.targetBizNo(),
+            record.changeType(),
+            record.reason(),
+            record.status(),
+            record.requestedBy(),
+            record.requestedAt(),
+            record.effectiveAt(),
+            record.attachmentFileId(),
+            items(record.id())
+        ));
+  }
+
+  @Override
   public List<ChangeRequestRecord> list(int limit, int offset) {
     List<ChangeRequestRecord> records = jdbcTemplate.query(
         """
@@ -125,6 +156,40 @@ public class JdbcChangeRequestRepository implements ChangeRequestRepository {
         Integer.class
     );
     return count == null ? 0 : count;
+  }
+
+  @Override
+  public ChangeRequestRecord updateStatus(UUID id, String status, UUID actorUserId) {
+    jdbcTemplate.update(
+        """
+        update change_request
+        set status = ?, updated_at = now(), updated_by = ?, version = version + 1
+        where id = ? and deleted_at is null
+        """,
+        status,
+        actorUserId,
+        id
+    );
+    return findById(id).orElseThrow();
+  }
+
+  @Override
+  public ChangeRequestRecord markEffective(UUID id, Instant effectiveAt, UUID actorUserId) {
+    jdbcTemplate.update(
+        """
+        update change_request
+        set status = 'EFFECTIVE',
+            effective_at = ?,
+            updated_at = now(),
+            updated_by = ?,
+            version = version + 1
+        where id = ? and deleted_at is null
+        """,
+        timestamp(effectiveAt),
+        actorUserId,
+        id
+    );
+    return findById(id).orElseThrow();
   }
 
   @Override

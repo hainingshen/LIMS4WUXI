@@ -1,7 +1,12 @@
 package com.njxs.lims.change.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.njxs.lims.approval.domain.ApprovalOutcome;
+import com.njxs.lims.approval.service.ApprovalRecordService;
+import com.njxs.lims.audit.AuditLogEntry;
+import com.njxs.lims.audit.AuditLogRepository;
 import com.njxs.lims.auth.domain.AuthPrincipal;
+import com.njxs.lims.change.api.ChangeRequestApprovalRequest;
 import com.njxs.lims.change.api.ChangeRequestCreateRequest;
 import com.njxs.lims.change.api.ChangeRequestItemRequest;
 import com.njxs.lims.change.api.ChangeRequestResponse;
@@ -38,15 +43,24 @@ public class ChangeRequestService {
   private final ChangeRequestRepository changeRequestRepository;
   private final SampleRepository sampleRepository;
   private final FormSchemaService formSchemaService;
+  private final ApprovalRecordService approvalRecordService;
+  private final ChangeRequestTargetWriter targetWriter;
+  private final AuditLogRepository auditLogRepository;
 
   public ChangeRequestService(
       ChangeRequestRepository changeRequestRepository,
       SampleRepository sampleRepository,
-      FormSchemaService formSchemaService
+      FormSchemaService formSchemaService,
+      ApprovalRecordService approvalRecordService,
+      ChangeRequestTargetWriter targetWriter,
+      AuditLogRepository auditLogRepository
   ) {
     this.changeRequestRepository = changeRequestRepository;
     this.sampleRepository = sampleRepository;
     this.formSchemaService = formSchemaService;
+    this.approvalRecordService = approvalRecordService;
+    this.targetWriter = targetWriter;
+    this.auditLogRepository = auditLogRepository;
   }
 
   @Transactional
@@ -94,6 +108,74 @@ public class ChangeRequestService {
     );
   }
 
+  @Transactional
+  public ChangeRequestResponse submit(UUID id, AuthPrincipal principal) {
+    ChangeRequestRecord record = changeRequest(id);
+    requireStatus(record, Set.of("DRAFT"), "CHANGE_REQUEST_STATUS_CONFLICT");
+    return ChangeRequestResponse.from(changeRequestRepository.updateStatus(id, "SUBMITTED", principal.userId()));
+  }
+
+  @Transactional
+  public ChangeRequestResponse approve(
+      UUID id,
+      ChangeRequestApprovalRequest request,
+      AuthPrincipal principal
+  ) {
+    ChangeRequestRecord record = changeRequest(id);
+    requireStatus(record, Set.of("SUBMITTED", "REVIEWING"), "CHANGE_REQUEST_STATUS_CONFLICT");
+    String stage = requireText("stage", normalize(request.stage()));
+    ApprovalOutcome outcome = ApprovalOutcome.require(normalize(request.outcome()));
+    if (outcome == ApprovalOutcome.NA) {
+      throw new BusinessException(
+          "CHANGE_REQUEST_OUTCOME_INVALID",
+          "变更审批结论不合法",
+          HttpStatus.BAD_REQUEST,
+          Map.of("outcome", request.outcome())
+      );
+    }
+    approvalRecordService.record(
+        "change_request",
+        record.id(),
+        record.bizNo(),
+        stage,
+        outcome.name(),
+        request.comment(),
+        principal,
+        null
+    );
+    String nextStatus = outcome == ApprovalOutcome.REJECTED ? "REJECTED" : "APPROVED";
+    return ChangeRequestResponse.from(changeRequestRepository.updateStatus(id, nextStatus, principal.userId()));
+  }
+
+  @Transactional
+  public ChangeRequestResponse effect(UUID id, AuthPrincipal principal) {
+    ChangeRequestRecord record = changeRequest(id);
+    requireStatus(record, Set.of("APPROVED"), "CHANGE_REQUEST_STATUS_CONFLICT");
+    if (approvalRecordService.listByEntity("change_request", id).stream()
+        .noneMatch(approval -> "APPROVED".equals(approval.outcome()))) {
+      throw new BusinessException(
+          "CHANGE_REQUEST_APPROVAL_REQUIRED",
+          "变更申请缺少审批通过记录",
+          HttpStatus.CONFLICT,
+          Map.of("changeRequestId", id)
+      );
+    }
+    if ("SAMPLE".equals(record.targetType())
+        && record.items().stream().anyMatch(item -> "HARD_LOCK".equals(item.lockPolicy()))
+        && changeRequestRepository.issuedReportExistsForSample(record.targetId())) {
+      throw new BusinessException(
+          "CHANGE_REQUEST_NEEDS_REPORT_REVISION",
+          "已签发报告的硬锁字段需先完成报告更正",
+          HttpStatus.CONFLICT,
+          Map.of("changeRequestId", id)
+      );
+    }
+    targetWriter.apply(record, principal.userId());
+    ChangeRequestRecord effective = changeRequestRepository.markEffective(id, Instant.now(), principal.userId());
+    appendTargetAudit(effective, principal);
+    return ChangeRequestResponse.from(effective);
+  }
+
   private ChangeRequestItemRecord normalizeItem(TargetSnapshot target, ChangeRequestItemRequest request) {
     String fieldKey = fieldKey(request.fieldPath());
     FieldPolicy policy = fieldPolicy(fieldKey, request.fieldLabel(), request.lockPolicy());
@@ -124,6 +206,22 @@ public class ChangeRequestService {
     return new TargetSnapshot(null, null);
   }
 
+  private ChangeRequestRecord changeRequest(UUID id) {
+    return changeRequestRepository.findById(id)
+        .orElseThrow(() -> notFound("change_request", id));
+  }
+
+  private void requireStatus(ChangeRequestRecord record, Set<String> expected, String code) {
+    if (!expected.contains(record.status())) {
+      throw new BusinessException(
+          code,
+          "变更申请当前状态不可执行该操作",
+          HttpStatus.CONFLICT,
+          Map.of("expected", expected, "actual", record.status())
+      );
+    }
+  }
+
   private FieldPolicy fieldPolicy(String fieldKey, String requestLabel, String requestLockPolicy) {
     FormSchemaRecord schema = formSchemaService.current("SUBMISSION_VER15", 1);
     JsonNode field = schema.schemaJson().path("properties").path(fieldKey);
@@ -139,6 +237,18 @@ public class ChangeRequestService {
 
   private String normalize(String value) {
     return value == null ? null : value.trim().toUpperCase(Locale.ROOT);
+  }
+
+  private String requireText(String field, String value) {
+    if (value == null || value.isBlank()) {
+      throw new BusinessException(
+          "VALIDATION_FAILED",
+          "请求参数校验失败",
+          HttpStatus.BAD_REQUEST,
+          Map.of(field, "required")
+      );
+    }
+    return value;
   }
 
   private void assertAllowedValue(String value, Set<String> allowed, String field) {
@@ -159,6 +269,25 @@ public class ChangeRequestService {
         HttpStatus.NOT_FOUND,
         Map.of("entityType", entityType, "entityId", entityId)
     );
+  }
+
+  private void appendTargetAudit(ChangeRequestRecord record, AuthPrincipal principal) {
+    auditLogRepository.append(new AuditLogEntry(
+        UUID.randomUUID(),
+        Instant.now(),
+        principal.userId(),
+        principal.roles().stream().findFirst().orElse(null),
+        principal.clientType(),
+        "CHANGE_REQUEST_EFFECT",
+        record.targetType().toLowerCase(Locale.ROOT),
+        record.targetId(),
+        record.targetBizNo(),
+        "SUCCESS",
+        null,
+        null,
+        null,
+        null
+    ));
   }
 
   private record FieldPolicy(String fieldLabel, String lockPolicy) {

@@ -104,6 +104,110 @@ class ChangeRequestTests {
     assertThat(lotBatch).isEqualTo("LOT-45");
   }
 
+  @Test
+  void approvedSampleChangeEffectsTargetAndWritesApprovalAndTargetAudit() throws Exception {
+    String applicantToken = login("portal", "portal.applicant", "Applicant123!");
+    String salesToken = login("internal", "internal.sales", "Sales123!");
+    String sampleToken = login("internal", "internal.sample", "Sales123!");
+    String qualityToken = login("internal", "internal.admin", "Internal123!");
+
+    UUID submissionId = createDraft(applicantToken);
+    UUID projectId = createProject(submissionId, applicantToken, salesToken);
+    UUID sampleId = jdbcTemplate.queryForObject(
+        "select id from sample where project_id = ?",
+        UUID.class,
+        projectId
+    );
+    assertThat(sampleId).isNotNull();
+
+    String created = mockMvc.perform(post("/change-requests")
+            .header(HttpHeaders.AUTHORIZATION, bearer(sampleToken))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "targetType": "SAMPLE",
+                  "targetId": "%s",
+                  "changeType": "FIELD_CORRECTION",
+                  "reason": "客户更正颜色",
+                  "items": [
+                    {
+                      "fieldPath": "sample.color",
+                      "fieldLabel": "颜色",
+                      "oldValue": "client-sent-old",
+                      "newValue": "Blue",
+                      "lockPolicy": "CHANGE_REQUEST"
+                    }
+                  ]
+                }
+                """.formatted(sampleId)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.status").value("DRAFT"))
+        .andExpect(jsonPath("$.items[0].oldValue").value("White"))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+    UUID changeRequestId = UUID.fromString(objectMapper.readTree(created).get("id").asText());
+
+    mockMvc.perform(post("/change-requests/{id}/submit", changeRequestId)
+            .header(HttpHeaders.AUTHORIZATION, bearer(sampleToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("SUBMITTED"));
+
+    mockMvc.perform(post("/change-requests/{id}/approve", changeRequestId)
+            .header(HttpHeaders.AUTHORIZATION, bearer(qualityToken))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "stage": "QA",
+                  "outcome": "APPROVED",
+                  "comment": "同意"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("APPROVED"));
+
+    mockMvc.perform(post("/change-requests/{id}/effect", changeRequestId)
+            .header(HttpHeaders.AUTHORIZATION, bearer(qualityToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("EFFECTIVE"))
+        .andExpect(jsonPath("$.effectiveAt").isString());
+
+    String color = jdbcTemplate.queryForObject(
+        "select color from sample where id = ?",
+        String.class,
+        sampleId
+    );
+    assertThat(color).isEqualTo("Blue");
+
+    Integer approvalCount = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from approval_record
+        where entity_type = 'change_request'
+          and entity_id = ?
+          and stage = 'QA'
+          and outcome = 'APPROVED'
+        """,
+        Integer.class,
+        changeRequestId
+    );
+    assertThat(approvalCount).isEqualTo(1);
+
+    Integer targetAuditCount = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from audit_log
+        where action_code = 'CHANGE_REQUEST_EFFECT'
+          and entity_type = 'sample'
+          and entity_id = ?
+          and result = 'SUCCESS'
+        """,
+        Integer.class,
+        sampleId
+    );
+    assertThat(targetAuditCount).isEqualTo(1);
+  }
+
   private UUID createProject(UUID submissionId, String applicantToken, String salesToken) throws Exception {
     mockMvc.perform(post("/submissions/{id}/submit", submissionId)
             .header(HttpHeaders.AUTHORIZATION, bearer(applicantToken)))

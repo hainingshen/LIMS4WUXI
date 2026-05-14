@@ -1,6 +1,7 @@
 package com.njxs.lims.sample.api;
 
 import com.njxs.lims.sample.domain.Sample;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -12,10 +13,15 @@ public record SampleResponse(
     String sampleNameZh,
     String sampleNameEn,
     String modelRef,
+    String sizeSpec,
     String lotBatch,
+    String rawMaterial,
+    String packagingMaterial,
     String physicalState,
     String sterilizationState,
     String storageCondition,
+    BigDecimal quantity,
+    String quantityUnit,
     String status,
     Instant receivedAt,
     UUID receivedBy,
@@ -32,10 +38,15 @@ public record SampleResponse(
         sample.getSampleNameZh(),
         sample.getSampleNameEn(),
         sample.getModelRef(),
+        sample.getSizeSpec(),
         sample.getLotBatch(),
+        sample.getRawMaterial(),
+        sample.getPackagingMaterial(),
         sample.getPhysicalState(),
         sample.getSterilizationState(),
         sample.getStorageCondition(),
+        sample.getQuantity(),
+        sample.getQuantityUnit(),
         sample.getStatus(),
         sample.getReceivedAt(),
         sample.getReceivedBy(),

@@ -469,6 +469,16 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
+        - name: keyword
+          in: query
+          description: Search by sample, project, or submission business number and sample identifiers.
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [WAITING_DELIVERY, ARRIVED_PENDING_CHECK, CHECK_EXCEPTION, PRE_IN_STOCK, IN_STOCK, CONDITIONING, READY_FOR_TEST, IN_TESTING, TEST_COMPLETED, PENDING_RETURN, PENDING_DISPOSAL, RETURNED, DISPOSED, ARCHIVED]
       responses:
         '200':
           description: Paged samples
@@ -2545,7 +2555,13 @@ components:
           type: string
         modelRef:
           type: string
+        sizeSpec:
+          type: string
         lotBatch:
+          type: string
+        rawMaterial:
+          type: string
+        packagingMaterial:
           type: string
         physicalState:
           type: string
@@ -2556,6 +2572,10 @@ components:
         storageCondition:
           type: string
           enum: [ROOM_TEMPERATURE, REFRIGERATED, FROZEN, OTHER]
+        quantity:
+          type: number
+        quantityUnit:
+          type: string
         status:
           type: string
           enum: [WAITING_DELIVERY, ARRIVED_PENDING_CHECK, CHECK_EXCEPTION, PRE_IN_STOCK, IN_STOCK, CONDITIONING, READY_FOR_TEST, IN_TESTING, TEST_COMPLETED, PENDING_RETURN, PENDING_DISPOSAL, RETURNED, DISPOSED, ARCHIVED]

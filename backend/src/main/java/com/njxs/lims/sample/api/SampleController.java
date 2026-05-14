@@ -2,14 +2,17 @@ package com.njxs.lims.sample.api;
 
 import com.njxs.lims.audit.Audited;
 import com.njxs.lims.auth.service.AuthContext;
+import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.permission.RequiresAction;
 import com.njxs.lims.sample.service.SamplePhotoService;
+import com.njxs.lims.sample.service.SampleQueryService;
 import com.njxs.lims.sample.service.SampleWorkflowService;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,10 +30,27 @@ public class SampleController {
 
   private final SampleWorkflowService sampleWorkflowService;
   private final SamplePhotoService samplePhotoService;
+  private final SampleQueryService sampleQueryService;
 
-  public SampleController(SampleWorkflowService sampleWorkflowService, SamplePhotoService samplePhotoService) {
+  public SampleController(
+      SampleWorkflowService sampleWorkflowService,
+      SamplePhotoService samplePhotoService,
+      SampleQueryService sampleQueryService
+  ) {
     this.sampleWorkflowService = sampleWorkflowService;
     this.samplePhotoService = samplePhotoService;
+    this.sampleQueryService = sampleQueryService;
+  }
+
+  @GetMapping
+  @RequiresAction("SAMPLE_RECEIVE")
+  public PageResponse<SampleResponse> list(
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) String status,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "20") int pageSize
+  ) {
+    return sampleQueryService.list(keyword, status, page, pageSize);
   }
 
   @PostMapping("/{id}/receive")

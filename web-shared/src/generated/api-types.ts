@@ -143,6 +143,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update submission draft data before contract lock */
+        patch: operations["updateSubmission"];
+        trace?: never;
+    };
     "/submissions/{id}/submit": {
         parameters: {
             query?: never;
@@ -359,6 +376,23 @@ export interface paths {
         put?: never;
         /** Stock in sample after check is passed */
         post: operations["stockInSample"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/samples/{id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload sample photo */
+        post: operations["uploadSamplePhoto"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1656,15 +1690,28 @@ export interface components {
             sampleNameZh: string;
             sampleNameEn: string;
             modelRef?: string;
+            sizeSpec?: string;
             lotBatch: string;
+            rawMaterial?: string;
+            packagingMaterial?: string;
             /** @enum {string} */
             physicalState?: "SOLID" | "LIQUID" | "POWDER" | "OTHER";
             /** @enum {string} */
             sterilizationState?: "NON_STERILE" | "STERILE_EO" | "STERILE_STEAM" | "STERILE_GAMMA" | "STERILE_E_BEAM";
             /** @enum {string} */
             storageCondition?: "ROOM_TEMPERATURE" | "REFRIGERATED" | "FROZEN" | "OTHER";
+            quantity?: number;
+            quantityUnit?: string;
             /** @enum {string} */
             status: "WAITING_DELIVERY" | "ARRIVED_PENDING_CHECK" | "CHECK_EXCEPTION" | "PRE_IN_STOCK" | "IN_STOCK" | "CONDITIONING" | "READY_FOR_TEST" | "IN_TESTING" | "TEST_COMPLETED" | "PENDING_RETURN" | "PENDING_DISPOSAL" | "RETURNED" | "DISPOSED" | "ARCHIVED";
+            /** Format: date-time */
+            receivedAt?: string | null;
+            /** Format: uuid */
+            receivedBy?: string | null;
+            recipientName?: string | null;
+            /** Format: date */
+            receivedDate?: string | null;
+            inventoryLocation?: string | null;
         };
         SampleReceiveRequest: {
             /** Format: date-time */
@@ -1678,6 +1725,20 @@ export interface components {
             inventoryLocation?: string;
             /** Format: date-time */
             stockedAt?: string;
+        };
+        SamplePhoto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            sampleId: string;
+            /** Format: uuid */
+            fileId: string;
+            fileName: string;
+            objectKey: string;
+            contentType?: string | null;
+            sha256: string;
+            /** Format: int64 */
+            sizeBytes: number;
         };
         StudyPlan: {
             /** Format: uuid */
@@ -2817,6 +2878,39 @@ export interface operations {
             };
         };
     };
+    updateSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmissionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated submission */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Submission"];
+                };
+            };
+            /** @description Locked field requires change request */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     submitSubmission: {
         parameters: {
             query?: never;
@@ -3093,6 +3187,9 @@ export interface operations {
             query?: {
                 page?: components["parameters"]["Page"];
                 pageSize?: components["parameters"]["PageSize"];
+                /** @description Search by sample, project, or submission business number and sample identifiers. */
+                keyword?: string;
+                status?: "WAITING_DELIVERY" | "ARRIVED_PENDING_CHECK" | "CHECK_EXCEPTION" | "PRE_IN_STOCK" | "IN_STOCK" | "CONDITIONING" | "READY_FOR_TEST" | "IN_TESTING" | "TEST_COMPLETED" | "PENDING_RETURN" | "PENDING_DISPOSAL" | "RETURNED" | "DISPOSED" | "ARCHIVED";
             };
             header?: never;
             path?: never;
@@ -3161,6 +3258,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Sample"];
+                };
+            };
+        };
+    };
+    uploadSamplePhoto: {
+        parameters: {
+            query?: {
+                note?: string;
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Uploaded sample photo */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SamplePhoto"];
                 };
             };
         };

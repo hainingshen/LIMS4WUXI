@@ -6,6 +6,7 @@ import { PERMISSION_MATRIX } from "./generated/dictionaries";
 
 export type ClientType = "INTERNAL" | "PORTAL" | "MOBILE";
 export type AuthToken = components["schemas"]["AuthToken"];
+export type CurrentUser = components["schemas"]["CurrentUser"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
 
 export type AuthSession = {
@@ -49,6 +50,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 export async function loginForClient(clientType: Exclude<ClientType, "MOBILE">, request: LoginRequest) {
   const path = clientType === "INTERNAL" ? "/auth/internal/login" : "/auth/portal/login";
   const response = await http.post<AuthToken>(path, request);
+  return response.data;
+}
+
+export async function getCurrentUser() {
+  const response = await http.get<CurrentUser>("/auth/me");
   return response.data;
 }
 

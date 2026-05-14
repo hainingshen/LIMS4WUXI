@@ -1,6 +1,7 @@
 package com.njxs.lims.sample;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,6 +66,21 @@ class SampleWorkflowTests {
         projectId
     );
     assertThat(sampleId).isNotNull();
+
+    mockMvc.perform(get("/samples")
+            .param("keyword", "LOT-41")
+            .header(HttpHeaders.AUTHORIZATION, bearer(sampleToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total").value(1))
+        .andExpect(jsonPath("$.items[0].id").value(sampleId.toString()))
+        .andExpect(jsonPath("$.items[0].lotBatch").value("LOT-41"))
+        .andExpect(jsonPath("$.items[0].quantity").value(10))
+        .andExpect(jsonPath("$.items[0].packagingMaterial").value("Pouch"));
+
+    mockMvc.perform(get("/samples")
+            .param("keyword", "LOT-41")
+            .header(HttpHeaders.AUTHORIZATION, bearer(salesToken)))
+        .andExpect(status().isForbidden());
 
     mockMvc.perform(post("/samples/{id}/receive", sampleId)
             .header(HttpHeaders.AUTHORIZATION, bearer(sampleToken))

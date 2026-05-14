@@ -7,6 +7,7 @@ public record ProjectHealthContext(
     UUID projectId,
     Instant lastProgressAt,
     int overdueTaskCount,
+    int openBlockerCount,
     boolean forcedRisk
 ) {
 }

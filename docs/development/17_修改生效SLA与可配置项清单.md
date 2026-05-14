@@ -33,6 +33,8 @@ A 类的所有可编辑项必须落到 `system_config`、字典表、`permission
 | 风险健康度分界 | `system_config`，`WORK_CENTER_RISK_SCORE` | 70 | `QUALITY_MANAGER` | 项目健康度状态分界 |
 | 单个超期任务扣分 | `system_config`，`WORK_CENTER_OVERDUE_TASK_PENALTY` | 8 | `QUALITY_MANAGER` | 项目健康度计算 |
 | 超期任务最大扣分 | `system_config`，`WORK_CENTER_OVERDUE_TASK_MAX_PENALTY` | 24 | `QUALITY_MANAGER` | 项目健康度计算 |
+| 单个未关闭阻塞扣分 | `system_config`，`WORK_CENTER_BLOCKER_PENALTY` | 10 | `QUALITY_MANAGER` | 项目健康度计算 |
+| 未关闭阻塞最大扣分 | `system_config`，`WORK_CENTER_BLOCKER_MAX_PENALTY` | 30 | `QUALITY_MANAGER` | 项目健康度计算 |
 | 检测员设备预约提前天数 | `system_config`，`DEVICE_BOOKING_INSPECTOR_DAYS` | 7 | `EQUIPMENT_MANAGER`、`SYSTEM_ADMIN` | 预约规则 |
 | 外部用户设备预约提前天数 | `system_config`，`DEVICE_BOOKING_PORTAL_DAYS` | 2 | `EQUIPMENT_MANAGER`、`SYSTEM_ADMIN` | 预约规则 |
 | 设备预约最小粒度 | `system_config`，`DEVICE_BOOKING_MIN_GRANULARITY_MINUTES` | 30 | `EQUIPMENT_MANAGER` | 预约时间槽 |

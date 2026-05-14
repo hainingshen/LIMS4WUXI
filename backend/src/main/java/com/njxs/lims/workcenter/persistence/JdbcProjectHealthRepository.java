@@ -27,19 +27,39 @@ public class JdbcProjectHealthRepository implements ProjectHealthRepository {
     return jdbcTemplate.query(
         """
         select p.id project_id,
-               coalesce(max(wo.last_progress_at), p.updated_at) last_progress_at,
-               count(*) filter (
-                 where wo.planned_finish_at is not null
+               coalesce((
+                 select max(wo.last_progress_at)
+                 from work_order wo
+                 where wo.project_id = p.id
+                   and wo.deleted_at is null
+               ), p.updated_at) last_progress_at,
+               (
+                 select count(*)
+                 from work_order wo
+                 where wo.project_id = p.id
+                   and wo.deleted_at is null
+                   and wo.planned_finish_at is not null
                    and wo.planned_finish_at < now()
                    and wo.status <> 'COMPLETED'
                ) overdue_task_count,
-               false forced_risk
+               (
+                 select count(*)
+                 from work_center_blocker wb
+                 where wb.project_id = p.id
+                   and wb.deleted_at is null
+                   and wb.status <> 'CLOSED'
+               ) open_blocker_count,
+               exists (
+                 select 1
+                 from work_center_blocker wb
+                 where wb.project_id = p.id
+                   and wb.deleted_at is null
+                   and wb.status <> 'CLOSED'
+                   and wb.severity = 'HIGH'
+               ) forced_risk
         from project p
-        left join work_order wo on wo.project_id = p.id
-          and wo.deleted_at is null
         where p.id = ?
           and p.deleted_at is null
-        group by p.id
         """,
         (rs, rowNum) -> context(rs),
         projectId
@@ -82,6 +102,7 @@ public class JdbcProjectHealthRepository implements ProjectHealthRepository {
         rs.getObject("project_id", UUID.class),
         instant(rs.getTimestamp("last_progress_at")),
         rs.getInt("overdue_task_count"),
+        rs.getInt("open_blocker_count"),
         rs.getBoolean("forced_risk")
     );
   }

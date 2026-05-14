@@ -1,5 +1,6 @@
 package com.njxs.lims.common.web;
 
+import com.njxs.lims.auth.service.AuthenticationFailedException;
 import com.njxs.lims.common.api.ApiError;
 import com.njxs.lims.common.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +26,16 @@ public class GlobalExceptionHandler {
     return ResponseEntity
         .status(exception.getStatus())
         .body(error(exception.getCode(), exception.getMessage(), request, exception.getDetails()));
+  }
+
+  @ExceptionHandler(AuthenticationFailedException.class)
+  public ResponseEntity<ApiError> handleAuthenticationFailed(
+      AuthenticationFailedException exception,
+      HttpServletRequest request
+  ) {
+    return ResponseEntity
+        .status(HttpStatus.UNAUTHORIZED)
+        .body(error(exception.getCode(), exception.getMessage(), request, Map.of()));
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

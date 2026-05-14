@@ -5,3 +5,9 @@ spring:
 server:
   servlet:
     context-path: /api/v1
+
+lims:
+  auth:
+    jwt-secret: "dev-only-lims4wuxi-change-before-production-32-bytes-minimum"
+    access-token-ttl-minutes: 15
+    refresh-token-ttl-days: 7

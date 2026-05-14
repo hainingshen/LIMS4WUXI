@@ -45,6 +45,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | 内部登录 | `POST /auth/internal/login` | 内部端登录，token 固化 `clientType=INTERNAL` |
 | 客户门户登录 | `POST /auth/portal/login` | 客户门户登录，token 固化 `clientType=PORTAL` |
 | 刷新令牌 | `POST /auth/refresh` | 刷新 token |
+| 登出 | `POST /auth/logout` | 登出并写入 token 黑名单 |
 | 当前用户 | `GET /auth/me` | 用户、角色、数据范围 |
 | 客户单位 | `/customer-orgs` | 委托单位 |
 | 客户账号 | `/portal-users` | 客户门户用户 |

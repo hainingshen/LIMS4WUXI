@@ -15,7 +15,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@SpringBootTest(classes = {LimsApplication.class, GlobalExceptionHandlerTests.BusinessErrorController.class})
+@SpringBootTest(
+    classes = {LimsApplication.class, GlobalExceptionHandlerTests.BusinessErrorController.class},
+    properties = {
+        "spring.autoconfigure.exclude="
+            + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
+            + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
+    }
+)
 @AutoConfigureMockMvc
 class GlobalExceptionHandlerTests {
 

@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
     properties = {
         "spring.autoconfigure.exclude="
             + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-            + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
+            + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration",
+        "lims.auth.enabled=false"
     }
 )
 @AutoConfigureMockMvc

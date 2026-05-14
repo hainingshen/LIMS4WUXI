@@ -12,6 +12,8 @@ public interface ReportTemplateRepository {
 
   Optional<ReportTemplateRecord> findById(UUID id);
 
+  Optional<ReportTemplateRecord> findPublishedByCode(String templateCode);
+
   List<ReportTemplateRecord> list(int limit, int offset);
 
   int count();

@@ -24,6 +24,7 @@ import {
   type AuthSession,
 } from "@lims4wuxi/shared";
 
+import { SubmissionFormPage } from "./SubmissionFormPage";
 import "./styles.css";
 
 const PORTAL_ROUTES = [
@@ -46,6 +47,8 @@ const PORTAL_ROUTES = [
     roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
   },
 ] as const;
+
+type PortalRouteKey = (typeof PORTAL_ROUTES)[number]["key"];
 
 function PortalApp() {
   const session = useAuthStore((state) => ({
@@ -134,20 +137,32 @@ function PortalShell() {
   const roles = useAuthStore((state) => state.roles);
   const clearSession = useAuthStore((state) => state.clearSession);
   const entries = useMemo(() => PORTAL_ROUTES.filter((item) => hasAnyRole(roles, item.roles)), [roles]);
+  const [selectedKey, setSelectedKey] = useState<PortalRouteKey>("dashboard");
+  const selectedEntry = entries.find((item) => item.key === selectedKey) ?? entries[0];
+  const activeKey = selectedEntry?.key;
+  const content = activeKey ? portalContent(activeKey, entries, setSelectedKey) : null;
 
   if (screens.xs) {
     return (
       <main className="mobileSurface">
-        <NavBar backArrow={false} right={<MobileButton size="mini" onClick={clearSession}>退出</MobileButton>}>
-          客户门户
+        <NavBar
+          backArrow={activeKey !== "dashboard"}
+          onBack={() => setSelectedKey("dashboard")}
+          right={<MobileButton size="mini" onClick={clearSession}>退出</MobileButton>}
+        >
+          {selectedEntry?.label ?? "客户门户"}
         </NavBar>
-        <List header="入口">
-          {entries.map((item) => (
-            <List.Item key={item.key} description={item.detail}>
-              {item.label}
-            </List.Item>
-          ))}
-        </List>
+        {activeKey === "dashboard" ? (
+          <List header="入口">
+            {entries.map((item) => (
+              <List.Item key={item.key} description={item.detail} onClick={() => setSelectedKey(item.key)}>
+                {item.label}
+              </List.Item>
+            ))}
+          </List>
+        ) : (
+          <div className="mobileContent">{content}</div>
+        )}
       </main>
     );
   }
@@ -156,7 +171,12 @@ function PortalShell() {
     <Layout className="appShell">
       <Layout.Sider width={232} theme="light" className="sidebar">
         <Typography.Title level={4}>客户门户</Typography.Title>
-        <Menu mode="inline" selectedKeys={entries[0] ? [entries[0].key] : []} items={entries.map((item) => ({ key: item.key, label: item.label }))} />
+        <Menu
+          mode="inline"
+          selectedKeys={activeKey ? [activeKey] : []}
+          items={entries.map((item) => ({ key: item.key, label: item.label }))}
+          onClick={({ key }) => setSelectedKey(key as PortalRouteKey)}
+        />
       </Layout.Sider>
       <Layout.Content className="content">
         <header className="topbar">
@@ -165,15 +185,39 @@ function PortalShell() {
           </Space>
           <Button onClick={clearSession}>退出</Button>
         </header>
-        <section className="entryGrid">
-          {entries.map((item) => (
-            <Card key={item.key} title={item.label} className="entryCard">
-              <Typography.Text>{item.detail}</Typography.Text>
-            </Card>
-          ))}
-        </section>
+        {content}
       </Layout.Content>
     </Layout>
+  );
+}
+
+function portalContent(
+  activeKey: PortalRouteKey,
+  entries: readonly (typeof PORTAL_ROUTES)[number][],
+  selectRoute: (key: PortalRouteKey) => void,
+) {
+  if (activeKey === "new-submission") {
+    return <SubmissionFormPage />;
+  }
+
+  if (activeKey === "dashboard") {
+    return (
+      <section className="entryGrid">
+        {entries.map((item) => (
+          <Card key={item.key} title={item.label} className="entryCard" onClick={() => selectRoute(item.key)}>
+            <Typography.Text>{item.detail}</Typography.Text>
+          </Card>
+        ))}
+      </section>
+    );
+  }
+
+  const entry = entries.find((item) => item.key === activeKey);
+  return (
+    <section className="routePanel">
+      <Typography.Title level={3}>{entry?.label}</Typography.Title>
+      <Typography.Text>{entry?.detail}</Typography.Text>
+    </section>
   );
 }
 

@@ -1,6 +1,7 @@
 package com.njxs.lims.workcenter.persistence;
 
 import com.njxs.lims.workcenter.domain.WorkCenterBlockerRecord;
+import com.njxs.lims.workcenter.domain.WorkCenterScope;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,9 +10,9 @@ public interface WorkCenterBlockerRepository {
 
   WorkCenterBlockerRecord insert(WorkCenterBlockerRecord record, UUID actorUserId);
 
-  List<WorkCenterBlockerRecord> list(int limit, int offset);
+  List<WorkCenterBlockerRecord> list(WorkCenterScope scope, int limit, int offset);
 
-  int count();
+  int count(WorkCenterScope scope);
 
   Optional<WorkCenterBlockerRecord> findById(UUID id);
 

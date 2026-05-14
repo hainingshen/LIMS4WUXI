@@ -26,6 +26,7 @@ import {
 } from "@lims4wuxi/shared";
 
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
+import { WorkCenterPage } from "./WorkCenterPage";
 import "./styles.css";
 
 type InternalRoute = {
@@ -41,7 +42,8 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     key: "work-center",
     label: "工作中心",
     detail: "待办、风险和负荷",
-    roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "DEPT_MANAGER", "GENERAL_MANAGER"],
+    roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "QUALITY_MANAGER", "DEPT_MANAGER", "GENERAL_MANAGER"],
+    actionCode: "WORK_CENTER_READ",
   },
   {
     key: "submissions",
@@ -215,6 +217,13 @@ function renderRoute(
     return (
       <RequireAction action="SAMPLE_RECEIVE">
         <SampleReceivingDesk />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "work-center") {
+    return (
+      <RequireAction action="WORK_CENTER_READ">
+        <WorkCenterPage />
       </RequireAction>
     );
   }

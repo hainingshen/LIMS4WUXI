@@ -9,4 +9,5 @@ export type AuthSession = {
 
 export { API_BASE_PATH } from "./api/config";
 export { http } from "./api/http";
+export * from "./generated/dictionaries";
 export type { components, operations, paths } from "./generated/api-types";

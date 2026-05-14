@@ -4,6 +4,7 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "gen:api": "openapi-typescript docs/development/specs/openapi.yaml -o web-shared/src/generated/api-types.ts",
+    "gen:seeds": "python3 scripts/dev/generate-seeds.py",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {

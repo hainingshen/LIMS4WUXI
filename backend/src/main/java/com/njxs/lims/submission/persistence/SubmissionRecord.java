@@ -6,7 +6,21 @@ public record SubmissionRecord(
     UUID id,
     String bizNo,
     UUID customerOrgId,
+    UUID customerContactId,
+    UUID manufacturerId,
     UUID applicantUserId,
-    String status
+    UUID assignedSalesUserId,
+    String formCode,
+    int schemaVersion,
+    String dataJson,
+    String status,
+    String officialReportEmail,
+    String shippingInfo,
+    boolean requiresGlp,
+    boolean requiresHardCopyOfElectronicReport,
+    String reportLanguage,
+    String protocolLanguage,
+    String submittedQuantityText,
+    String sampleDisposition
 ) {
 }

@@ -26,6 +26,15 @@ public class Submission extends BaseEntity {
   @Column(name = "assigned_sales_user_id")
   private UUID assignedSalesUserId;
 
+  @Column(name = "form_code", nullable = false)
+  private String formCode;
+
+  @Column(name = "schema_version", nullable = false)
+  private Integer schemaVersion;
+
+  @Column(name = "data_json", nullable = false)
+  private String dataJson;
+
   @Column(name = "status", nullable = false)
   private String status;
 
@@ -109,6 +118,30 @@ public class Submission extends BaseEntity {
 
   public void setAssignedSalesUserId(UUID assignedSalesUserId) {
     this.assignedSalesUserId = assignedSalesUserId;
+  }
+
+  public String getFormCode() {
+    return formCode;
+  }
+
+  public void setFormCode(String formCode) {
+    this.formCode = formCode;
+  }
+
+  public Integer getSchemaVersion() {
+    return schemaVersion;
+  }
+
+  public void setSchemaVersion(Integer schemaVersion) {
+    this.schemaVersion = schemaVersion;
+  }
+
+  public String getDataJson() {
+    return dataJson;
+  }
+
+  public void setDataJson(String dataJson) {
+    this.dataJson = dataJson;
   }
 
   public String getStatus() {

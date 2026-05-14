@@ -67,6 +67,20 @@ public class JdbcReportTemplateRepository implements ReportTemplateRepository {
   }
 
   @Override
+  public Optional<ReportTemplateRecord> findPublishedByCode(String templateCode) {
+    return jdbcTemplate.query(
+        "select " + SELECT_COLUMNS + """
+        from report_template
+        where template_code = ?
+          and status = 'PUBLISHED'
+          and deleted_at is null
+        """,
+        (rs, rowNum) -> record(rs),
+        templateCode
+    ).stream().findFirst();
+  }
+
+  @Override
   public List<ReportTemplateRecord> list(int limit, int offset) {
     return jdbcTemplate.query(
         "select " + SELECT_COLUMNS + """

@@ -1215,10 +1215,34 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: projectId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: reportBizNo
+          in: query
+          schema:
+            type: string
         - name: templateType
           in: query
           schema:
             type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING_GENERATE, DRAFT, QC_REVIEWING, QA_REVIEWING, SD_REVIEWING, PENDING_ISSUE, ISSUED_PAYMENT_LOCKED, GREEN_RELEASED, RELEASED, REVISION_DRAFT, ARCHIVED, VOIDED]
+        - name: issuedFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: issuedTo
+          in: query
+          schema:
+            type: string
+            format: date-time
       responses:
         '200':
           description: Paged report registry items
@@ -3194,6 +3218,37 @@ components:
           enum: [LOCKED, UNLOCKED, GREEN_UNLOCKED]
         deliveryCount:
           type: integer
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportRegistryVersion'
+    ReportRegistryVersion:
+      type: object
+      required: [id, reportId, versionNo, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reportId:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, ISSUED, VOIDED, SUPERSEDED]
+        docxFileId:
+          type: string
+          format: uuid
+          nullable: true
+        pdfFileId:
+          type: string
+          format: uuid
+          nullable: true
+        issuedAt:
+          type: string
+          format: date-time
+          nullable: true
     ReportRegistryBatchDownloadRequest:
       type: object
       required: [reportIds]

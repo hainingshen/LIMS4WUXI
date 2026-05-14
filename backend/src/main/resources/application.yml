@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: lims4wuxi-backend
+
+server:
+  servlet:
+    context-path: /api/v1

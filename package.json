@@ -1,0 +1,11 @@
+{
+  "name": "lims4wuxi",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

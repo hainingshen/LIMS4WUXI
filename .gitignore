@@ -15,6 +15,7 @@ dist/
 build/
 .turbo/
 .vite/
+*.tsbuildinfo
 
 # Java / backend
 target/

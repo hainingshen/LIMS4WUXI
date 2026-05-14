@@ -7,6 +7,10 @@ import com.njxs.lims.approval.service.ApprovalRecordService;
 import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
+import com.njxs.lims.project.domain.Project;
+import com.njxs.lims.project.domain.ProjectStatus;
+import com.njxs.lims.project.persistence.ProjectRepository;
+import com.njxs.lims.project.service.ProjectStatusTransitionService;
 import com.njxs.lims.report.api.ReportGenerateDraftRequest;
 import com.njxs.lims.report.api.ReportResponse;
 import com.njxs.lims.report.api.ReportReviewRequest;
@@ -43,6 +47,8 @@ public class ReportService {
   private final ApprovalRecordService approvalRecordService;
   private final PermissionService permissionService;
   private final ReportStateMachine reportStateMachine;
+  private final ProjectRepository projectRepository;
+  private final ProjectStatusTransitionService projectStatusTransitionService;
   private final ObjectMapper objectMapper;
 
   public ReportService(
@@ -52,6 +58,8 @@ public class ReportService {
       ApprovalRecordService approvalRecordService,
       PermissionService permissionService,
       ReportStateMachine reportStateMachine,
+      ProjectRepository projectRepository,
+      ProjectStatusTransitionService projectStatusTransitionService,
       ObjectMapper objectMapper
   ) {
     this.reportRepository = reportRepository;
@@ -60,6 +68,8 @@ public class ReportService {
     this.approvalRecordService = approvalRecordService;
     this.permissionService = permissionService;
     this.reportStateMachine = reportStateMachine;
+    this.projectRepository = projectRepository;
+    this.projectStatusTransitionService = projectStatusTransitionService;
     this.objectMapper = objectMapper;
   }
 
@@ -209,7 +219,17 @@ public class ReportService {
         "ISSUED",
         principal.userId()
     );
+    advanceProjectAfterIssue(issued.projectId(), principal.userId());
     return ReportResponse.from(issued);
+  }
+
+  private void advanceProjectAfterIssue(UUID projectId, UUID actorUserId) {
+    Project project = projectRepository.findById(projectId).orElse(null);
+    if (project == null || !ProjectStatus.REPORTING.name().equals(project.getStatus())) {
+      return;
+    }
+    projectStatusTransitionService.transition(project, ProjectStatus.PAYMENT_HOLD, "report issued");
+    projectRepository.updateStatus(project, actorUserId);
   }
 
   private Map<UUID, UUID> rawRecordIds(List<ReportWorkOrderRecord> workOrders) {

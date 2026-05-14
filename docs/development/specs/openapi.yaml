@@ -670,6 +670,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkOrder'
+  /work-orders/{id}/pick-sample:
+    post:
+      summary: Register sample pickup for work order
+      operationId: pickWorkOrderSample
+      tags: [WorkOrders]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Updated work order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkOrder'
+  /work-orders/{id}/enter-result:
+    post:
+      summary: Mark work order result entered
+      operationId: enterWorkOrderResult
+      tags: [WorkOrders]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Updated work order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkOrder'
   /work-orders/{id}/submit-raw-record:
     post:
       summary: Submit raw record for work order review

@@ -162,11 +162,7 @@ public class JdbcStudyPlanRepository implements StudyPlanRepository {
         (rs, rowNum) -> rs.getObject("id", UUID.class),
         plan.projectId()
     );
-    UUID ownerUserId = jdbcTemplate.queryForObject(
-        "select technical_owner_id from project where id = ?",
-        UUID.class,
-        plan.projectId()
-    );
+    UUID ownerUserId = defaultInspectorUserId().orElseGet(() -> technicalOwnerId(plan.projectId()));
     int year = Instant.now().atZone(ZoneOffset.UTC).getYear();
     int created = 0;
     for (UUID sampleId : sampleIds) {
@@ -184,7 +180,7 @@ public class JdbcStudyPlanRepository implements StudyPlanRepository {
           plan.projectId(),
           sampleId,
           ownerUserId,
-          "PENDING_ASSIGN",
+          "PENDING_EXECUTION",
           0,
           timestamp(plan.plannedFinishAt()),
           actorUserId,
@@ -196,6 +192,29 @@ public class JdbcStudyPlanRepository implements StudyPlanRepository {
       created++;
     }
     return created;
+  }
+
+  private Optional<UUID> defaultInspectorUserId() {
+    return jdbcTemplate.query(
+        """
+        select u.id
+        from app_user u
+        join user_role ur on ur.user_id = u.id
+        where ur.role_code = 'INSPECTOR'
+          and u.status = 'ACTIVE'
+        order by u.created_at, u.id
+        limit 1
+        """,
+        (rs, rowNum) -> rs.getObject("id", UUID.class)
+    ).stream().findFirst();
+  }
+
+  private UUID technicalOwnerId(UUID projectId) {
+    return jdbcTemplate.queryForObject(
+        "select technical_owner_id from project where id = ?",
+        UUID.class,
+        projectId
+    );
   }
 
   @Override

@@ -5,7 +5,9 @@ import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
 import com.njxs.lims.project.domain.Project;
+import com.njxs.lims.project.domain.ProjectStatus;
 import com.njxs.lims.project.persistence.ProjectRepository;
+import com.njxs.lims.project.service.ProjectStatusTransitionService;
 import com.njxs.lims.sample.persistence.SampleRepository;
 import com.njxs.lims.study.api.StudyPlanCreateRequest;
 import com.njxs.lims.study.api.StudyPlanResponse;
@@ -29,17 +31,20 @@ public class StudyPlanService {
 
   private final StudyPlanRepository studyPlanRepository;
   private final ProjectRepository projectRepository;
+  private final ProjectStatusTransitionService transitionService;
   private final SampleRepository sampleRepository;
   private final ApprovalRecordService approvalRecordService;
 
   public StudyPlanService(
       StudyPlanRepository studyPlanRepository,
       ProjectRepository projectRepository,
+      ProjectStatusTransitionService transitionService,
       SampleRepository sampleRepository,
       ApprovalRecordService approvalRecordService
   ) {
     this.studyPlanRepository = studyPlanRepository;
     this.projectRepository = projectRepository;
+    this.transitionService = transitionService;
     this.sampleRepository = sampleRepository;
     this.approvalRecordService = approvalRecordService;
   }
@@ -101,6 +106,9 @@ public class StudyPlanService {
         now,
         principal.userId()
     );
+    if (readiness.ready()) {
+      advanceProject(plan.projectId(), ProjectStatus.SAMPLE_RECEIVED, ProjectStatus.PLAN_READY, principal.userId());
+    }
     return StudyPlanResponse.from(reviewed);
   }
 
@@ -133,7 +141,18 @@ public class StudyPlanService {
     if (studyPlanRepository.workOrderCount(id) == 0) {
       studyPlanRepository.createWorkOrders(id, principal.userId());
     }
-    return StudyPlanResponse.from(studyPlanRepository.updateStatus(id, "DISPATCHED", principal.userId()));
+    StudyPlanRecord dispatched = studyPlanRepository.updateStatus(id, "DISPATCHED", principal.userId());
+    advanceProject(plan.projectId(), ProjectStatus.PLAN_READY, ProjectStatus.IN_TESTING, principal.userId());
+    return StudyPlanResponse.from(dispatched);
+  }
+
+  private void advanceProject(UUID projectId, ProjectStatus source, ProjectStatus target, UUID actorUserId) {
+    Project project = projectRepository.findById(projectId).orElse(null);
+    if (project == null || !source.name().equals(project.getStatus())) {
+      return;
+    }
+    transitionService.transition(project, target, "study plan " + target.name().toLowerCase());
+    projectRepository.updateStatus(project, actorUserId);
   }
 
   private DispatchReadiness readiness(StudyPlanRecord plan) {

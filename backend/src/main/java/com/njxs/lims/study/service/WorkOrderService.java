@@ -39,17 +39,30 @@ public class WorkOrderService {
   }
 
   @Transactional
+  public WorkOrderResponse pickSample(UUID id, AuthPrincipal principal) {
+    WorkOrderRecord record = workOrder(id);
+    if (!"PENDING_EXECUTION".equals(record.status())) {
+      throw statusConflict(Set.of("PENDING_EXECUTION"), record.status());
+    }
+    return WorkOrderResponse.from(workOrderRepository.updateStatus(id, "SAMPLE_PICKED", 5, principal.userId()));
+  }
+
+  @Transactional
   public WorkOrderResponse start(UUID id, AuthPrincipal principal) {
     WorkOrderRecord record = workOrder(id);
     if (!"SAMPLE_PICKED".equals(record.status())) {
-      throw new BusinessException(
-          "WORK_ORDER_STATUS_CONFLICT",
-          "工单当前状态不可执行该操作",
-          HttpStatus.CONFLICT,
-          Map.of("expected", Set.of("SAMPLE_PICKED"), "actual", record.status())
-      );
+      throw statusConflict(Set.of("SAMPLE_PICKED"), record.status());
     }
     return WorkOrderResponse.from(workOrderRepository.updateStatus(id, "IN_PROGRESS", 10, principal.userId()));
+  }
+
+  @Transactional
+  public WorkOrderResponse enterResult(UUID id, AuthPrincipal principal) {
+    WorkOrderRecord record = workOrder(id);
+    if (!"IN_PROGRESS".equals(record.status())) {
+      throw statusConflict(Set.of("IN_PROGRESS"), record.status());
+    }
+    return WorkOrderResponse.from(workOrderRepository.updateStatus(id, "RESULT_ENTERED", 80, principal.userId()));
   }
 
   private WorkOrderRecord workOrder(UUID id) {
@@ -60,5 +73,14 @@ public class WorkOrderService {
             HttpStatus.NOT_FOUND,
             Map.of("entityType", "work_order", "entityId", id)
         ));
+  }
+
+  private BusinessException statusConflict(Set<String> expected, String actual) {
+    return new BusinessException(
+        "WORK_ORDER_STATUS_CONFLICT",
+        "工单当前状态不可执行该操作",
+        HttpStatus.CONFLICT,
+        Map.of("expected", expected, "actual", actual)
+    );
   }
 }

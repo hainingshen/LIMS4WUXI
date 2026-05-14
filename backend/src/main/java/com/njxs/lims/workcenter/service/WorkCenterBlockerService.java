@@ -8,6 +8,7 @@ import com.njxs.lims.workcenter.api.WorkCenterBlockerCreateRequest;
 import com.njxs.lims.workcenter.api.WorkCenterBlockerResponse;
 import com.njxs.lims.workcenter.api.WorkCenterBlockerUpdateRequest;
 import com.njxs.lims.workcenter.domain.WorkCenterBlockerRecord;
+import com.njxs.lims.workcenter.domain.WorkCenterScope;
 import com.njxs.lims.workcenter.persistence.WorkCenterBlockerRepository;
 import java.util.List;
 import java.util.Map;
@@ -49,17 +50,18 @@ public class WorkCenterBlockerService {
     this.projectHealthService = projectHealthService;
   }
 
-  public PageResponse<WorkCenterBlockerResponse> list(int page, int pageSize) {
+  public PageResponse<WorkCenterBlockerResponse> list(AuthPrincipal principal, int page, int pageSize) {
     int normalizedPage = Math.max(page, 1);
     int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
     int offset = (normalizedPage - 1) * normalizedPageSize;
+    WorkCenterScope scope = WorkCenterScope.from(principal);
     return new PageResponse<>(
-        blockerRepository.list(normalizedPageSize, offset).stream()
+        blockerRepository.list(scope, normalizedPageSize, offset).stream()
             .map(WorkCenterBlockerResponse::from)
             .toList(),
         normalizedPage,
         normalizedPageSize,
-        blockerRepository.count()
+        blockerRepository.count(scope)
     );
   }
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.njxs.lims.workcenter.domain.WorkCenterBlockerRecord;
+import com.njxs.lims.workcenter.domain.WorkCenterScope;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -22,6 +23,10 @@ public class JdbcWorkCenterBlockerRepository implements WorkCenterBlockerReposit
   private static final String SELECT_COLUMNS = """
       id, project_id, blocker_type, severity, description, impact_scope,
       expected_recovery_at, owner_user_id, collaborator_ids, status, resolution
+      """;
+  private static final String SELECT_COLUMNS_WITH_ALIAS = """
+      wb.id, wb.project_id, wb.blocker_type, wb.severity, wb.description, wb.impact_scope,
+      wb.expected_recovery_at, wb.owner_user_id, wb.collaborator_ids, wb.status, wb.resolution
       """;
 
   private final JdbcTemplate jdbcTemplate;
@@ -62,28 +67,94 @@ public class JdbcWorkCenterBlockerRepository implements WorkCenterBlockerReposit
   }
 
   @Override
-  public List<WorkCenterBlockerRecord> list(int limit, int offset) {
+  public List<WorkCenterBlockerRecord> list(WorkCenterScope scope, int limit, int offset) {
     return jdbcTemplate.query(
-        "select " + SELECT_COLUMNS + """
-        from work_center_blocker
-        where deleted_at is null
+        "select " + SELECT_COLUMNS_WITH_ALIAS + """
+        from work_center_blocker wb
+        join project p on p.id = wb.project_id and p.deleted_at is null
+        join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where wb.deleted_at is null
+          and (
+            ? = true
+            or p.business_owner_id = ?
+            or p.technical_owner_id = ?
+            or p.sd_user_id = ?
+            or sub.assigned_sales_user_id = ?
+            or exists (
+              select 1
+              from work_order wo
+              where wo.project_id = p.id
+                and wo.owner_user_id = ?
+                and wo.deleted_at is null
+            )
+            or exists (
+              select 1
+              from raw_record rr
+              where rr.project_id = p.id
+                and (rr.tester_id = ? or rr.checker_id = ?)
+                and rr.deleted_at is null
+            )
+          )
         order by
-          case when status = 'CLOSED' then 1 else 0 end,
-          expected_recovery_at asc,
-          created_at desc
+          case when wb.status = 'CLOSED' then 1 else 0 end,
+          wb.expected_recovery_at asc,
+          wb.created_at desc
         limit ? offset ?
         """,
         (rs, rowNum) -> record(rs),
+        scope.allAccess(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId(),
         limit,
         offset
     );
   }
 
   @Override
-  public int count() {
+  public int count(WorkCenterScope scope) {
     Integer count = jdbcTemplate.queryForObject(
-        "select count(*) from work_center_blocker where deleted_at is null",
-        Integer.class
+        """
+        select count(*)
+        from work_center_blocker wb
+        join project p on p.id = wb.project_id and p.deleted_at is null
+        join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where wb.deleted_at is null
+          and (
+            ? = true
+            or p.business_owner_id = ?
+            or p.technical_owner_id = ?
+            or p.sd_user_id = ?
+            or sub.assigned_sales_user_id = ?
+            or exists (
+              select 1
+              from work_order wo
+              where wo.project_id = p.id
+                and wo.owner_user_id = ?
+                and wo.deleted_at is null
+            )
+            or exists (
+              select 1
+              from raw_record rr
+              where rr.project_id = p.id
+                and (rr.tester_id = ? or rr.checker_id = ?)
+                and rr.deleted_at is null
+            )
+          )
+        """,
+        Integer.class,
+        scope.allAccess(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId(),
+        scope.userId()
     );
     return count == null ? 0 : count;
   }

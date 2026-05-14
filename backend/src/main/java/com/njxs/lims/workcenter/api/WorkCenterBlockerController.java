@@ -36,7 +36,7 @@ public class WorkCenterBlockerController {
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize
   ) {
-    return blockerService.list(page, pageSize);
+    return blockerService.list(AuthContext.require(), page, pageSize);
   }
 
   @PostMapping

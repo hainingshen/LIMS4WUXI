@@ -386,7 +386,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | `PortalProjectDetail` | `/portal/projects/:id` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
 | `PortalReportPreview` | `/portal/reports/:id/preview` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
 | `InternalLogin` | `/internal/login` | `BlankLayout` | none |
-| `InternalWorkCenter` | `/internal/work-center` | `InternalLayout` | `SALES_REP,BUSINESS_OWNER,TECHNICAL_LEADER,SD,QA,QC,DEPT_MANAGER,GENERAL_MANAGER` |
+| `InternalWorkCenter` | `/internal/work-center` | `InternalLayout` | `SALES_REP,BUSINESS_OWNER,TECHNICAL_LEADER,SD,QA,QC,QUALITY_MANAGER,DEPT_MANAGER,GENERAL_MANAGER` |
 | `InternalSubmissionList` | `/internal/submissions` | `InternalLayout` | `SALES_REP,SAMPLE_MANAGER,TECHNICAL_LEADER` |
 | `InternalProjectDetail` | `/internal/projects/:id` | `InternalLayout` | `SALES_REP,BUSINESS_OWNER,TECHNICAL_LEADER,SD,QA,QC,SAMPLE_MANAGER,REPORT_PREPARER` |
 | `InternalSampleDesk` | `/internal/samples/receiving` | `InternalLayout` | `SAMPLE_MANAGER` |

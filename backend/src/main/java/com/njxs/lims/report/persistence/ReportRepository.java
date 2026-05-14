@@ -16,6 +16,8 @@ public interface ReportRepository {
 
   Optional<ReportRecord> findById(UUID id);
 
+  boolean existsById(UUID id);
+
   List<ReportRecord> list(int limit, int offset);
 
   int count();
@@ -38,4 +40,10 @@ public interface ReportRepository {
   );
 
   ReportVersionRecord saveVersion(ReportVersionRecord version, UUID actorUserId);
+
+  ReportRecord updateStatus(UUID id, String status, UUID actorUserId);
+
+  ReportRecord issue(UUID id, UUID actorUserId);
+
+  void updateCurrentVersionStatus(UUID reportId, int versionNo, String status, UUID actorUserId);
 }

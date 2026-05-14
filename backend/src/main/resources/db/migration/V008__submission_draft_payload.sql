@@ -1,0 +1,56 @@
+alter table submission
+  add column form_code varchar(64) not null default 'SUBMISSION_VER15',
+  add column schema_version int not null default 1,
+  add column data_json jsonb not null default '{}'::jsonb;
+
+update submission
+set data_json = jsonb_build_object(
+  'sponsorNameZh', 'Demo Sponsor',
+  'sponsorNameEn', 'Demo Sponsor',
+  'sponsorAddressZh', 'No.1 Demo Road, Wuxi',
+  'sponsorAddressEn', 'No.1 Demo Road, Wuxi',
+  'manufacturerNameZh', 'Demo Manufacturer',
+  'manufacturerNameEn', 'Demo Manufacturer',
+  'manufacturerAddressZh', 'No.1 Manufacturing Road, Wuxi',
+  'manufacturerAddressEn', 'No.1 Manufacturing Road, Wuxi',
+  'contactName', 'Demo Applicant',
+  'contactPhone', '13800000000',
+  'contactEmail', 'applicant@example.com',
+  'officialReportEmail', official_report_email,
+  'shippingInfo', shipping_info,
+  'requiresGlp', requires_glp,
+  'requiresHardCopyOfElectronicReport', requires_hard_copy_of_electronic_report,
+  'protocolLanguage', protocol_language,
+  'reportLanguage', report_language,
+  'submittedQuantityText', submitted_quantity_text,
+  'sampleDisposition', sample_disposition,
+  'sampleNameZh', 'Demo Sample',
+  'sampleNameEn', 'Demo Sample',
+  'sterilizationState', 'NON_STERILE',
+  'casCode', 'N/A',
+  'modelRef', 'DEMO-MODEL',
+  'sizeSpec', 'N/A',
+  'lotBatch', 'DEMO-LOT',
+  'rawMaterial', 'N/A',
+  'packagingMaterial', 'N/A',
+  'physicalState', 'SOLID',
+  'color', 'N/A',
+  'density', 'N/A',
+  'stability', 'N/A',
+  'solubility', 'N/A',
+  'storageCondition', 'ROOM_TEMPERATURE',
+  'intendedUse', 'N/A',
+  'additionalInfo', 'N/A',
+  'canBeCut', false,
+  'componentsToTestZh', 'N/A',
+  'componentsToTestEn', 'N/A',
+  'workingTemperatureCelsius', 'N/A',
+  'withstand50C', false,
+  'clinicalContactDuration', 'A_LIMITED',
+  'extractionBasis', 'SURFACE_AREA',
+  'thinnestThicknessMm', 'N/A',
+  'specialInstructions', 'N/A'
+)
+where data_json = '{}'::jsonb;
+
+create index ix_submission_form_code_version on submission(form_code, schema_version);

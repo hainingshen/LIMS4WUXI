@@ -1,11 +1,28 @@
 package com.njxs.lims.submission.persistence;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface SubmissionRepository {
 
   Optional<SubmissionRecord> findById(UUID id);
+
+  String nextSubmissionBizNo(int year);
+
+  Optional<UUID> findDefaultSalesUserId();
+
+  List<SubmissionRecord> listForApplicant(UUID applicantUserId, int limit, int offset);
+
+  int countForApplicant(UUID applicantUserId);
+
+  List<SubmissionRecord> listForCustomerOrg(UUID customerOrgId, int limit, int offset);
+
+  int countForCustomerOrg(UUID customerOrgId);
+
+  List<SubmissionRecord> listSubmittedForAssignedSales(UUID salesUserId, int limit, int offset);
+
+  int countSubmittedForAssignedSales(UUID salesUserId);
 
   boolean existsByApplicant(UUID id, UUID applicantUserId);
 

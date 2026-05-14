@@ -7,8 +7,18 @@ public record SubmissionResponse(
     UUID id,
     String bizNo,
     UUID customerOrgId,
+    UUID customerContactId,
+    UUID manufacturerId,
     UUID applicantUserId,
-    String status
+    String status,
+    String officialReportEmail,
+    String shippingInfo,
+    boolean requiresGlp,
+    boolean requiresHardCopyOfElectronicReport,
+    String reportLanguage,
+    String protocolLanguage,
+    String submittedQuantityText,
+    String sampleDisposition
 ) {
 
   public static SubmissionResponse from(SubmissionRecord record) {
@@ -16,8 +26,18 @@ public record SubmissionResponse(
         record.id(),
         record.bizNo(),
         record.customerOrgId(),
+        record.customerContactId(),
+        record.manufacturerId(),
         record.applicantUserId(),
-        record.status()
+        record.status(),
+        record.officialReportEmail(),
+        record.shippingInfo(),
+        record.requiresGlp(),
+        record.requiresHardCopyOfElectronicReport(),
+        record.reportLanguage(),
+        record.protocolLanguage(),
+        record.submittedQuantityText(),
+        record.sampleDisposition()
     );
   }
 }

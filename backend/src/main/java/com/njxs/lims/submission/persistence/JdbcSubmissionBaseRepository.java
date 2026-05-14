@@ -26,15 +26,15 @@ public class JdbcSubmissionBaseRepository implements SubmissionBaseRepository {
         """
         insert into submission (
           id, biz_no, customer_org_id, customer_contact_id, manufacturer_id, applicant_user_id,
-          assigned_sales_user_id, status, official_report_email, shipping_info, requires_glp,
-          requires_hard_copy_of_electronic_report, report_language, protocol_language,
-          submitted_quantity_text, sample_disposition, sample_disposition_remark, change_locked_at,
-          glp_characterization_affirmed, glp_characterization_statement_version,
-          glp_characterization_confirmed_by, glp_characterization_confirmed_at, created_at,
-          created_by, updated_at, updated_by, deleted_at, version, tenant_org_id, legacy_id,
-          source_type, migration_batch, data_quality_score
+          assigned_sales_user_id, form_code, schema_version, data_json, status, official_report_email,
+          shipping_info, requires_glp, requires_hard_copy_of_electronic_report, report_language,
+          protocol_language, submitted_quantity_text, sample_disposition, sample_disposition_remark,
+          change_locked_at, glp_characterization_affirmed, glp_characterization_statement_version,
+          glp_characterization_confirmed_by, glp_characterization_confirmed_at, created_at, created_by,
+          updated_at, updated_by, deleted_at, version, tenant_org_id, legacy_id, source_type,
+          migration_batch, data_quality_score
         ) values (
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
         """,
         submission.getId(),
@@ -44,6 +44,9 @@ public class JdbcSubmissionBaseRepository implements SubmissionBaseRepository {
         submission.getManufacturerId(),
         submission.getApplicantUserId(),
         submission.getAssignedSalesUserId(),
+        valueOrDefault(submission.getFormCode(), "SUBMISSION_VER15"),
+        submission.getSchemaVersion() == null ? 1 : submission.getSchemaVersion(),
+        valueOrDefault(submission.getDataJson(), "{}"),
         submission.getStatus(),
         submission.getOfficialReportEmail(),
         submission.getShippingInfo(),
@@ -71,6 +74,13 @@ public class JdbcSubmissionBaseRepository implements SubmissionBaseRepository {
         submission.getMigrationBatch(),
         submission.getDataQualityScore()
     );
+  }
+
+  private String valueOrDefault(String value, String defaultValue) {
+    if (value == null || value.isBlank()) {
+      return defaultValue;
+    }
+    return value;
   }
 
   @Override

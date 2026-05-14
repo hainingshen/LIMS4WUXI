@@ -39,4 +39,23 @@ public class SubmissionApplicationService {
     }
     return SubmissionResponse.from(submissionRepository.markSubmitted(id, principal.userId()));
   }
+
+  public SubmissionResponse accept(UUID id, AuthPrincipal principal) {
+    SubmissionRecord current = submissionRepository.findById(id)
+        .orElseThrow(() -> new BusinessException(
+            "NOT_FOUND",
+            "资源不存在",
+            HttpStatus.NOT_FOUND,
+            Map.of("entityType", "submission", "entityId", id)
+        ));
+    if (!"SUBMITTED".equals(current.status())) {
+      throw new BusinessException(
+          "SUBMISSION_STATUS_CONFLICT",
+          "送检单当前状态不可受理",
+          HttpStatus.CONFLICT,
+          Map.of("expected", "SUBMITTED", "actual", current.status())
+      );
+    }
+    return SubmissionResponse.from(submissionRepository.markAccepted(id, principal.userId()));
+  }
 }

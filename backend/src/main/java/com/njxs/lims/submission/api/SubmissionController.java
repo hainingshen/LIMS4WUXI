@@ -1,5 +1,6 @@
 package com.njxs.lims.submission.api;
 
+import com.njxs.lims.audit.Audited;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.permission.RequiresAction;
 import com.njxs.lims.submission.service.SubmissionApplicationService;
@@ -22,8 +23,16 @@ public class SubmissionController {
   }
 
   @PostMapping("/{id}/submit")
+  @Audited(actionCode = "SUBMISSION_CREATE", entityType = "submission")
   @RequiresAction("SUBMISSION_CREATE")
   public SubmissionResponse submit(@PathVariable UUID id) {
     return submissionApplicationService.submit(id, AuthContext.require());
+  }
+
+  @PostMapping("/{id}/accept")
+  @Audited(actionCode = "SUBMISSION_ACCEPT", entityType = "submission")
+  @RequiresAction("SUBMISSION_ACCEPT")
+  public SubmissionResponse accept(@PathVariable UUID id) {
+    return submissionApplicationService.accept(id, AuthContext.require());
   }
 }

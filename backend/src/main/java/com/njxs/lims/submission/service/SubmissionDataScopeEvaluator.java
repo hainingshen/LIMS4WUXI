@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class SubmissionDataScopeEvaluator implements DataScopeEvaluator {
 
   private static final String ACTION_SUBMISSION_CREATE = "SUBMISSION_CREATE";
+  private static final String ACTION_SUBMISSION_ACCEPT = "SUBMISSION_ACCEPT";
 
   private final SubmissionRepository submissionRepository;
 
@@ -23,7 +24,8 @@ public class SubmissionDataScopeEvaluator implements DataScopeEvaluator {
 
   @Override
   public boolean supports(String actionCode, String scope) {
-    return ACTION_SUBMISSION_CREATE.equals(actionCode) && ("OWN".equals(scope) || "ORG".equals(scope));
+    return (ACTION_SUBMISSION_CREATE.equals(actionCode) && ("OWN".equals(scope) || "ORG".equals(scope)))
+        || (ACTION_SUBMISSION_ACCEPT.equals(actionCode) && "ASSIGNED_CUSTOMER".equals(scope));
   }
 
   @Override
@@ -34,6 +36,9 @@ public class SubmissionDataScopeEvaluator implements DataScopeEvaluator {
     }
     if ("OWN".equals(scope)) {
       return submissionRepository.existsByApplicant(resourceId.get(), principal.userId());
+    }
+    if ("ASSIGNED_CUSTOMER".equals(scope)) {
+      return submissionRepository.existsByAssignedSales(resourceId.get(), principal.userId());
     }
     return principal.orgId() != null && submissionRepository.existsByCustomerOrg(resourceId.get(), principal.orgId());
   }

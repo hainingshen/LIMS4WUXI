@@ -11,5 +11,9 @@ public interface SubmissionRepository {
 
   boolean existsByCustomerOrg(UUID id, UUID customerOrgId);
 
+  boolean existsByAssignedSales(UUID id, UUID salesUserId);
+
   SubmissionRecord markSubmitted(UUID id, UUID actorUserId);
+
+  SubmissionRecord markAccepted(UUID id, UUID actorUserId);
 }

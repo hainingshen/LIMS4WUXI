@@ -3,9 +3,11 @@
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "scripts": {
+    "gen:api": "openapi-typescript docs/development/specs/openapi.yaml -o web-shared/src/generated/api-types.ts",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
+    "openapi-typescript": "^7.6.1",
     "typescript": "^5.8.3"
   }
 }

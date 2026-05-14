@@ -27,6 +27,8 @@ public class ProjectHealthService {
   private static final String RISK_SCORE = "WORK_CENTER_RISK_SCORE";
   private static final String OVERDUE_TASK_PENALTY = "WORK_CENTER_OVERDUE_TASK_PENALTY";
   private static final String OVERDUE_TASK_MAX_PENALTY = "WORK_CENTER_OVERDUE_TASK_MAX_PENALTY";
+  private static final String BLOCKER_PENALTY = "WORK_CENTER_BLOCKER_PENALTY";
+  private static final String BLOCKER_MAX_PENALTY = "WORK_CENTER_BLOCKER_MAX_PENALTY";
 
   private final ProjectHealthRepository repository;
 
@@ -47,6 +49,7 @@ public class ProjectHealthService {
     int score = 100;
     score -= stalePenalty(context);
     score -= overdueTaskPenalty(context);
+    score -= blockerPenalty(context);
     score = clamp(score);
 
     String status = context.forcedRisk() ? RISK : statusByScore(score);
@@ -69,6 +72,12 @@ public class ProjectHealthService {
     int penalty = Math.max(0, config(OVERDUE_TASK_PENALTY, 8));
     int maxPenalty = Math.max(0, config(OVERDUE_TASK_MAX_PENALTY, 24));
     return Math.min(context.overdueTaskCount() * penalty, maxPenalty);
+  }
+
+  private int blockerPenalty(ProjectHealthContext context) {
+    int penalty = Math.max(0, config(BLOCKER_PENALTY, 10));
+    int maxPenalty = Math.max(0, config(BLOCKER_MAX_PENALTY, 30));
+    return Math.min(context.openBlockerCount() * penalty, maxPenalty);
   }
 
   private String statusByScore(int score) {

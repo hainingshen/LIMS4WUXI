@@ -523,6 +523,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Sample'
+  /samples/{id}/photos:
+    post:
+      summary: Upload sample photo
+      operationId: uploadSamplePhoto
+      tags: [Samples]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - name: note
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Uploaded sample photo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SamplePhoto'
   /study-plans:
     get:
       summary: List study plans
@@ -2570,6 +2599,31 @@ components:
         stockedAt:
           type: string
           format: date-time
+    SamplePhoto:
+      type: object
+      required: [id, sampleId, fileId, fileName, objectKey, sha256, sizeBytes]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sampleId:
+          type: string
+          format: uuid
+        fileId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        objectKey:
+          type: string
+        contentType:
+          type: string
+          nullable: true
+        sha256:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
     StudyPlan:
       type: object
       required: [id, bizNo, projectId, status, requiresConditioning, requiresGlp, requiresAnimalTest]

@@ -16,4 +16,6 @@ public interface WorkOrderRepository {
   WorkOrderRecord updateStatus(UUID id, String status, int progressPercent, UUID actorUserId);
 
   boolean existsAssigned(UUID id, UUID ownerUserId);
+
+  boolean allCompletedByProject(UUID projectId);
 }

@@ -96,6 +96,32 @@ public class JdbcWorkOrderRepository implements WorkOrderRepository {
     return count != null && count > 0;
   }
 
+  @Override
+  public boolean allCompletedByProject(UUID projectId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from work_order
+        where project_id = ?
+          and deleted_at is null
+        """,
+        Integer.class,
+        projectId
+    );
+    Integer incompleteCount = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from work_order
+        where project_id = ?
+          and status <> 'COMPLETED'
+          and deleted_at is null
+        """,
+        Integer.class,
+        projectId
+    );
+    return count != null && count > 0 && incompleteCount != null && incompleteCount == 0;
+  }
+
   private WorkOrderRecord record(ResultSet rs) throws SQLException {
     return new WorkOrderRecord(
         rs.getObject("id", UUID.class),

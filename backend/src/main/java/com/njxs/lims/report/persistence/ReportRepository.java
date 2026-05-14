@@ -41,9 +41,13 @@ public interface ReportRepository {
 
   ReportVersionRecord saveVersion(ReportVersionRecord version, UUID actorUserId);
 
+  Optional<ReportVersionRecord> findVersion(UUID reportId, int versionNo);
+
   ReportRecord updateStatus(UUID id, String status, UUID actorUserId);
 
   ReportRecord issue(UUID id, UUID actorUserId);
 
   void updateCurrentVersionStatus(UUID reportId, int versionNo, String status, UUID actorUserId);
+
+  void updateCurrentVersionPdfFile(UUID reportId, int versionNo, UUID pdfFileId, UUID actorUserId);
 }

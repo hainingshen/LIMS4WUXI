@@ -22,8 +22,10 @@ import com.njxs.lims.submission.persistence.SubmissionRecord;
 import com.njxs.lims.submission.persistence.SubmissionRepository;
 import java.time.Instant;
 import java.time.Year;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -146,6 +148,50 @@ public class SubmissionApplicationService {
     return SubmissionResponse.from(submissionRepository.markSubmitted(id, principal.userId()));
   }
 
+  @Transactional
+  public SubmissionResponse update(UUID id, SubmissionDraftRequest request, AuthPrincipal principal) {
+    SubmissionRecord current = submissionRepository.findById(id)
+        .orElseThrow(() -> new BusinessException(
+            "NOT_FOUND",
+            "资源不存在",
+            HttpStatus.NOT_FOUND,
+            Map.of("entityType", "submission", "entityId", id)
+        ));
+    FormSchemaRecord schema = formSchemaService.current(request.formCode(), request.schemaVersion());
+    JsonNode data = request.data();
+    formSchemaValidator.validate(schema.schemaJson(), data);
+
+    if (current.changeLockedAt() != null) {
+      FormSchemaRecord lockedSchema = formSchemaService.current(current.formCode(), current.schemaVersion());
+      assertNoChangeRequestFieldChanged(current, lockedSchema, data);
+    }
+    if (!"DRAFT".equals(current.status())) {
+      throw new BusinessException(
+          "SUBMISSION_STATUS_CONFLICT",
+          "送检单当前状态不可直接修改",
+          HttpStatus.CONFLICT,
+          Map.of("expected", "DRAFT", "actual", current.status())
+      );
+    }
+
+    return SubmissionResponse.from(submissionRepository.updateDraftData(
+        id,
+        schema.formCode(),
+        schema.versionNo(),
+        dataJson(data),
+        text(data, "officialReportEmail"),
+        text(data, "shippingInfo"),
+        bool(data, "requiresGlp"),
+        bool(data, "requiresHardCopyOfElectronicReport"),
+        textOrDefault(data, "reportLanguage", "CHS"),
+        textOrDefault(data, "protocolLanguage", "CHS"),
+        text(data, "submittedQuantityText"),
+        textOrDefault(data, "sampleDisposition", "DESTROY_DISCARD"),
+        text(data, "sampleDispositionRemark"),
+        principal.userId()
+    ));
+  }
+
   public SubmissionResponse accept(UUID id, AuthPrincipal principal) {
     SubmissionRecord current = submissionRepository.findById(id)
         .orElseThrow(() -> new BusinessException(
@@ -265,6 +311,48 @@ public class SubmissionApplicationService {
           Map.of("dataJson", "Invalid JSON payload")
       );
     }
+  }
+
+  private void assertNoChangeRequestFieldChanged(
+      SubmissionRecord current,
+      FormSchemaRecord schema,
+      JsonNode newData
+  ) {
+    JsonNode currentData = dataJson(current.dataJson());
+    JsonNode properties = schema.schemaJson().path("properties");
+    Iterator<Map.Entry<String, JsonNode>> fields = properties.fields();
+    while (fields.hasNext()) {
+      Map.Entry<String, JsonNode> field = fields.next();
+      JsonNode fieldSchema = field.getValue();
+      if (!"CHANGE_REQUEST".equals(fieldSchema.path("x-lock-policy").asText())) {
+        continue;
+      }
+      String fieldName = field.getKey();
+      if (sameValue(currentData.get(fieldName), newData.get(fieldName))) {
+        continue;
+      }
+      throw new BusinessException(
+          "FIELD_CHANGE_REQUIRES_CHANGE_REQUEST",
+          "字段已锁定，请创建变更申请",
+          HttpStatus.CONFLICT,
+          Map.of(
+              "fieldPath", fieldName,
+              "fieldLabel", fieldSchema.path("title").asText(fieldName),
+              "lockPolicy", "CHANGE_REQUEST",
+              "nextAction", "CREATE_CHANGE_REQUEST"
+          )
+      );
+    }
+  }
+
+  private boolean sameValue(JsonNode left, JsonNode right) {
+    JsonNode normalizedLeft = nullOrMissing(left) ? null : left;
+    JsonNode normalizedRight = nullOrMissing(right) ? null : right;
+    return Objects.equals(normalizedLeft, normalizedRight);
+  }
+
+  private boolean nullOrMissing(JsonNode value) {
+    return value == null || value.isMissingNode() || value.isNull();
   }
 
   private String text(JsonNode data, String field) {

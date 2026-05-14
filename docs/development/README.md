@@ -57,7 +57,7 @@ python .\scripts\checks\drift-detector.py
 - 存储：MinIO；文档：OnlyOffice Document Server
 - 部署：公有云 ECS 私有部署 + Docker Compose + Nginx 蓝绿 + 等保二级
 - 核心实体：客户、送检单、项目、样品、工单、原始记录、报告、统一变更中心、留样、报告注册中心、设备文件、导入导出任务
-- 机读契约：`specs/openapi.yaml` 当前覆盖 80 个 API path、77 个 schema，并已声明 JWT `bearerAuth`
+- 机读契约：`specs/openapi.yaml` 当前覆盖 83 个 API path、82 个 schema，并已声明 JWT `bearerAuth`
 - 详见 [00_技术栈与工程约定.md](00_技术栈与工程约定.md) 和 [18_第四轮决策记录.md](18_第四轮决策记录.md)。
 
 ## 代码生成硬约束

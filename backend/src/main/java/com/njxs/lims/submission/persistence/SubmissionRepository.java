@@ -35,4 +35,23 @@ public interface SubmissionRepository {
   SubmissionRecord markAccepted(UUID id, UUID actorUserId);
 
   SubmissionRecord markProjectSplit(UUID id, UUID actorUserId);
+
+  SubmissionRecord updateDraftData(
+      UUID id,
+      String formCode,
+      int schemaVersion,
+      String dataJson,
+      String officialReportEmail,
+      String shippingInfo,
+      boolean requiresGlp,
+      boolean requiresHardCopyOfElectronicReport,
+      String reportLanguage,
+      String protocolLanguage,
+      String submittedQuantityText,
+      String sampleDisposition,
+      String sampleDispositionRemark,
+      UUID actorUserId
+  );
+
+  void markChangeLocked(UUID id, UUID actorUserId);
 }

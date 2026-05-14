@@ -13,6 +13,7 @@ import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,6 +52,13 @@ public class SubmissionController {
   @RequiresAction("SUBMISSION_CREATE")
   public SubmissionResponse create(@Valid @RequestBody SubmissionDraftRequest request) {
     return submissionApplicationService.createDraft(request, AuthContext.require());
+  }
+
+  @PatchMapping("/{id}")
+  @Audited(actionCode = "SUBMISSION_CREATE", entityType = "submission")
+  @RequiresAction("SUBMISSION_CREATE")
+  public SubmissionResponse update(@PathVariable UUID id, @Valid @RequestBody SubmissionDraftRequest request) {
+    return submissionApplicationService.update(id, request, AuthContext.require());
   }
 
   @PostMapping("/{id}/submit")

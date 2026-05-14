@@ -1,6 +1,7 @@
 package com.njxs.lims.submission.api;
 
 import com.njxs.lims.submission.persistence.SubmissionRecord;
+import java.time.Instant;
 import java.util.UUID;
 
 public record SubmissionResponse(
@@ -18,7 +19,9 @@ public record SubmissionResponse(
     String reportLanguage,
     String protocolLanguage,
     String submittedQuantityText,
-    String sampleDisposition
+    String sampleDisposition,
+    String sampleDispositionRemark,
+    Instant changeLockedAt
 ) {
 
   public static SubmissionResponse from(SubmissionRecord record) {
@@ -37,7 +40,9 @@ public record SubmissionResponse(
         record.reportLanguage(),
         record.protocolLanguage(),
         record.submittedQuantityText(),
-        record.sampleDisposition()
+        record.sampleDisposition(),
+        record.sampleDispositionRemark(),
+        record.changeLockedAt()
     );
   }
 }

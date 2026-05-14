@@ -2530,6 +2530,24 @@ components:
         status:
           type: string
           enum: [WAITING_DELIVERY, ARRIVED_PENDING_CHECK, CHECK_EXCEPTION, PRE_IN_STOCK, IN_STOCK, CONDITIONING, READY_FOR_TEST, IN_TESTING, TEST_COMPLETED, PENDING_RETURN, PENDING_DISPOSAL, RETURNED, DISPOSED, ARCHIVED]
+        receivedAt:
+          type: string
+          format: date-time
+          nullable: true
+        receivedBy:
+          type: string
+          format: uuid
+          nullable: true
+        recipientName:
+          type: string
+          nullable: true
+        receivedDate:
+          type: string
+          format: date
+          nullable: true
+        inventoryLocation:
+          type: string
+          nullable: true
     SampleReceiveRequest:
       type: object
       required: [receivedAt, receivedBy, checkPassed]

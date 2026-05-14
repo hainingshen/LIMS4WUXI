@@ -101,7 +101,9 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | 留样处置 | `POST /sample-retentions/{id}/dispose` | 样品管理员、质量管理员 |
 | 方案提交审批 | `POST /study-plans/{id}/submit-review` | 技术负责人或 SD |
 | 试验下发 | `POST /study-plans/{id}/dispatch` | SD |
+| 工单领样 | `POST /work-orders/{id}/pick-sample` | 检测员 |
 | 工单开始 | `POST /work-orders/{id}/start` | 检测员 |
+| 工单结果录入完成 | `POST /work-orders/{id}/enter-result` | 检测员 |
 | 提交原始记录 | `POST /work-orders/{id}/submit-raw-record` | 检测员 |
 | 原始记录审核 | `POST /raw-records/{id}/review` | 审核人 |
 | 生成报告草稿 | `POST /reports/generate-draft` | 报告编制员 |

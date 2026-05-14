@@ -38,11 +38,25 @@ public class WorkOrderController {
     return workOrderService.list(page, pageSize);
   }
 
+  @PostMapping("/{id}/pick-sample")
+  @Audited(actionCode = "WORK_ORDER_EXECUTE", entityType = "work_order")
+  @RequiresAction("WORK_ORDER_EXECUTE")
+  public WorkOrderResponse pickSample(@PathVariable UUID id) {
+    return workOrderService.pickSample(id, AuthContext.require());
+  }
+
   @PostMapping("/{id}/start")
   @Audited(actionCode = "WORK_ORDER_EXECUTE", entityType = "work_order")
   @RequiresAction("WORK_ORDER_EXECUTE")
   public WorkOrderResponse start(@PathVariable UUID id) {
     return workOrderService.start(id, AuthContext.require());
+  }
+
+  @PostMapping("/{id}/enter-result")
+  @Audited(actionCode = "WORK_ORDER_EXECUTE", entityType = "work_order")
+  @RequiresAction("WORK_ORDER_EXECUTE")
+  public WorkOrderResponse enterResult(@PathVariable UUID id) {
+    return workOrderService.enterResult(id, AuthContext.require());
   }
 
   @PostMapping("/{id}/submit-raw-record")

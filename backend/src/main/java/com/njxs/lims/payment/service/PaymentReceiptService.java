@@ -7,6 +7,10 @@ import com.njxs.lims.payment.api.PaymentReceiptCreateRequest;
 import com.njxs.lims.payment.api.PaymentReceiptResponse;
 import com.njxs.lims.payment.domain.PaymentReceiptRecord;
 import com.njxs.lims.payment.persistence.PaymentReceiptRepository;
+import com.njxs.lims.project.domain.Project;
+import com.njxs.lims.project.domain.ProjectStatus;
+import com.njxs.lims.project.persistence.ProjectRepository;
+import com.njxs.lims.project.service.ProjectStatusTransitionService;
 import java.time.ZoneOffset;
 import java.util.Locale;
 import java.util.Map;
@@ -24,9 +28,17 @@ public class PaymentReceiptService {
   private static final Set<String> METHODS = Set.of("BANK_TRANSFER", "CASH", "OTHER");
 
   private final PaymentReceiptRepository paymentReceiptRepository;
+  private final ProjectRepository projectRepository;
+  private final ProjectStatusTransitionService projectStatusTransitionService;
 
-  public PaymentReceiptService(PaymentReceiptRepository paymentReceiptRepository) {
+  public PaymentReceiptService(
+      PaymentReceiptRepository paymentReceiptRepository,
+      ProjectRepository projectRepository,
+      ProjectStatusTransitionService projectStatusTransitionService
+  ) {
     this.paymentReceiptRepository = paymentReceiptRepository;
+    this.projectRepository = projectRepository;
+    this.projectStatusTransitionService = projectStatusTransitionService;
   }
 
   public PageResponse<PaymentReceiptResponse> list(UUID projectId, int page, int pageSize) {
@@ -78,7 +90,17 @@ public class PaymentReceiptService {
     } else {
       paymentReceiptRepository.unlockReport(saved.reportId(), principal.userId());
     }
+    advanceProjectAfterPayment(saved.projectId(), principal.userId());
     return PaymentReceiptResponse.from(saved);
+  }
+
+  private void advanceProjectAfterPayment(UUID projectId, UUID actorUserId) {
+    Project project = projectRepository.findById(projectId).orElse(null);
+    if (project == null || !ProjectStatus.PAYMENT_HOLD.name().equals(project.getStatus())) {
+      return;
+    }
+    projectStatusTransitionService.transition(project, ProjectStatus.RELEASED, "payment received");
+    projectRepository.updateStatus(project, actorUserId);
   }
 
   private String normalizeMethod(String method) {

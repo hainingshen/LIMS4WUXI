@@ -1106,6 +1106,8 @@ Code slice:
 
 Verify: 使用一组固定测试数据跑完整链路，所有状态与 `06_数据模型与状态机.md` 一致，所有写动作都有 `audit_log`。
 
+Executable: `scripts/acceptance/phase-one-smoke.sh` 运行 `PhaseOneAcceptanceFlowTests`，在 Docker/Testcontainers 可用环境中执行上述固定数据链路。
+
 ## 每次提交前检查清单
 
 ```bash

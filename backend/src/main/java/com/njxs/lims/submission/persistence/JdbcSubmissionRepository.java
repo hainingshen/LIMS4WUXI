@@ -69,11 +69,47 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
   }
 
   @Override
+  public boolean existsByAssignedSales(UUID id, UUID salesUserId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from submission
+        where id = ?
+          and assigned_sales_user_id = ?
+          and deleted_at is null
+        """,
+        Integer.class,
+        id,
+        salesUserId
+    );
+    return count != null && count > 0;
+  }
+
+  @Override
   public SubmissionRecord markSubmitted(UUID id, UUID actorUserId) {
     return jdbcTemplate.queryForObject(
         """
         update submission
         set status = 'SUBMITTED',
+            updated_at = now(),
+            updated_by = ?,
+            version = version + 1
+        where id = ?
+          and deleted_at is null
+        returning id, biz_no, customer_org_id, applicant_user_id, status
+        """,
+        (rs, rowNum) -> record(rs),
+        actorUserId,
+        id
+    );
+  }
+
+  @Override
+  public SubmissionRecord markAccepted(UUID id, UUID actorUserId) {
+    return jdbcTemplate.queryForObject(
+        """
+        update submission
+        set status = 'ACCEPTED',
             updated_at = now(),
             updated_by = ?,
             version = version + 1

@@ -9,4 +9,8 @@ public interface QuotationRepository {
   String nextQuotationBizNo(int year);
 
   void save(Quotation quotation, List<QuotationItem> items);
+
+  List<Quotation> list(int limit, int offset);
+
+  int count();
 }

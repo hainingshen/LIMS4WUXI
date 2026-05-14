@@ -1,8 +1,12 @@
 package com.njxs.lims.project.api;
 
 import com.njxs.lims.audit.Audited;
+import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
+import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.permission.RequiresAction;
+import com.njxs.lims.permission.RequiresClient;
+import com.njxs.lims.project.persistence.ProjectRepository;
 import com.njxs.lims.project.service.NonstandardReviewService;
 import com.njxs.lims.quotation.api.QuotationCreateRequest;
 import com.njxs.lims.quotation.api.QuotationResponse;
@@ -11,10 +15,12 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,12 +29,35 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnProperty(prefix = "lims.auth", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ProjectController {
 
+  private final ProjectRepository projectRepository;
   private final NonstandardReviewService nonstandardReviewService;
   private final QuotationService quotationService;
 
-  public ProjectController(NonstandardReviewService nonstandardReviewService, QuotationService quotationService) {
+  public ProjectController(
+      ProjectRepository projectRepository,
+      NonstandardReviewService nonstandardReviewService,
+      QuotationService quotationService
+  ) {
+    this.projectRepository = projectRepository;
     this.nonstandardReviewService = nonstandardReviewService;
     this.quotationService = quotationService;
+  }
+
+  @GetMapping
+  @RequiresClient(ClientType.INTERNAL)
+  public PageResponse<ProjectResponse> list(
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "20") int pageSize
+  ) {
+    int normalizedPage = Math.max(page, 1);
+    int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
+    int offset = (normalizedPage - 1) * normalizedPageSize;
+    return new PageResponse<>(
+        projectRepository.list(normalizedPageSize, offset).stream().map(ProjectResponse::from).toList(),
+        normalizedPage,
+        normalizedPageSize,
+        projectRepository.count()
+    );
   }
 
   @PostMapping("/{id}/nonstandard-review/start")

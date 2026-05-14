@@ -20,6 +20,7 @@ run_step() {
 run_step "Preflight" scripts/local/preflight.sh
 run_step "Start local Compose stack" scripts/local/up.sh
 run_step "API smoke" scripts/acceptance/local-compose-smoke.sh
+run_step "Workflow gap regression" scripts/acceptance/workflow-gap-regression.sh
 
 run_step "Typecheck shared" ./node_modules/.bin/tsc --noEmit -p web-shared/tsconfig.json
 run_step "Typecheck internal" ./node_modules/.bin/tsc --noEmit -p web-internal/tsconfig.json

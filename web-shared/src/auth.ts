@@ -1,6 +1,11 @@
 import { create } from "zustand";
 
 import { http } from "./api/http";
+import {
+  clearStoredSessionForCurrentClient,
+  readStoredSessionForCurrentClient,
+  writeStoredSessionForCurrentClient,
+} from "./authStorage";
 import type { components } from "./generated/api-types";
 import { PERMISSION_MATRIX } from "./generated/dictionaries";
 
@@ -27,16 +32,14 @@ type AuthState = {
   clearSession: () => void;
 };
 
-const AUTH_STORAGE_KEY = "lims.auth.session";
-
 export const useAuthStore = create<AuthState>((set) => ({
   ...readStoredSession(),
   setSession: (session) => {
-    writeStoredSession(session);
+    writeStoredSessionForCurrentClient(session);
     set(session);
   },
   clearSession: () => {
-    clearStoredSession();
+    clearStoredSessionForCurrentClient();
     set({
       accessToken: undefined,
       refreshToken: undefined,
@@ -80,40 +83,15 @@ export function roleLabel(role: string) {
 }
 
 function readStoredSession(): Pick<AuthState, "accessToken" | "refreshToken" | "roles" | "clientType" | "expiresInSeconds"> {
-  if (typeof window === "undefined") {
+  const session = readStoredSessionForCurrentClient();
+  if (!session) {
     return { roles: [] };
   }
-  const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) {
-    return { roles: [] };
-  }
-  try {
-    const session = JSON.parse(raw) as AuthSession;
-    return {
-      accessToken: session.accessToken,
-      refreshToken: session.refreshToken,
-      roles: session.roles ?? [],
-      clientType: session.clientType,
-      expiresInSeconds: session.expiresInSeconds,
-    };
-  } catch {
-    clearStoredSession();
-    return { roles: [] };
-  }
-}
-
-function writeStoredSession(session: AuthSession) {
-  if (typeof window === "undefined") {
-    return;
-  }
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-  window.localStorage.setItem("accessToken", session.accessToken);
-}
-
-function clearStoredSession() {
-  if (typeof window === "undefined") {
-    return;
-  }
-  window.localStorage.removeItem(AUTH_STORAGE_KEY);
-  window.localStorage.removeItem("accessToken");
+  return {
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+    roles: session.roles ?? [],
+    clientType: session.clientType as ClientType,
+    expiresInSeconds: session.expiresInSeconds,
+  };
 }

@@ -1,9 +1,11 @@
 package com.njxs.lims.study.api;
 
 import com.njxs.lims.audit.Audited;
+import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.permission.RequiresAction;
+import com.njxs.lims.permission.RequiresClient;
 import com.njxs.lims.study.service.StudyPlanService;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -30,6 +32,7 @@ public class StudyPlanController {
   }
 
   @GetMapping
+  @RequiresClient(ClientType.INTERNAL)
   public PageResponse<StudyPlanResponse> list(
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize

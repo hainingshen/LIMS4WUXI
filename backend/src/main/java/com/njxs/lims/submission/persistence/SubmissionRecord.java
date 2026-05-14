@@ -1,5 +1,6 @@
 package com.njxs.lims.submission.persistence;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record SubmissionRecord(
@@ -21,6 +22,8 @@ public record SubmissionRecord(
     String reportLanguage,
     String protocolLanguage,
     String submittedQuantityText,
-    String sampleDisposition
+    String sampleDisposition,
+    String sampleDispositionRemark,
+    Instant changeLockedAt
 ) {
 }

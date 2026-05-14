@@ -217,6 +217,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Submission'
+  /submissions/{id}:
+    patch:
+      summary: Update submission draft data before contract lock
+      operationId: updateSubmission
+      tags: [Submissions]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionCreateRequest'
+      responses:
+        '200':
+          description: Updated submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+        '409':
+          description: Locked field requires change request
   /submissions/{id}/submit:
     post:
       summary: Submit customer submission

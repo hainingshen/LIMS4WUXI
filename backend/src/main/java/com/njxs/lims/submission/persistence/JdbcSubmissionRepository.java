@@ -2,6 +2,8 @@ package com.njxs.lims.submission.persistence;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,7 +34,9 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
       report_language,
       protocol_language,
       submitted_quantity_text,
-      sample_disposition
+      sample_disposition,
+      sample_disposition_remark,
+      change_locked_at
       """;
 
   private final JdbcTemplate jdbcTemplate;
@@ -273,6 +277,79 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
     );
   }
 
+  @Override
+  public SubmissionRecord updateDraftData(
+      UUID id,
+      String formCode,
+      int schemaVersion,
+      String dataJson,
+      String officialReportEmail,
+      String shippingInfo,
+      boolean requiresGlp,
+      boolean requiresHardCopyOfElectronicReport,
+      String reportLanguage,
+      String protocolLanguage,
+      String submittedQuantityText,
+      String sampleDisposition,
+      String sampleDispositionRemark,
+      UUID actorUserId
+  ) {
+    return jdbcTemplate.queryForObject(
+        "update submission " + """
+        set form_code = ?,
+            schema_version = ?,
+            data_json = ?::jsonb,
+            official_report_email = ?,
+            shipping_info = ?,
+            requires_glp = ?,
+            requires_hard_copy_of_electronic_report = ?,
+            report_language = ?,
+            protocol_language = ?,
+            submitted_quantity_text = ?,
+            sample_disposition = ?,
+            sample_disposition_remark = ?,
+            updated_at = now(),
+            updated_by = ?,
+            version = version + 1
+        where id = ?
+          and deleted_at is null
+        returning
+        """ + SELECT_COLUMNS,
+        (rs, rowNum) -> record(rs),
+        formCode,
+        schemaVersion,
+        dataJson,
+        officialReportEmail,
+        shippingInfo,
+        requiresGlp,
+        requiresHardCopyOfElectronicReport,
+        reportLanguage,
+        protocolLanguage,
+        submittedQuantityText,
+        sampleDisposition,
+        sampleDispositionRemark,
+        actorUserId,
+        id
+    );
+  }
+
+  @Override
+  public void markChangeLocked(UUID id, UUID actorUserId) {
+    jdbcTemplate.update(
+        """
+        update submission
+        set change_locked_at = coalesce(change_locked_at, now()),
+            updated_at = now(),
+            updated_by = ?,
+            version = version + 1
+        where id = ?
+          and deleted_at is null
+        """,
+        actorUserId,
+        id
+    );
+  }
+
   private SubmissionRecord record(ResultSet rs) throws SQLException {
     return new SubmissionRecord(
         rs.getObject("id", UUID.class),
@@ -293,12 +370,21 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
         rs.getString("report_language"),
         rs.getString("protocol_language"),
         rs.getString("submitted_quantity_text"),
-        rs.getString("sample_disposition")
+        rs.getString("sample_disposition"),
+        rs.getString("sample_disposition_remark"),
+        instant(rs.getTimestamp("change_locked_at"))
     );
   }
 
   private int count(String sql, Object... args) {
     Integer count = jdbcTemplate.queryForObject(sql, Integer.class, args);
     return count == null ? 0 : count;
+  }
+
+  private Instant instant(Timestamp timestamp) {
+    if (timestamp == null) {
+      return null;
+    }
+    return timestamp.toInstant();
   }
 }

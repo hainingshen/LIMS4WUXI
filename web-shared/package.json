@@ -4,10 +4,15 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./api/http": "./src/api/http.ts",
+    "./generated/api-types": "./src/generated/api-types.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "axios": "^1.7.9"
   },
   "devDependencies": {
     "typescript": "^5.8.3"

@@ -7,4 +7,6 @@ export type AuthSession = {
   roles: string[];
 };
 
-export const API_BASE_PATH = "/api/v1";
+export { API_BASE_PATH } from "./api/config";
+export { http } from "./api/http";
+export type { components, operations, paths } from "./generated/api-types";

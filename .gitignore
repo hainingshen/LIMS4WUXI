@@ -1,0 +1,27 @@
+.claude/
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.turbo/
+.vite/
+
+# Java / backend
+target/
+*.class
+
+# Logs and local env
+*.log
+.env
+.env.*
+!.env.example

@@ -1,0 +1,192 @@
+{
+  "customerOrg": {
+    "id": "018f0000-0000-7000-8000-000000000001",
+    "nameZh": "无锡市南京大学锡山应用生物技术研究所",
+    "addressZh": "无锡市锡山区安镇街道东安路88号5楼"
+  },
+  "submission": {
+    "id": "018f0000-0000-7000-8000-000000000011",
+    "bizNo": "SUB-2026-0001",
+    "requiresGlp": false,
+    "reportLanguage": "CHS",
+    "protocolLanguage": "CHS",
+    "sampleDisposition": "RETURN_UNUSED",
+    "status": "ACCEPTED"
+  },
+  "project": {
+    "id": "018f0000-0000-7000-8000-000000000021",
+    "bizNo": "P-2026-0001",
+    "projectType": "STD_ACCREDITED",
+    "qualificationType": "CMA",
+    "requiresGlp": false,
+    "requiresAnimalTest": false,
+    "requiresEthicsReview": false,
+    "requiresNonstandardReview": false,
+    "status": "IN_TESTING",
+    "healthStatus": "NORMAL",
+    "healthScore": 92,
+    "paymentStatus": "UNPAID"
+  },
+  "sample": {
+    "id": "018f0000-0000-7000-8000-000000000031",
+    "bizNo": "S-20260309-001",
+    "sampleNameZh": "妥能一次性使用水胶体敷贴",
+    "sampleNameEn": "Disposable hydrocolloid dressing",
+    "modelRef": "1片/袋",
+    "lotBatch": "20250909",
+    "quantity": 2,
+    "quantityUnit": "盒",
+    "physicalState": "SOLID",
+    "sterilizationState": "STERILE_GAMMA",
+    "storageCondition": "ROOM_TEMPERATURE",
+    "status": "IN_TESTING"
+  },
+  "studyPlan": {
+    "id": "018f0000-0000-7000-8000-000000000041",
+    "bizNo": "PLAN-2026-0001",
+    "status": "DISPATCHED",
+    "requiresConditioning": false
+  },
+  "workOrder": {
+    "id": "018f0000-0000-7000-8000-000000000051",
+    "bizNo": "WO-2026-00001",
+    "testItemCode": "MICRO_STERILITY",
+    "ownerUserId": "018f0000-0000-7000-8000-000000000091",
+    "status": "RAW_REVIEWING",
+    "progressPercent": 90
+  },
+  "rawRecord": {
+    "id": "018f0000-0000-7000-8000-000000000061",
+    "bizNo": "RR-2026-00001",
+    "templateCode": "STERILITY_T078",
+    "testItem": "无菌",
+    "testBasis": "接触性创面敷料 第4部分：水胶体敷料 YY/T 1293.4-2016",
+    "method": "DIRECT_INOCULATION",
+    "sterilityResults": [
+      {
+        "sampleNo": "S-20260309-001",
+        "sampleGrowthResult": "NO_GROWTH",
+        "conclusion": "STERILE"
+      }
+    ]
+  },
+  "report": {
+    "id": "018f0000-0000-7000-8000-000000000071",
+    "bizNo": "TR260408-03",
+    "reportTemplateId": "018f0000-0000-7000-8000-000000000101",
+    "templateCode": "STERILITY_REPORT_V1",
+    "templateVersion": "1.0.0",
+    "status": "ISSUED_PAYMENT_LOCKED",
+    "currentVersionNo": 1,
+    "watermarkType": "NONE",
+    "paymentGateStatus": "LOCKED"
+  },
+  "reportTemplate": {
+    "id": "018f0000-0000-7000-8000-000000000101",
+    "templateCode": "STERILITY_REPORT_V1",
+    "templateVersion": "1.0.0",
+    "templateName": "无菌检查报告模板",
+    "templateType": "REPORT",
+    "automationLevel": "A",
+    "fileId": "018f0000-0000-7000-8000-000000000102",
+    "status": "PUBLISHED",
+    "publishedAt": "2026-04-08T09:30:00+08:00",
+    "publishedBy": "018f0000-0000-7000-8000-000000000093"
+  },
+  "reportVersion": {
+    "id": "018f0000-0000-7000-8000-000000000111",
+    "reportId": "018f0000-0000-7000-8000-000000000071",
+    "versionNo": 1,
+    "status": "ISSUED",
+    "docxFileId": "018f0000-0000-7000-8000-000000000112",
+    "pdfFileId": "018f0000-0000-7000-8000-000000000113",
+    "issuedAt": "2026-04-08T10:20:00+08:00"
+  },
+  "changeRequest": {
+    "id": "018f0000-0000-7000-8000-000000000121",
+    "bizNo": "CR-2026-0001",
+    "targetType": "REPORT",
+    "targetId": "018f0000-0000-7000-8000-000000000071",
+    "targetBizNo": "TR260408-03",
+    "changeType": "REPORT_CORRECTION",
+    "reason": "客户确认样品英文名称需与注册证英文名称保持一致，报告已签发，需走重新签发。",
+    "status": "NEEDS_REPORT_REVISION",
+    "requestedBy": "018f0000-0000-7000-8000-000000000092",
+    "requestedAt": "2026-04-09T14:10:00+08:00",
+    "items": [
+      {
+        "fieldPath": "sample.sampleNameEn",
+        "fieldLabel": "样品英文名称",
+        "oldValue": "Disposable hydrocolloid dressing",
+        "newValue": "Sterile disposable hydrocolloid dressing",
+        "lockPolicy": "HARD_LOCK"
+      }
+    ]
+  },
+  "sampleRetention": {
+    "id": "018f0000-0000-7000-8000-000000000131",
+    "bizNo": "RET-2026-0001",
+    "sampleId": "018f0000-0000-7000-8000-000000000031",
+    "projectId": "018f0000-0000-7000-8000-000000000021",
+    "reportId": "018f0000-0000-7000-8000-000000000071",
+    "retainedQuantity": 1,
+    "quantityUnit": "盒",
+    "storageCondition": "ROOM_TEMPERATURE",
+    "storageLocation": "留样柜-A-03",
+    "retainedAt": "2026-03-10T16:00:00+08:00",
+    "retainedBy": "018f0000-0000-7000-8000-000000000094",
+    "retainUntil": "2026-09-10",
+    "dispositionPlan": "RETURN",
+    "status": "RETAINED"
+  },
+  "device": {
+    "id": "018f0000-0000-7000-8000-000000000141",
+    "bizNo": "DEV-INC-003",
+    "name": "生化培养箱",
+    "status": "ACTIVE"
+  },
+  "deviceFile": {
+    "id": "018f0000-0000-7000-8000-000000000151",
+    "deviceId": "018f0000-0000-7000-8000-000000000141",
+    "fileType": "CALIBRATION_CERT",
+    "fileId": "018f0000-0000-7000-8000-000000000152",
+    "versionNo": "2026",
+    "validFrom": "2026-01-01",
+    "validUntil": "2026-12-31",
+    "isCurrent": true,
+    "uploadedBy": "018f0000-0000-7000-8000-000000000095",
+    "uploadedAt": "2026-01-02T09:00:00+08:00",
+    "status": "ACTIVE"
+  },
+  "reportDeliveryLog": {
+    "id": "018f0000-0000-7000-8000-000000000161",
+    "reportId": "018f0000-0000-7000-8000-000000000071",
+    "reportVersionId": "018f0000-0000-7000-8000-000000000111",
+    "deliveryType": "PREVIEW",
+    "deliveredTo": "customer@example.com",
+    "deliveredBy": "018f0000-0000-7000-8000-000000000092",
+    "deliveredAt": "2026-04-08T11:00:00+08:00",
+    "clientType": "PORTAL",
+    "paymentGateStatus": "LOCKED"
+  },
+  "importExportTask": {
+    "id": "018f0000-0000-7000-8000-000000000171",
+    "bizNo": "IET-2026-0001",
+    "taskType": "REPORT_BATCH_DOWNLOAD",
+    "entityType": "REPORT",
+    "status": "SUCCESS",
+    "requestedBy": "018f0000-0000-7000-8000-000000000096",
+    "requestedAt": "2026-04-08T15:00:00+08:00",
+    "resultFileId": "018f0000-0000-7000-8000-000000000172",
+    "expiresAt": "2026-04-15T15:00:00+08:00"
+  },
+  "legacyStatusMapping": {
+    "legacyEntityType": "REPORT",
+    "legacyStatusText": "报告待提交",
+    "targetEntityType": "report",
+    "targetStatus": "DRAFT",
+    "migrationMode": "MANUAL_REVIEW",
+    "qualityScoreDelta": -10,
+    "note": "需人工判断是否已进入 QC。"
+  }
+}

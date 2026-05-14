@@ -1,0 +1,24 @@
+roleCode,labelZh,labelEn,side,description
+CUSTOMER_ORG_ADMIN,客户单位管理员,Customer Organization Admin,PORTAL,管理本单位客户账号并查看本单位全部项目
+CUSTOMER_APPLICANT,客户申请人,Customer Applicant,PORTAL,提交送检信息并查看本人项目
+CUSTOMER_VIEWER,客户只读用户,Customer Viewer,PORTAL,查看被授权项目和报告
+SALES_REP,业务员,Sales Representative,INTERNAL,客户沟通送检受理报价合同发起
+BUSINESS_OWNER,业务负责人,Business Owner,INTERNAL,审批非标项目报价前评审
+TECHNICAL_LEADER,技术负责人,Technical Leader,INTERNAL,技术评审方法可行性资源协调
+SD,SD,Study Director,INTERNAL,方案审核项目关键节点审核报告最终审核
+QA,QA,Quality Assurance,INTERNAL,GLP项目审核和报告质量审核
+QC,QC,Quality Control,INTERNAL,报告技术审核和原始记录技术复核
+ETHICS_COMMITTEE,伦理委员会,Ethics Committee,INTERNAL,动物试验伦理审批
+SAMPLE_MANAGER,样品管理员,Sample Manager,INTERNAL,样品接收核验入库流转处置
+INSPECTOR,检测员,Inspector,INTERNAL,试验执行结果录入原始记录填写
+REPORT_PREPARER,报告编制员,Report Preparer,INTERNAL,报告草稿生成和内容编制
+AUTHORIZED_SIGNATORY,授权签字人,Authorized Signatory,INTERNAL,报告签发或授权签名
+DEPT_MANAGER,部门负责人,Department Manager,INTERNAL,绿色通道第一层审批
+GENERAL_MANAGER,管理层/总经理,General Manager,INTERNAL,绿色通道最终审批
+FINANCE_CASHIER,财务人员/出纳,Finance Cashier,INTERNAL,登记到账上传凭证
+FINANCE_MANAGER,财务负责人,Finance Manager,INTERNAL,复核异常收款查看应收
+EQUIPMENT_MANAGER,设备管理员,Equipment Manager,INTERNAL,设备台账预约管理冲突处理
+INVENTORY_MANAGER,标准品/耗材管理员,Inventory Manager,INTERNAL,台账库存领用预警出入库
+ARCHIVE_MANAGER,文件/档案管理员,Archive Manager,INTERNAL,项目资料归档报告原始记录归档
+QUALITY_MANAGER,质量主管/质量负责人,Quality Manager,INTERNAL,质量监督流程合规检查
+SYSTEM_ADMIN,系统管理员,System Administrator,INTERNAL,用户角色字典模板基础配置

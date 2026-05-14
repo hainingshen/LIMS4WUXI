@@ -255,6 +255,24 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
     );
   }
 
+  @Override
+  public SubmissionRecord markProjectSplit(UUID id, UUID actorUserId) {
+    return jdbcTemplate.queryForObject(
+        "update submission " + """
+        set status = 'PROJECT_SPLIT',
+            updated_at = now(),
+            updated_by = ?,
+            version = version + 1
+        where id = ?
+          and deleted_at is null
+        returning
+        """ + SELECT_COLUMNS,
+        (rs, rowNum) -> record(rs),
+        actorUserId,
+        id
+    );
+  }
+
   private SubmissionRecord record(ResultSet rs) throws SQLException {
     return new SubmissionRecord(
         rs.getObject("id", UUID.class),

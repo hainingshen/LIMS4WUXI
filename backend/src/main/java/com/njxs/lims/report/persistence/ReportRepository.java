@@ -18,6 +18,12 @@ public interface ReportRepository {
 
   boolean existsById(UUID id);
 
+  boolean reportCustomerOrgMatches(UUID reportId, UUID customerOrgId);
+
+  boolean reportApplicantMatches(UUID reportId, UUID userId);
+
+  boolean reportAssignedSales(UUID reportId, UUID userId);
+
   List<ReportRecord> list(int limit, int offset);
 
   int count();

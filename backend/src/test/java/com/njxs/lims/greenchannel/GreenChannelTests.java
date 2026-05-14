@@ -242,6 +242,19 @@ class GreenChannelTests {
         requestId
     );
     assertThat(approvals).isEqualTo(2);
+
+    Integer greenChannelLogs = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report_delivery_log
+        where report_id = ?
+          and delivery_type = 'GREEN_CHANNEL'
+          and payment_gate_status = 'GREEN_UNLOCKED'
+        """,
+        Integer.class,
+        reportId
+    );
+    assertThat(greenChannelLogs).isEqualTo(1);
   }
 
   private String login(String channel, String username, String password) throws Exception {

@@ -137,6 +137,8 @@ request GET "/auth/me" 401
 
 portal_token="$(login portal portal.applicant Applicant123!)"
 internal_token="$(login internal internal.sales Sales123!)"
+tech_token="$(login internal internal.tech Sales123!)"
+business_token="$(login internal internal.business Sales123!)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
@@ -194,8 +196,60 @@ request GET "/projects?page=1&pageSize=20" 200 "$internal_token"
 jq -e --arg id "$project_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
   || fail "internal project list does not contain $project_id"
 
+nonstandard_split_payload="$(jq -nc '{
+  splitStrategy: "MANUAL",
+  projectDrafts: [
+    {
+      projectType: "NON_STANDARD",
+      qualificationType: "NONE",
+      serviceType: "NORMAL",
+      requiresAnimalTest: false
+    }
+  ]
+}')"
+
+request POST "/submissions" 201 "$portal_token" "$payload"
+nonstandard_submission_id="$(jq -er '.id' "$LAST_BODY")"
+request POST "/submissions/$nonstandard_submission_id/submit" 200 "$portal_token"
+request POST "/submissions/$nonstandard_submission_id/accept" 200 "$internal_token"
+request POST "/submissions/$nonstandard_submission_id/split-projects" 201 "$internal_token" "$nonstandard_split_payload"
+nonstandard_project_id="$(jq -er '.[0].id' "$LAST_BODY")"
+jq -e '.[0].projectType == "NON_STANDARD" and .[0].status == "ACCEPTED"' "$LAST_BODY" >/dev/null \
+  || fail "nonstandard split did not return accepted nonstandard project"
+
+quotation_payload="$(jq -nc '{
+  items: [
+    {
+      testName: "Cytotoxicity",
+      unitPrice: 100,
+      quantity: 2
+    }
+  ],
+  discountAmount: 10,
+  note: "Local smoke quotation"
+}')"
+request POST "/projects/$nonstandard_project_id/quotations" 409 "$internal_token" "$quotation_payload"
+jq -e '.code == "PROJECT_NOT_QUOTABLE"' "$LAST_BODY" >/dev/null || fail "quotation guard did not reject before review"
+
+request POST "/projects/$nonstandard_project_id/nonstandard-review/start" 200 "$internal_token"
+jq -e '.status == "NONSTANDARD_REVIEW"' "$LAST_BODY" >/dev/null || fail "nonstandard review did not start"
+
+tech_approval_payload="$(jq -nc '{stage:"TECH",outcome:"APPROVED",comment:"技术通过"}')"
+request POST "/projects/$nonstandard_project_id/nonstandard-review/approve" 200 "$tech_token" "$tech_approval_payload"
+jq -e '.status == "NONSTANDARD_REVIEW"' "$LAST_BODY" >/dev/null || fail "tech approval should keep review pending"
+
+business_approval_payload="$(jq -nc '{stage:"BUSINESS",outcome:"APPROVED",comment:"业务通过"}')"
+request POST "/projects/$nonstandard_project_id/nonstandard-review/approve" 200 "$business_token" "$business_approval_payload"
+jq -e '.status == "QUOTABLE"' "$LAST_BODY" >/dev/null || fail "business approval did not make project quotable"
+
+request POST "/projects/$nonstandard_project_id/quotations" 201 "$internal_token" "$quotation_payload"
+quotation_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg project_id "$nonstandard_project_id" \
+  '.projectId == $project_id and .totalAmount == 190' "$LAST_BODY" >/dev/null \
+  || fail "quotation creation did not return expected project and amount"
+
 audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$submission_id' and action_code = 'SUBMISSION_CREATE' and result = 'SUCCESS';")"
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s\n' "$submission_id" "$project_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s\n' "$submission_id" "$project_id" "$quotation_id"

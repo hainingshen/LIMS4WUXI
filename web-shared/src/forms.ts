@@ -5,6 +5,7 @@ import { DICTIONARY_ITEMS, type DictionaryCode } from "./generated/dictionaries"
 export type FormSchema = components["schemas"]["FormSchema"];
 export type Submission = components["schemas"]["Submission"];
 export type Project = components["schemas"]["Project"];
+export type Quotation = components["schemas"]["Quotation"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
@@ -13,6 +14,8 @@ export type ProjectPage = Omit<components["schemas"]["PageResponse"], "items"> &
 };
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
+export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
+export type QuotationCreateRequest = components["schemas"]["QuotationCreateRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -87,6 +90,21 @@ export async function listSubmissions(params: { page?: number; pageSize?: number
 
 export async function listProjects(params: { page?: number; pageSize?: number } = {}) {
   const response = await http.get<ProjectPage>("/projects", { params });
+  return response.data;
+}
+
+export async function startNonstandardReview(id: string) {
+  const response = await http.post<Project>(`/projects/${id}/nonstandard-review/start`);
+  return response.data;
+}
+
+export async function approveNonstandardReview(id: string, request: ApprovalRequest) {
+  const response = await http.post<Project>(`/projects/${id}/nonstandard-review/approve`, request);
+  return response.data;
+}
+
+export async function createProjectQuotation(id: string, request: QuotationCreateRequest) {
+  const response = await http.post<Quotation>(`/projects/${id}/quotations`, request);
   return response.data;
 }
 

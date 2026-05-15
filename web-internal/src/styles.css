@@ -216,6 +216,11 @@ body {
   gap: 16px;
 }
 
+.deviceBookingPage {
+  display: grid;
+  gap: 16px;
+}
+
 .importExportPage {
   display: grid;
   gap: 16px;
@@ -289,6 +294,10 @@ body {
   width: min(240px, 100%);
 }
 
+.deviceBookingDeviceSelect {
+  width: min(300px, 100%);
+}
+
 .archiveSearchInput {
   width: min(300px, 100%);
 }
@@ -314,6 +323,13 @@ body {
 .deviceFileGrid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.deviceBookingGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
   gap: 16px;
   align-items: start;
 }
@@ -515,6 +531,7 @@ body {
   .sampleDeskGrid,
   .reportRegistryDetailGrid,
   .deviceFileGrid,
+  .deviceBookingGrid,
   .deviceFileFormGrid,
   .importExportGrid,
   .archiveGrid,

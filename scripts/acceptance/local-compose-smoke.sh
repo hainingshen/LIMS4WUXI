@@ -689,6 +689,57 @@ jq -e --arg id "$device_id" --arg device_no "DEV-SMOKE-$suffix" \
   '.items[] | select(.id == $id and .deviceNo == $device_no and .metrologyRequired == true and .status == "ACTIVE")' "$LAST_BODY" >/dev/null \
   || fail "device list did not contain local smoke device"
 
+booking_start="$(date -u -d '+4 hours' '+%Y-%m-%dT%H:00:00Z')"
+booking_end="$(date -u -d '+5 hours' '+%Y-%m-%dT%H:00:00Z')"
+booking_payload="$(jq -nc \
+  --arg device_id "$device_id" \
+  --arg work_order_id "$work_order_id" \
+  --arg start_at "$booking_start" \
+  --arg end_at "$booking_end" '{
+    deviceId: $device_id,
+    workOrderId: $work_order_id,
+    purpose: "Local smoke internal device booking",
+    startAt: $start_at,
+    endAt: $end_at
+  }')"
+request POST "/device-bookings" 201 "$inspector_token" "$booking_payload"
+device_booking_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg device_id "$device_id" --arg work_order_id "$work_order_id" \
+  '.deviceId == $device_id and .workOrderId == $work_order_id and .bookerType == "INSPECTOR" and .status == "BOOKED"' "$LAST_BODY" >/dev/null \
+  || fail "device booking creation did not return booked inspector reservation"
+
+request GET "/device-bookings?deviceId=$device_id&page=1&pageSize=20" 200 "$equipment_token"
+jq -e --arg id "$device_booking_id" \
+  '.items[] | select(.id == $id and .status == "BOOKED")' "$LAST_BODY" >/dev/null \
+  || fail "device booking list did not contain created reservation"
+
+external_booking_start="$(date -u -d '+6 hours' '+%Y-%m-%dT%H:00:00Z')"
+external_booking_end="$(date -u -d '+7 hours' '+%Y-%m-%dT%H:00:00Z')"
+external_booking_payload="$(jq -nc \
+  --arg device_id "$device_id" \
+  --arg start_at "$external_booking_start" \
+  --arg end_at "$external_booking_end" '{
+    deviceId: $device_id,
+    purpose: "Local smoke portal device booking",
+    startAt: $start_at,
+    endAt: $end_at
+  }')"
+request POST "/device-bookings" 201 "$portal_token" "$external_booking_payload"
+external_booking_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e '.bookerType == "EXTERNAL_USER" and .status == "BOOKED" and .workOrderId == null' "$LAST_BODY" >/dev/null \
+  || fail "portal device booking did not return booked external reservation"
+
+override_payload="$(jq -nc \
+  --arg start_at "$external_booking_start" \
+  --arg end_at "$external_booking_end" '{
+    reason: "Local smoke internal priority",
+    replacementStartAt: $start_at,
+    replacementEndAt: $end_at
+  }')"
+request POST "/device-bookings/$external_booking_id/override" 200 "$equipment_token" "$override_payload"
+jq -e '.status == "NEEDS_RESCHEDULE" and .overrideReason == "Local smoke internal priority"' "$LAST_BODY" >/dev/null \
+  || fail "device booking override did not mark external reservation as needs reschedule"
+
 device_file_payload="$(jq -nc --arg file_id "$device_file_source_id" '{
   fileType: "CALIBRATION_CERT",
   fileId: $file_id,
@@ -756,5 +807,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_file %s retention %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_file_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"

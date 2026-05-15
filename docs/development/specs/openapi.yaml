@@ -212,6 +212,24 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /ops/health:
+    get:
+      summary: Deployment health check
+      operationId: getOperationsHealth
+      tags: [Operations]
+      responses:
+        '200':
+          description: Application dependencies are reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsHealth'
+        '503':
+          description: One or more dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsHealth'
   /submissions:
     get:
       summary: List submissions
@@ -2937,6 +2955,22 @@ components:
           format: int64
         sha256:
           type: string
+    OperationsHealth:
+      type: object
+      required: [status, checkedAt, traceId, checks]
+      properties:
+        status:
+          type: string
+          enum: [UP, DEGRADED]
+        checkedAt:
+          type: string
+          format: date-time
+        traceId:
+          type: string
+        checks:
+          type: object
+          additionalProperties:
+            type: string
     SamplePhoto:
       type: object
       required: [id, sampleId, fileId, fileName, objectKey, sha256, sizeBytes]
@@ -3595,6 +3629,9 @@ components:
         fileId:
           type: string
           format: uuid
+          nullable: true
+        traceId:
+          type: string
           nullable: true
     Device:
       type: object

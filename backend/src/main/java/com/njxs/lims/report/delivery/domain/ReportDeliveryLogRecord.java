@@ -13,6 +13,7 @@ public record ReportDeliveryLogRecord(
     Instant deliveredAt,
     String clientType,
     String paymentGateStatus,
-    UUID fileId
+    UUID fileId,
+    String traceId
 ) {
 }

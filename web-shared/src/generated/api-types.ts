@@ -142,6 +142,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ops/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Deployment health check */
+        get: operations["getOperationsHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/submissions": {
         parameters: {
             query?: never;
@@ -1942,6 +1959,16 @@ export interface components {
             sizeBytes: number;
             sha256: string;
         };
+        OperationsHealth: {
+            /** @enum {string} */
+            status: "UP" | "DEGRADED";
+            /** Format: date-time */
+            checkedAt: string;
+            traceId: string;
+            checks: {
+                [key: string]: string;
+            };
+        };
         SamplePhoto: {
             /** Format: uuid */
             id: string;
@@ -2307,6 +2334,7 @@ export interface components {
             paymentGateStatus?: "LOCKED" | "UNLOCKED" | "GREEN_UNLOCKED";
             /** Format: uuid */
             fileId?: string | null;
+            traceId?: string | null;
         };
         Device: {
             /** Format: uuid */
@@ -3140,6 +3168,35 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    getOperationsHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Application dependencies are reachable */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationsHealth"];
+                };
+            };
+            /** @description One or more dependencies are unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationsHealth"];
+                };
+            };
         };
     };
     listSubmissions: {

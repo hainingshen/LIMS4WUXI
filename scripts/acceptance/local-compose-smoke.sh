@@ -178,6 +178,10 @@ db_scalar() {
 
 request GET "/auth/me" 401
 
+request GET "/ops/health" 200
+jq -e '.status == "UP" and .checks.database == "UP" and .checks.objectStorage == "UP" and (.traceId | length > 0)' "$LAST_BODY" >/dev/null \
+  || fail "operations health check did not report healthy dependencies"
+
 portal_token="$(login portal portal.applicant Applicant123!)"
 admin_token="$(login internal internal.admin Internal123!)"
 internal_token="$(login internal internal.sales Sales123!)"
@@ -942,16 +946,16 @@ jq -e --arg id "$nonstandard_project_id" \
 
 request GET "/report-delivery-logs?reportId=$report_id&page=1&pageSize=20" 200 "$admin_token"
 jq -e --arg id "$report_id" \
-  '.items[] | select(.reportId == $id and .deliveryType == "GREEN_CHANNEL_RELEASE" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
-  || fail "green channel approval did not write delivery log"
+  '.items[] | select(.reportId == $id and .deliveryType == "GREEN_CHANNEL_RELEASE" and .paymentGateStatus == "GREEN_UNLOCKED" and (.traceId | length > 0))' "$LAST_BODY" >/dev/null \
+  || fail "green channel approval did not write traceable delivery log"
 
 request GET "/reports/$report_id/official-pdf" 200 "$portal_token"
 grep -q "%PDF-1.4" "$LAST_BODY" || fail "green channel official PDF did not return PDF bytes"
 
 request GET "/report-delivery-logs?reportId=$report_id&page=1&pageSize=20" 200 "$admin_token"
 jq -e --arg id "$report_id" \
-  '.items[] | select(.reportId == $id and .deliveryType == "OFFICIAL_DOWNLOAD" and .paymentGateStatus == "GREEN_UNLOCKED" and .clientType == "PORTAL")' "$LAST_BODY" >/dev/null \
-  || fail "green channel official PDF download did not write portal delivery log"
+  '.items[] | select(.reportId == $id and .deliveryType == "OFFICIAL_DOWNLOAD" and .paymentGateStatus == "GREEN_UNLOCKED" and .clientType == "PORTAL" and (.traceId | length > 0))' "$LAST_BODY" >/dev/null \
+  || fail "green channel official PDF download did not write traceable portal delivery log"
 
 payment_payload="$(jq -nc --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" '{
   projectId: $project_id,
@@ -994,11 +998,11 @@ jq -e --arg id "$nonstandard_project_id" \
 
 request GET "/report-delivery-logs?reportId=$report_id&page=1&pageSize=20" 200 "$admin_token"
 jq -e --arg id "$report_id" \
-  '.items[] | select(.reportId == $id and .deliveryType == "PAYMENT_UNLOCK_RELEASE" and .paymentGateStatus == "UNLOCKED" and .clientType == "INTERNAL")' "$LAST_BODY" >/dev/null \
-  || fail "payment receipt did not write unlock release log"
+  '.items[] | select(.reportId == $id and .deliveryType == "PAYMENT_UNLOCK_RELEASE" and .paymentGateStatus == "UNLOCKED" and .clientType == "INTERNAL" and (.traceId | length > 0))' "$LAST_BODY" >/dev/null \
+  || fail "payment receipt did not write traceable unlock release log"
 jq -e --arg id "$report_id" \
-  '.items[] | select(.reportId == $id and .deliveryType == "OFFICIAL_DOWNLOAD" and .paymentGateStatus == "UNLOCKED" and .clientType == "PORTAL")' "$LAST_BODY" >/dev/null \
-  || fail "official PDF download did not write delivery log"
+  '.items[] | select(.reportId == $id and .deliveryType == "OFFICIAL_DOWNLOAD" and .paymentGateStatus == "UNLOCKED" and .clientType == "PORTAL" and (.traceId | length > 0))' "$LAST_BODY" >/dev/null \
+  || fail "official PDF download did not write traceable delivery log"
 
 request GET "/report-registry/search?projectId=$nonstandard_project_id&status=RELEASED&page=1&pageSize=20" 200 "$admin_token"
 jq -e --arg id "$report_id" \

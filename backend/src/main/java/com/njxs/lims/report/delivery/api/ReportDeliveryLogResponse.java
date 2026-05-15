@@ -14,7 +14,8 @@ public record ReportDeliveryLogResponse(
     Instant deliveredAt,
     String clientType,
     String paymentGateStatus,
-    UUID fileId
+    UUID fileId,
+    String traceId
 ) {
 
   public static ReportDeliveryLogResponse from(ReportDeliveryLogRecord record) {
@@ -28,7 +29,8 @@ public record ReportDeliveryLogResponse(
         record.deliveredAt(),
         record.clientType(),
         record.paymentGateStatus(),
-        record.fileId()
+        record.fileId(),
+        record.traceId()
     );
   }
 }

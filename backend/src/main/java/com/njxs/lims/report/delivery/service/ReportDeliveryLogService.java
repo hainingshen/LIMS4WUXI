@@ -3,10 +3,12 @@ package com.njxs.lims.report.delivery.service;
 import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
+import com.njxs.lims.common.web.TraceIdFilter;
 import com.njxs.lims.payment.service.PaymentGateStatus;
 import com.njxs.lims.report.delivery.api.ReportDeliveryLogResponse;
 import com.njxs.lims.report.delivery.domain.ReportDeliveryLogRecord;
 import com.njxs.lims.report.delivery.persistence.ReportDeliveryLogRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
@@ -16,6 +18,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Service
 @ConditionalOnProperty(prefix = "lims.auth", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -74,7 +78,8 @@ public class ReportDeliveryLogService {
         principal.userId(),
         principal.clientType(),
         paymentGateStatus,
-        fileId
+        fileId,
+        currentTraceId()
     ));
   }
 
@@ -117,7 +122,8 @@ public class ReportDeliveryLogService {
         Instant.now(),
         command.clientType().name(),
         command.paymentGateStatus().name(),
-        command.fileId()
+        command.fileId(),
+        emptyToNull(command.traceId())
     );
     return reportDeliveryLogRepository.save(record, command.deliveredBy());
   }
@@ -139,5 +145,20 @@ public class ReportDeliveryLogService {
 
   private String normalize(String value) {
     return value == null ? null : value.trim().toUpperCase(Locale.ROOT);
+  }
+
+  private String currentTraceId() {
+    if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+      HttpServletRequest request = attributes.getRequest();
+      Object value = request.getAttribute(TraceIdFilter.TRACE_ID_ATTRIBUTE);
+      if (value instanceof String traceId && !traceId.isBlank()) {
+        return traceId;
+      }
+      String header = request.getHeader(TraceIdFilter.TRACE_ID_HEADER);
+      if (header != null && !header.isBlank()) {
+        return header;
+      }
+    }
+    return null;
   }
 }

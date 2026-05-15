@@ -12,6 +12,7 @@ public record DeliveryLogCommand(
     UUID deliveredBy,
     ClientType clientType,
     PaymentGateStatus paymentGateStatus,
-    UUID fileId
+    UUID fileId,
+    String traceId
 ) {
 }

@@ -80,6 +80,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | 节假日 | `/holidays` | SLA 和设备预约日历排除日 |
 | 导入导出任务 | `/import-export-tasks` | 批量导入、迁移导入、列表导出、报告批量下载 |
 | 旧状态映射 | `/legacy-status-mappings` | 迁移期旧状态到新状态映射 |
+| 运维健康检查 | `GET /ops/health` | 部署后健康检查，返回数据库、对象存储和 traceId |
 
 ## 3. 关键动作接口
 

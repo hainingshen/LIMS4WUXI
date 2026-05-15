@@ -18,7 +18,7 @@ public class JdbcReportDeliveryLogRepository implements ReportDeliveryLogReposit
 
   private static final String SELECT_COLUMNS = """
       id, report_id, report_version_id, delivery_type, delivered_to, delivered_by,
-      delivered_at, client_type, payment_gate_status, file_id
+      delivered_at, client_type, payment_gate_status, file_id, trace_id
       """;
 
   private final JdbcTemplate jdbcTemplate;
@@ -33,9 +33,9 @@ public class JdbcReportDeliveryLogRepository implements ReportDeliveryLogReposit
         """
         insert into report_delivery_log (
           id, report_id, report_version_id, delivery_type, delivered_to, delivered_by,
-          delivered_at, client_type, payment_gate_status, file_id, created_at, created_by,
+          delivered_at, client_type, payment_gate_status, file_id, trace_id, created_at, created_by,
           updated_at, updated_by, version, source_type, data_quality_score
-        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), ?, now(), ?, 0, 'NEW', 100)
+        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), ?, now(), ?, 0, 'NEW', 100)
         """,
         record.id(),
         record.reportId(),
@@ -47,6 +47,7 @@ public class JdbcReportDeliveryLogRepository implements ReportDeliveryLogReposit
         record.clientType(),
         record.paymentGateStatus(),
         record.fileId(),
+        record.traceId(),
         actorUserId,
         actorUserId
     );
@@ -134,7 +135,8 @@ public class JdbcReportDeliveryLogRepository implements ReportDeliveryLogReposit
         instant(rs.getTimestamp("delivered_at")),
         rs.getString("client_type"),
         rs.getString("payment_gate_status"),
-        rs.getObject("file_id", UUID.class)
+        rs.getObject("file_id", UUID.class),
+        rs.getString("trace_id")
     );
   }
 

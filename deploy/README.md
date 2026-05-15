@@ -44,6 +44,7 @@ Services:
 ## Verify
 
 ```bash
+scripts/ops/health-check.sh
 curl -i http://localhost:8080/api/v1/auth/me
 docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
   -c "select version, success from flyway_schema_history order by installed_rank desc limit 5;"
@@ -52,6 +53,17 @@ scripts/acceptance/local-compose-smoke.sh
 
 Expected:
 
+- `/api/v1/ops/health` returns `200` with `status=UP`, `checks.database=UP`, `checks.objectStorage=UP` and a `traceId`.
 - `/api/v1/auth/me` returns `401` without a bearer token.
 - Flyway history has successful rows through the latest `V` migration.
 - `local-compose-smoke.sh` cleans its own `LOCAL_SMOKE_*` data unless `LIMS_KEEP_SMOKE_DATA=1` is set.
+
+## Backup And Trace
+
+```bash
+scripts/ops/backup-compose.sh
+scripts/ops/trace-report-delivery.sh <report_id>
+```
+
+- `backup-compose.sh` writes a timestamped PostgreSQL dump and MinIO bucket archive under `backups/`.
+- `trace-report-delivery.sh` prints the report, file object, delivery log and audit log records for a report ID.

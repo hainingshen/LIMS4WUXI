@@ -1,6 +1,7 @@
 package com.njxs.lims.project;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,6 +66,14 @@ class ProjectSplitTests {
         .getResponse()
         .getContentAsString();
     String customerOrgId = objectMapper.readTree(acceptedResponse).get("customerOrgId").asText();
+
+    String acceptedListResponse = mockMvc.perform(get("/submissions")
+            .header(HttpHeaders.AUTHORIZATION, bearer(salesToken)))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+    assertThat(acceptedListResponse).contains(submissionId.toString(), "ACCEPTED");
 
     mockMvc.perform(post("/submissions/{id}/split-projects", submissionId)
             .header(HttpHeaders.AUTHORIZATION, bearer(applicantToken))

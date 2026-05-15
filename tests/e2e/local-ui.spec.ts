@@ -48,6 +48,15 @@ test("internal sales can open submission acceptance desk", async ({ page }) => {
   await expect(page.getByRole("button", { name: /刷\s*新/ })).toBeVisible();
 });
 
+test("internal sales can open project list after split flow", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("项目详情").first().click();
+  await expect(page.getByText("PROJECT LIST")).toBeVisible();
+  await expect(page.getByRole("button", { name: /刷\s*新/ })).toBeVisible();
+  await expect(page.getByText(/P-\d{4}-/).first()).toBeVisible();
+});
+
 test("mobile portal keeps 390px workflow usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

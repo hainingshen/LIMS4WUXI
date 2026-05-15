@@ -169,8 +169,33 @@ jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "portal accept did 
 request POST "/submissions/$submission_id/accept" 200 "$internal_token"
 jq -e '.status == "ACCEPTED"' "$LAST_BODY" >/dev/null || fail "sales accept did not return ACCEPTED"
 
+split_payload="$(jq -nc '{
+  splitStrategy: "MANUAL",
+  projectDrafts: [
+    {
+      projectType: "STD_ACCREDITED",
+      qualificationType: "CMA",
+      serviceType: "NORMAL",
+      requiresAnimalTest: false
+    }
+  ]
+}')"
+
+request POST "/submissions/$submission_id/split-projects" 403 "$portal_token" "$split_payload"
+jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "portal split did not return FORBIDDEN"
+
+request POST "/submissions/$submission_id/split-projects" 201 "$internal_token" "$split_payload"
+project_id="$(jq -er '.[0].id' "$LAST_BODY")"
+jq -e --arg submission_id "$submission_id" \
+  '.[0].submissionId == $submission_id and .[0].status == "ACCEPTED"' "$LAST_BODY" >/dev/null \
+  || fail "sales split did not return accepted project for submission"
+
+request GET "/projects?page=1&pageSize=20" 200 "$internal_token"
+jq -e --arg id "$project_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
+  || fail "internal project list does not contain $project_id"
+
 audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$submission_id' and action_code = 'SUBMISSION_CREATE' and result = 'SUCCESS';")"
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s\n' "$submission_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s\n' "$submission_id" "$project_id"

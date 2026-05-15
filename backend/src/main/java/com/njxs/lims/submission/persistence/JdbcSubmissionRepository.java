@@ -152,7 +152,7 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
         "select " + SELECT_COLUMNS + """
         from submission
         where assigned_sales_user_id = ?
-          and status = 'SUBMITTED'
+          and status in ('SUBMITTED', 'ACCEPTED')
           and deleted_at is null
         order by updated_at desc, created_at desc
         limit ? offset ?
@@ -171,7 +171,7 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
         select count(*)
         from submission
         where assigned_sales_user_id = ?
-          and status = 'SUBMITTED'
+          and status in ('SUBMITTED', 'ACCEPTED')
           and deleted_at is null
         """,
         salesUserId

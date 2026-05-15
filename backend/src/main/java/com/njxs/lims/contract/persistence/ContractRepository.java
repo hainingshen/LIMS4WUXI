@@ -17,6 +17,14 @@ public interface ContractRepository {
 
   int count();
 
+  List<Contract> listForCustomerOrg(UUID customerOrgId, int limit, int offset);
+
+  int countForCustomerOrg(UUID customerOrgId);
+
+  List<Contract> listForApplicant(UUID applicantUserId, int limit, int offset);
+
+  int countForApplicant(UUID applicantUserId);
+
   Contract markSigned(Contract contract, UUID actorUserId);
 
   boolean existsByAssignedSales(UUID contractId, UUID userId);

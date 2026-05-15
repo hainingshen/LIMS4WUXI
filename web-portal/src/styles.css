@@ -364,6 +364,7 @@ body {
   font-weight: 600;
 }
 
+.portalContractRow,
 .portalReportRow {
   display: flex;
   align-items: center;
@@ -402,10 +403,12 @@ body {
   place-items: center;
 }
 
+.portalContractConfirmPage,
 .portalReportPreviewPage {
   max-width: 980px;
 }
 
+.portalContractSheet,
 .portalReportSheet {
   position: relative;
   overflow: hidden;
@@ -431,19 +434,23 @@ body {
   white-space: nowrap;
 }
 
+.portalContractHeading,
 .portalReportHeading,
 .portalReportMetaGrid,
+.portalContractBody,
 .portalReportBody {
   position: relative;
   z-index: 1;
 }
 
+.portalContractHeading,
 .portalReportHeading {
   display: grid;
   gap: 4px;
   text-align: center;
 }
 
+.portalContractHeading h4,
 .portalReportHeading h4 {
   margin: 0;
 }
@@ -475,6 +482,7 @@ body {
   font-size: 13px;
 }
 
+.portalContractBody,
 .portalReportBody {
   min-height: 180px;
   padding: 18px;
@@ -519,6 +527,7 @@ body {
     display: grid;
   }
 
+  .portalContractRow,
   .portalReportRow {
     display: grid;
   }

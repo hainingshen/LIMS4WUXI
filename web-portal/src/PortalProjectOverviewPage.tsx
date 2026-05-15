@@ -2,14 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Progress, Space, Spin, Tag, Typography } from "antd";
 import {
   downloadOfficialReportPdf,
+  listContracts,
   listProjects,
   listReports,
   listSubmissions,
+  type Contract,
   type Project,
   type Report,
   type Submission,
 } from "@lims4wuxi/shared";
 
+import { contractStatusColor, contractTypeLabel } from "./contractPresentation";
 import { isPaymentGateLocked, paymentGateColor, reportStatusColor, triggerPdfDownload } from "./reportPresentation";
 
 type PortalProjectOverviewPageProps = {
@@ -17,6 +20,7 @@ type PortalProjectOverviewPageProps = {
   selectedProjectId?: string;
   onNewSubmission?: () => void;
   onOpenProjects?: () => void;
+  onOpenContract?: (contractId: string) => void;
   onPreviewReport?: (reportId: string) => void;
 };
 
@@ -27,10 +31,12 @@ export function PortalProjectOverviewPage({
   selectedProjectId,
   onNewSubmission,
   onOpenProjects,
+  onOpenContract,
   onPreviewReport,
 }: PortalProjectOverviewPageProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
@@ -41,13 +47,15 @@ export function PortalProjectOverviewPage({
     setLoading(true);
     setError(undefined);
     try {
-      const [submissionPage, projectPage, reportPage] = await Promise.all([
+      const [submissionPage, projectPage, contractPage, reportPage] = await Promise.all([
         listSubmissions({ page: 1, pageSize: 50 }),
         listProjects({ page: 1, pageSize: 50 }),
+        listContracts({ page: 1, pageSize: 100 }),
         listReports({ page: 1, pageSize: 100 }),
       ]);
       setSubmissions(submissionPage.items ?? []);
       setProjects(projectPage.items ?? []);
+      setContracts(contractPage.items ?? []);
       setReports(reportPage.items ?? []);
     } catch {
       setError("客户进度加载失败");
@@ -95,6 +103,15 @@ export function PortalProjectOverviewPage({
     }
     return byProject;
   }, [reports]);
+  const contractByProjectId = useMemo(() => {
+    const byProject = new Map<string, Contract>();
+    for (const contract of contracts) {
+      if (!byProject.has(contract.projectId)) {
+        byProject.set(contract.projectId, contract);
+      }
+    }
+    return byProject;
+  }, [contracts]);
   const recentProjects = mode === "dashboard" ? projects.slice(0, 5) : projects;
   const submittedCount = submissions.filter((submission) => submission.status !== "DRAFT").length;
   const releasedCount = projects.filter((project) => project.status === "RELEASED" || project.status === "ARCHIVED").length;
@@ -149,6 +166,7 @@ export function PortalProjectOverviewPage({
       {recentProjects.length ? (
         <div className="portalProjectList">
           {recentProjects.map((project) => {
+            const contract = contractByProjectId.get(project.id);
             const report = reportByProjectId.get(project.id);
             return (
               <article
@@ -185,6 +203,23 @@ export function PortalProjectOverviewPage({
                     </span>
                   ))}
                 </div>
+                {contract ? (
+                  <div className="portalContractRow">
+                    <div>
+                      <Typography.Text strong>{contract.bizNo}</Typography.Text>
+                      <Space wrap className="portalReportTags">
+                        <Tag color={contractStatusColor(contract.status)}>{contract.status}</Tag>
+                        <Tag>{contractTypeLabel(contract.contractType)}</Tag>
+                        <Tag>{contract.templateCode ?? "-"}</Tag>
+                      </Space>
+                    </div>
+                    {onOpenContract ? (
+                      <Button onClick={() => onOpenContract(contract.id)}>
+                        {contract.status === "PENDING_SIGN" ? "确认协议" : "查看协议"}
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
                 {report ? (
                   <div className="portalReportRow">
                     <div>

@@ -398,15 +398,25 @@ request GET "/contracts?page=1&pageSize=20" 200 "$internal_token"
 jq -e --arg id "$contract_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
   || fail "internal contract list does not contain $contract_id"
 
+request GET "/contracts?page=1&pageSize=100" 200 "$portal_token"
+jq -e --arg id "$contract_id" \
+  '.items[] | select(.id == $id and .status == "PENDING_SIGN")' "$LAST_BODY" >/dev/null \
+  || fail "portal contract list does not show own pending contract"
+
 signed_payload="$(jq -nc '{signedAt:"2026-05-15T00:00:00Z"}')"
-request POST "/contracts/$contract_id/mark-signed" 200 "$internal_token" "$signed_payload"
+request POST "/contracts/$contract_id/mark-signed" 200 "$portal_token" "$signed_payload"
 jq -e '.status == "SIGNED" and .signedAt == "2026-05-15T00:00:00Z"' "$LAST_BODY" >/dev/null \
-  || fail "contract signing did not return signed contract"
+  || fail "portal contract signing did not return signed contract"
+
+request GET "/contracts?page=1&pageSize=100" 200 "$portal_token"
+jq -e --arg id "$contract_id" \
+  '.items[] | select(.id == $id and .status == "SIGNED")' "$LAST_BODY" >/dev/null \
+  || fail "portal contract list does not show signed contract"
 
 request GET "/projects?page=1&pageSize=20" 200 "$internal_token"
 jq -e --arg id "$nonstandard_project_id" \
   '.items[] | select(.id == $id and .status == "CONTRACTED")' "$LAST_BODY" >/dev/null \
-  || fail "signed contract did not move project to CONTRACTED"
+  || fail "portal signed contract did not move project to CONTRACTED"
 
 request GET "/samples?keyword=LOT-$suffix&page=1&pageSize=50" 200 "$sample_token"
 sample_id="$(jq -er --arg project_id "$nonstandard_project_id" \

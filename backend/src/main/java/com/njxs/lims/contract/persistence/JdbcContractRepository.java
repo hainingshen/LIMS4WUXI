@@ -24,6 +24,8 @@ public class JdbcContractRepository implements ContractRepository {
       source_file_id, signed_at, signed_file_id, created_at, created_by, updated_at, updated_by,
       deleted_at, version, tenant_org_id, legacy_id, source_type, migration_batch, data_quality_score
       """;
+  private static final String SELECT_CONTRACT_COLUMNS = "c."
+      + SELECT_COLUMNS.strip().replaceAll("\\s+", " ").replace(", ", ", c.");
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -114,6 +116,78 @@ public class JdbcContractRepository implements ContractRepository {
         where deleted_at is null
         """,
         Integer.class
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
+  public List<Contract> listForCustomerOrg(UUID customerOrgId, int limit, int offset) {
+    return jdbcTemplate.query(
+        "select " + SELECT_COLUMNS + """
+        from contract
+        where customer_org_id = ?
+          and deleted_at is null
+        order by updated_at desc, created_at desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> contract(rs),
+        customerOrgId,
+        limit,
+        offset
+    );
+  }
+
+  @Override
+  public int countForCustomerOrg(UUID customerOrgId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from contract
+        where customer_org_id = ?
+          and deleted_at is null
+        """,
+        Integer.class,
+        customerOrgId
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
+  public List<Contract> listForApplicant(UUID applicantUserId, int limit, int offset) {
+    return jdbcTemplate.query(
+        "select " + SELECT_CONTRACT_COLUMNS + " " + """
+        from contract c
+        join project p on p.id = c.project_id
+        join submission s on s.id = p.submission_id
+        where s.applicant_user_id = ?
+          and c.deleted_at is null
+          and p.deleted_at is null
+          and s.deleted_at is null
+        order by c.updated_at desc, c.created_at desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> contract(rs),
+        applicantUserId,
+        limit,
+        offset
+    );
+  }
+
+  @Override
+  public int countForApplicant(UUID applicantUserId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from contract c
+        join project p on p.id = c.project_id
+        join submission s on s.id = p.submission_id
+        where s.applicant_user_id = ?
+          and c.deleted_at is null
+          and p.deleted_at is null
+          and s.deleted_at is null
+        """,
+        Integer.class,
+        applicantUserId
     );
     return count == null ? 0 : count;
   }

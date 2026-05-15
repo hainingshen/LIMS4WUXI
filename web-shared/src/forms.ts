@@ -21,6 +21,7 @@ export type ReportDeliveryLog = components["schemas"]["ReportDeliveryLog"];
 export type ImportExportTask = components["schemas"]["ImportExportTask"];
 export type Device = components["schemas"]["Device"];
 export type DeviceFile = components["schemas"]["DeviceFile"];
+export type ArchiveItem = components["schemas"]["ArchiveItem"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
@@ -66,6 +67,9 @@ export type DevicePage = Omit<components["schemas"]["PageResponse"], "items"> & 
 export type ImportExportTaskPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: ImportExportTask[];
 };
+export type ArchiveItemPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: ArchiveItem[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
@@ -84,6 +88,7 @@ export type GreenChannelCreateRequest = components["schemas"]["GreenChannelCreat
 export type ReportRegistryBatchDownloadRequest = components["schemas"]["ReportRegistryBatchDownloadRequest"];
 export type DeviceFileUploadRequest = components["schemas"]["DeviceFileUploadRequest"];
 export type ImportExportTaskCreateRequest = components["schemas"]["ImportExportTaskCreateRequest"];
+export type ArchiveItemCreateRequest = components["schemas"]["ArchiveItemCreateRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -409,6 +414,16 @@ export async function downloadImportExportTaskResultFile(id: string) {
   const response = await http.get<Blob>(`/import-export-tasks/${id}/result-file`, {
     responseType: "blob",
   });
+  return response.data;
+}
+
+export async function listArchiveItems(params: { page?: number; pageSize?: number; projectId?: string } = {}) {
+  const response = await http.get<ArchiveItemPage>("/archive-items", { params });
+  return response.data;
+}
+
+export async function createArchiveItem(request: ArchiveItemCreateRequest) {
+  const response = await http.post<ArchiveItem>("/archive-items", request);
   return response.data;
 }
 

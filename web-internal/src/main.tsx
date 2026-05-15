@@ -28,6 +28,7 @@ import {
 } from "@lims4wuxi/shared";
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
+import { ArchiveItemPage } from "./ArchiveItemPage";
 import { ContractListPage } from "./ContractListPage";
 import { DeviceFilePage } from "./DeviceFilePage";
 import { GreenChannelPage } from "./GreenChannelPage";
@@ -110,6 +111,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "预校验、执行和结果文件",
     roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER", "ARCHIVE_MANAGER"],
     actionCode: "IMPORT_EXPORT_TASK_CREATE",
+  },
+  {
+    key: "archive-items",
+    label: "档案归档",
+    detail: "项目归档件和长期保存",
+    roles: ["ARCHIVE_MANAGER", "QUALITY_MANAGER"],
+    actionCode: "ARCHIVE_READ",
   },
   {
     key: "green-channels",
@@ -344,6 +352,13 @@ function renderRoute(
     return (
       <RequireAction action="IMPORT_EXPORT_TASK_CREATE">
         <ImportExportTaskPage />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "archive-items") {
+    return (
+      <RequireAction action="ARCHIVE_READ">
+        <ArchiveItemPage />
       </RequireAction>
     );
   }

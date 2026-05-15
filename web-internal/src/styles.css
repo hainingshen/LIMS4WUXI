@@ -221,6 +221,11 @@ body {
   gap: 16px;
 }
 
+.archivePage {
+  display: grid;
+  gap: 16px;
+}
+
 .sampleRetentionPage {
   display: grid;
   gap: 16px;
@@ -279,6 +284,10 @@ body {
   width: min(240px, 100%);
 }
 
+.archiveSearchInput {
+  width: min(300px, 100%);
+}
+
 .sampleDeskGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
@@ -311,6 +320,13 @@ body {
 }
 
 .importExportGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  gap: 16px;
+  align-items: start;
+}
+
+.archiveGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
   gap: 16px;
@@ -479,6 +495,7 @@ body {
   .deviceFileGrid,
   .deviceFileFormGrid,
   .importExportGrid,
+  .archiveGrid,
   .workCenterHeader,
   .workCenterGrid,
   .workCenterSummary {

@@ -151,6 +151,7 @@ dept_token="$(login internal internal.dept_manager Sales123!)"
 general_token="$(login internal internal.general_manager Sales123!)"
 finance_token="$(login internal internal.finance Sales123!)"
 equipment_token="$(login internal internal.equipment_manager Sales123!)"
+archive_token="$(login internal internal.archive Sales123!)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
@@ -571,6 +572,24 @@ jq -e '.status == "SUCCESS" and .resultFileId != null and .errorSummary == "SUCC
 request GET "/import-export-tasks/$registry_task_id/result-file" 200 "$admin_token"
 grep -q "$registry_task_id" "$LAST_BODY" || fail "import/export result file did not contain task id"
 
+archive_payload="$(jq -nc --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" --arg file_id "$template_file_id" '{
+  projectId: $project_id,
+  entityType: "REPORT",
+  entityId: $report_id,
+  archiveType: "REPORT_OFFICIAL_PDF",
+  fileId: $file_id
+}')"
+request POST "/archive-items" 201 "$archive_token" "$archive_payload"
+archive_item_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" --arg file_id "$template_file_id" \
+  '.projectId == $project_id and .entityType == "REPORT" and .entityId == $report_id and .archiveType == "REPORT_OFFICIAL_PDF" and .fileId == $file_id and .status == "ARCHIVED"' "$LAST_BODY" >/dev/null \
+  || fail "archive item creation did not return archived report record"
+
+request GET "/archive-items?projectId=$nonstandard_project_id&page=1&pageSize=20" 200 "$admin_token"
+jq -e --arg id "$archive_item_id" \
+  '.items[] | select(.id == $id and .status == "ARCHIVED")' "$LAST_BODY" >/dev/null \
+  || fail "archive item list did not contain created item"
+
 device_id="$(cat /proc/sys/kernel/random/uuid)"
 device_file_source_id="$(cat /proc/sys/kernel/random/uuid)"
 db_scalar "
@@ -693,5 +712,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s device_file %s retention %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$device_file_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s device_file %s retention %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$device_file_id" "$retention_id"

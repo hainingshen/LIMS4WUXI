@@ -74,6 +74,7 @@ for path in \
   /green-channel-requests \
   /change-requests \
   /sample-retentions \
+  /archive-items \
   /report-templates \
   /projects \
   /quotations \
@@ -83,7 +84,7 @@ do
   jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "$path did not return FORBIDDEN"
 done
 
-for path in /projects /quotations /contracts
+for path in /projects /quotations /contracts /archive-items
 do
   request GET "$path" 200 "$internal_token"
   jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \

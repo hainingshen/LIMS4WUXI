@@ -191,6 +191,11 @@ body {
   gap: 16px;
 }
 
+.studyPlanPage {
+  display: grid;
+  gap: 16px;
+}
+
 .pageHeader {
   display: flex;
   align-items: end;

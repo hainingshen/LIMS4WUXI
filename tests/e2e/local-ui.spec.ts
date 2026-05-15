@@ -76,6 +76,16 @@ test("sample manager can open sample receiving desk", async ({ page }) => {
   await expect(page.getByPlaceholder("送检单 / 项目 / 样品 / 批号")).toBeVisible();
 });
 
+test("SD can open study plan dispatch page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.sd");
+  await page.locator("#password").fill("Sales123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("方案编制").first().click();
+  await expect(page.getByText("STUDY PLAN DISPATCH")).toBeVisible();
+  await expect(page.getByText("试验工单")).toBeVisible();
+});
+
 test("mobile portal keeps 390px workflow usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

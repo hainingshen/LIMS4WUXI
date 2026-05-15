@@ -31,6 +31,7 @@ import "@lims4wuxi/shared/theme/limsTheme.css";
 import { ContractListPage } from "./ContractListPage";
 import { ProjectListPage } from "./ProjectListPage";
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
+import { StudyPlanPage } from "./StudyPlanPage";
 import { SubmissionAcceptanceDesk } from "./SubmissionAcceptanceDesk";
 import { WorkCenterPage } from "./WorkCenterPage";
 import "./styles.css";
@@ -63,6 +64,12 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     label: "项目详情",
     detail: "评审、方案和报告进度",
     roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "SAMPLE_MANAGER", "REPORT_PREPARER"],
+  },
+  {
+    key: "study-plans",
+    label: "方案编制",
+    detail: "审批、下发和工单",
+    roles: ["TECHNICAL_LEADER", "SD"],
   },
   {
     key: "contracts",
@@ -257,6 +264,9 @@ function renderRoute(
   }
   if (activeRoute?.key === "projects") {
     return <ProjectListPage />;
+  }
+  if (activeRoute?.key === "study-plans") {
+    return <StudyPlanPage />;
   }
   if (activeRoute?.key === "contracts") {
     return <ContractListPage />;

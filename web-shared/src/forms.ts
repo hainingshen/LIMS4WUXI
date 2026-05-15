@@ -7,6 +7,8 @@ export type Submission = components["schemas"]["Submission"];
 export type Project = components["schemas"]["Project"];
 export type Quotation = components["schemas"]["Quotation"];
 export type Contract = components["schemas"]["Contract"];
+export type StudyPlan = components["schemas"]["StudyPlan"];
+export type WorkOrder = components["schemas"]["WorkOrder"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
@@ -16,12 +18,19 @@ export type ProjectPage = Omit<components["schemas"]["PageResponse"], "items"> &
 export type ContractPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Contract[];
 };
+export type StudyPlanPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: StudyPlan[];
+};
+export type WorkOrderPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: WorkOrder[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
 export type QuotationCreateRequest = components["schemas"]["QuotationCreateRequest"];
 export type ContractCreateRequest = components["schemas"]["ContractCreateRequest"];
 export type ContractMarkSignedRequest = components["schemas"]["ContractMarkSignedRequest"];
+export type StudyPlanCreateRequest = components["schemas"]["StudyPlanCreateRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -126,6 +135,31 @@ export async function createContract(request: ContractCreateRequest) {
 
 export async function markContractSigned(id: string, request: ContractMarkSignedRequest = {}) {
   const response = await http.post<Contract>(`/contracts/${id}/mark-signed`, request);
+  return response.data;
+}
+
+export async function listStudyPlans(params: { page?: number; pageSize?: number; projectId?: string } = {}) {
+  const response = await http.get<StudyPlanPage>("/study-plans", { params });
+  return response.data;
+}
+
+export async function createStudyPlan(request: StudyPlanCreateRequest) {
+  const response = await http.post<StudyPlan>("/study-plans", request);
+  return response.data;
+}
+
+export async function submitStudyPlanReview(id: string) {
+  const response = await http.post<StudyPlan>(`/study-plans/${id}/submit-review`);
+  return response.data;
+}
+
+export async function dispatchStudyPlan(id: string) {
+  const response = await http.post<StudyPlan>(`/study-plans/${id}/dispatch`);
+  return response.data;
+}
+
+export async function listWorkOrders(params: { page?: number; pageSize?: number } = {}) {
+  const response = await http.get<WorkOrderPage>("/work-orders", { params });
   return response.data;
 }
 

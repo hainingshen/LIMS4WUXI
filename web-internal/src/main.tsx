@@ -33,6 +33,7 @@ import { ContractListPage } from "./ContractListPage";
 import { DeviceFilePage } from "./DeviceFilePage";
 import { GreenChannelPage } from "./GreenChannelPage";
 import { ImportExportTaskPage } from "./ImportExportTaskPage";
+import { InventoryPage } from "./InventoryPage";
 import { ProjectListPage } from "./ProjectListPage";
 import { ReportRegistryPage } from "./ReportRegistryPage";
 import { ReportWorkbenchPage } from "./ReportWorkbenchPage";
@@ -118,6 +119,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "项目归档件和长期保存",
     roles: ["ARCHIVE_MANAGER", "QUALITY_MANAGER"],
     actionCode: "ARCHIVE_READ",
+  },
+  {
+    key: "inventory",
+    label: "库存管理",
+    detail: "标准品、耗材和流水",
+    roles: ["INVENTORY_MANAGER", "INSPECTOR", "QUALITY_MANAGER"],
+    actionCode: "INVENTORY_READ",
   },
   {
     key: "green-channels",
@@ -359,6 +367,13 @@ function renderRoute(
     return (
       <RequireAction action="ARCHIVE_READ">
         <ArchiveItemPage />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "inventory") {
+    return (
+      <RequireAction action="INVENTORY_READ">
+        <InventoryPage />
       </RequireAction>
     );
   }

@@ -125,6 +125,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a validated file object */
+        post: operations["uploadFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/submissions": {
         parameters: {
             query?: never;
@@ -150,7 +167,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get submission detail */
+        get: operations["getSubmission"];
         put?: never;
         post?: never;
         delete?: never;
@@ -220,6 +238,23 @@ export interface paths {
         };
         /** List projects */
         get: operations["listProjects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get project detail */
+        get: operations["getProject"];
         put?: never;
         post?: never;
         delete?: never;
@@ -325,6 +360,23 @@ export interface paths {
         put?: never;
         /** Mark contract or agreement as signed */
         post: operations["markContractSigned"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get contract detail */
+        get: operations["getContract"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -598,6 +650,23 @@ export interface paths {
         put?: never;
         /** Generate draft report */
         post: operations["generateDraftReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get report detail */
+        get: operations["getReport"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1167,6 +1236,23 @@ export interface paths {
         };
         /** Get work center health, todo and risk summary */
         get: operations["getWorkCenterSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/work-center/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List role-scoped work center tasks */
+        get: operations["listWorkCenterTasks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1846,6 +1932,16 @@ export interface components {
             /** Format: date-time */
             stockedAt?: string;
         };
+        FileUpload: {
+            /** Format: uuid */
+            fileId: string;
+            fileName: string;
+            objectKey: string;
+            contentType: string;
+            /** Format: int64 */
+            sizeBytes: number;
+            sha256: string;
+        };
         SamplePhoto: {
             /** Format: uuid */
             id: string;
@@ -2404,6 +2500,20 @@ export interface components {
             /** Format: date-time */
             generatedAt?: string;
         };
+        WorkCenterTask: {
+            taskKey: string;
+            roleGroup: string;
+            taskType: string;
+            title: string;
+            bizNo: string;
+            customerOrgName?: string;
+            /** @enum {string} */
+            status: "SUBMITTED" | "ACCEPTED" | "NONSTANDARD_REVIEW" | "QUOTABLE" | "QUOTED" | "ARRIVED_PENDING_CHECK" | "PRE_IN_STOCK" | "PENDING_RETURN" | "PENDING_DISPOSAL" | "PENDING_REGISTER" | "EXPIRING" | "PENDING_CONFIRM" | "PENDING_ASSIGN" | "PENDING_EXECUTION" | "SAMPLE_PICKED" | "IN_PROGRESS" | "PAUSED" | "RESULT_ENTERED" | "RAW_REVIEWING" | "COMPLETED" | "REVIEWING" | "QC_REVIEWING" | "QA_REVIEWING" | "SD_REVIEWING" | "PENDING_ISSUE" | "REPORTING" | "LOCKED" | "GREEN_UNLOCKED" | "UNLOCKED" | "DEPT_REVIEWING" | "MANAGEMENT_REVIEWING" | "BOOKED" | "NEEDS_RESCHEDULE" | "ACTIVE" | "IN_STOCK" | "LOW_STOCK" | "EXPIRED" | "GREEN_RELEASED" | "RELEASED";
+            priority: number;
+            /** Format: date-time */
+            dueAt?: string | null;
+            actionPath: string;
+        };
         WorkCenterProject: {
             /** Format: uuid */
             projectId: string;
@@ -2488,12 +2598,19 @@ export interface components {
             id: string;
             /** Format: uuid */
             projectId: string;
+            projectBizNo?: string;
+            customerOrgName?: string;
             entityType?: string;
             /** Format: uuid */
             entityId?: string | null;
+            entityBizNo?: string | null;
             archiveType: string;
             /** Format: uuid */
             fileId: string;
+            fileName?: string;
+            contentType?: string;
+            /** Format: int64 */
+            sizeBytes?: number;
             /** @enum {string} */
             status: "ARCHIVED" | "SUPERSEDED" | "VOIDED";
             /** Format: date-time */
@@ -2994,6 +3111,37 @@ export interface operations {
             };
         };
     };
+    uploadFile: {
+        parameters: {
+            query?: {
+                purpose?: "GENERAL" | "SAMPLE" | "DEVICE" | "REPORT" | "CONTRACT" | "PAYMENT" | "ARCHIVE" | "RAW_RECORD" | "IMPORT_EXPORT";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Uploaded file metadata */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileUpload"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     listSubmissions: {
         parameters: {
             query?: {
@@ -3041,6 +3189,30 @@ export interface operations {
                     "application/json": components["schemas"]["Submission"];
                 };
             };
+        };
+    };
+    getSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Submission detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Submission"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     updateSubmission: {
@@ -3169,6 +3341,30 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    getProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     startNonstandardReview: {
@@ -3345,6 +3541,30 @@ export interface operations {
                     "application/json": components["schemas"]["Contract"];
                 };
             };
+        };
+    };
+    getContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contract detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contract"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listSamples: {
@@ -3768,6 +3988,30 @@ export interface operations {
                     "application/json": components["schemas"]["Report"];
                 };
             };
+        };
+    };
+    getReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Report"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     downloadOfficialPdf: {
@@ -4808,6 +5052,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkCenterSummary"];
+                };
+            };
+        };
+    };
+    listWorkCenterTasks: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Role-scoped task list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkCenterTask"][];
                 };
             };
         };

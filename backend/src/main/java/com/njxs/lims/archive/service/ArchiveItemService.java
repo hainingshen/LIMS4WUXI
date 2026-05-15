@@ -68,7 +68,13 @@ public class ArchiveItemService {
         request.fileId(),
         "ARCHIVED",
         now,
-        principal.userId()
+        principal.userId(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
     );
     return ArchiveItemResponse.from(archiveItemRepository.save(record));
   }

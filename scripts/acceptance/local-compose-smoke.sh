@@ -1037,12 +1037,12 @@ archive_payload="$(jq -nc --arg project_id "$nonstandard_project_id" --arg repor
 request POST "/archive-items" 201 "$archive_token" "$archive_payload"
 archive_item_id="$(jq -er '.id' "$LAST_BODY")"
 jq -e --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" --arg file_id "$template_file_id" \
-  '.projectId == $project_id and .entityType == "REPORT" and .entityId == $report_id and .archiveType == "REPORT_OFFICIAL_PDF" and .fileId == $file_id and .status == "ARCHIVED"' "$LAST_BODY" >/dev/null \
+  '.projectId == $project_id and (.projectBizNo | startswith("P-")) and (.customerOrgName | length > 0) and .entityType == "REPORT" and .entityId == $report_id and (.entityBizNo | startswith("RPT-")) and .archiveType == "REPORT_OFFICIAL_PDF" and .fileId == $file_id and (.fileName | length > 0) and .status == "ARCHIVED"' "$LAST_BODY" >/dev/null \
   || fail "archive item creation did not return archived report record"
 
 request GET "/archive-items?projectId=$nonstandard_project_id&page=1&pageSize=20" 200 "$admin_token"
 jq -e --arg id "$archive_item_id" \
-  '.items[] | select(.id == $id and .status == "ARCHIVED")' "$LAST_BODY" >/dev/null \
+  '.items[] | select(.id == $id and .status == "ARCHIVED" and (.projectBizNo | startswith("P-")) and (.entityBizNo | startswith("RPT-")) and (.fileName | length > 0))' "$LAST_BODY" >/dev/null \
   || fail "archive item list did not contain created item"
 
 request GET "/archive-items?projectId=$nonstandard_project_id&page=1&pageSize=20" 200 "$archive_token"

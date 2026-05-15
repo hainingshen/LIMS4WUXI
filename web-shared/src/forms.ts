@@ -19,6 +19,7 @@ export type ReportRegistryItem = components["schemas"]["ReportRegistryItem"];
 export type ReportRegistryVersion = components["schemas"]["ReportRegistryVersion"];
 export type ReportDeliveryLog = components["schemas"]["ReportDeliveryLog"];
 export type ImportExportTask = components["schemas"]["ImportExportTask"];
+export type FileUpload = components["schemas"]["FileUpload"];
 export type CustomerOrg = components["schemas"]["CustomerOrg"];
 export type PortalUser = components["schemas"]["PortalUser"];
 export type SystemConfig = components["schemas"]["SystemConfig"];
@@ -586,6 +587,13 @@ export async function uploadDeviceFile(deviceId: string, request: DeviceFileUplo
 
 export async function disableDeviceFile(id: string) {
   const response = await http.post<DeviceFile>(`/device-files/${id}/disable`);
+  return response.data;
+}
+
+export async function uploadFile(purpose: "DEVICE" | "ARCHIVE" | "IMPORT_EXPORT" | "GENERAL", file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await http.post<FileUpload>("/files", form, { params: { purpose } });
   return response.data;
 }
 

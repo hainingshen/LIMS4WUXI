@@ -17,6 +17,7 @@ import {
   disableDeviceFile,
   listDeviceFiles,
   listDevices,
+  uploadFile,
   uploadDeviceFile,
   useAuthStore,
   type Device,
@@ -34,9 +35,23 @@ const FILE_TYPES: DeviceFile["fileType"][] = [
   "OTHER",
 ];
 
+const FILE_TYPE_LABELS: Record<DeviceFile["fileType"], string> = {
+  MANUAL: "说明书",
+  CALIBRATION_CERT: "校准证书",
+  VERIFICATION_CERT: "检定证书",
+  MAINTENANCE_RECORD: "维护记录",
+  SOP: "SOP",
+  TRAINING_RECORD: "培训记录",
+  OTHER: "其他",
+};
+
+const FILE_STATUS_LABELS: Record<NonNullable<DeviceFile["status"]>, string> = {
+  ACTIVE: "有效",
+  DISABLED: "已作废",
+};
+
 type UploadValues = {
   fileType: DeviceFileUploadRequest["fileType"];
-  fileId: string;
   versionNo: string;
   validFrom?: string;
   validUntil?: string;
@@ -53,6 +68,8 @@ export function DeviceFilePage() {
   const [loading, setLoading] = useState(true);
   const [fileLoading, setFileLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedUpload, setSelectedUpload] = useState<File>();
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [feedback, setFeedback] = useState<string>();
   const [error, setError] = useState<string>();
 
@@ -107,24 +124,31 @@ export function DeviceFilePage() {
       setError("请先选择设备");
       return;
     }
+    if (!selectedUpload) {
+      setError("请先选择需要登记的设备文件");
+      return;
+    }
     setSubmitting(true);
     setError(undefined);
     setFeedback(undefined);
-    const request: DeviceFileUploadRequest = {
-      fileType: values.fileType,
-      fileId: values.fileId.trim(),
-      versionNo: values.versionNo.trim(),
-      validFrom: emptyToUndefined(values.validFrom),
-      validUntil: emptyToUndefined(values.validUntil),
-      isCurrent: values.isCurrent ?? true,
-    };
     try {
+      const uploaded = await uploadFile("DEVICE", selectedUpload);
+      const request: DeviceFileUploadRequest = {
+        fileType: values.fileType,
+        fileId: uploaded.fileId,
+        versionNo: values.versionNo.trim(),
+        validFrom: emptyToUndefined(values.validFrom),
+        validUntil: emptyToUndefined(values.validUntil),
+        isCurrent: values.isCurrent ?? true,
+      };
       const created = await uploadDeviceFile(selectedDevice.id, request);
-      setFeedback(`设备文件 ${created.versionNo} 已登记`);
+      setFeedback(`设备文件 ${created.versionNo} 已登记：${uploaded.fileName}`);
       form.resetFields();
+      setSelectedUpload(undefined);
+      setFileInputKey((value) => value + 1);
       await loadFiles(selectedDevice.id);
     } catch {
-      setError("设备文件登记失败，请确认文件 ID、类型和权限");
+      setError("设备文件登记失败，请确认文件格式、类型和权限");
     } finally {
       setSubmitting(false);
     }
@@ -193,7 +217,7 @@ export function DeviceFilePage() {
       dataIndex: "fileType",
       key: "fileType",
       width: 170,
-      render: (value: DeviceFile["fileType"]) => <Tag color="blue">{value}</Tag>,
+      render: (value: DeviceFile["fileType"]) => <Tag color="blue">{fileTypeLabel(value)}</Tag>,
     },
     {
       title: "版本",
@@ -219,7 +243,7 @@ export function DeviceFilePage() {
       dataIndex: "status",
       key: "status",
       width: 100,
-      render: (status: DeviceFile["status"]) => <Tag color={fileStatusColor(status)}>{status}</Tag>,
+      render: (status: DeviceFile["status"]) => <Tag color={fileStatusColor(status)}>{fileStatusLabel(status)}</Tag>,
     },
     {
       title: "上传时间",
@@ -315,13 +339,22 @@ export function DeviceFilePage() {
           >
             <div className="deviceFileFormGrid">
               <Form.Item name="fileType" label="文件类型" rules={[{ required: true }]}>
-                <Select options={FILE_TYPES.map((value) => ({ label: value, value }))} disabled={!canUpload(roles)} />
+                <Select options={FILE_TYPES.map((value) => ({ label: fileTypeLabel(value), value }))} disabled={!canUpload(roles)} />
               </Form.Item>
               <Form.Item name="versionNo" label="版本号" rules={[{ required: true }]}>
                 <Input placeholder="v1.0" disabled={!canUpload(roles)} />
               </Form.Item>
-              <Form.Item name="fileId" label="文件 ID" rules={[{ required: true }]}>
-                <Input placeholder="file_metadata UUID" disabled={!canUpload(roles)} />
+              <Form.Item label="设备文件" required>
+                <Input
+                  key={fileInputKey}
+                  type="file"
+                  accept=".pdf,.docx,.png,.jpg,.jpeg"
+                  disabled={!canUpload(roles)}
+                  onChange={(event) => setSelectedUpload(event.target.files?.[0])}
+                />
+                {selectedUpload ? (
+                  <Typography.Text type="secondary">{selectedUpload.name}</Typography.Text>
+                ) : null}
               </Form.Item>
               <Form.Item name="validFrom" label="有效开始">
                 <Input type="date" disabled={!canUpload(roles)} />
@@ -398,6 +431,14 @@ function deviceStatusColor(status: Device["status"]) {
 
 function fileStatusColor(status?: DeviceFile["status"]) {
   return status === "DISABLED" ? "red" : "green";
+}
+
+function fileTypeLabel(type: DeviceFile["fileType"]) {
+  return FILE_TYPE_LABELS[type] ?? type;
+}
+
+function fileStatusLabel(status?: DeviceFile["status"]) {
+  return status ? FILE_STATUS_LABELS[status] ?? status : "-";
 }
 
 function formatDateTime(value?: string | null) {

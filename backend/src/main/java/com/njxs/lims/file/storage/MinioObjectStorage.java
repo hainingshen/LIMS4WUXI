@@ -85,6 +85,7 @@ public class MinioObjectStorage implements ObjectStorage {
       case "image/png" -> isPng(bytes);
       case "application/pdf" -> isPdf(bytes);
       case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> isZip(bytes);
+      case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> isZip(bytes);
       default -> throw unsupported(contentType);
     };
     if (!matches) {

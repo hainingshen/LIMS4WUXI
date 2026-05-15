@@ -4154,17 +4154,31 @@ components:
         projectId:
           type: string
           format: uuid
+        projectBizNo:
+          type: string
+        customerOrgName:
+          type: string
         entityType:
           type: string
         entityId:
           type: string
           format: uuid
           nullable: true
+        entityBizNo:
+          type: string
+          nullable: true
         archiveType:
           type: string
         fileId:
           type: string
           format: uuid
+        fileName:
+          type: string
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
         status:
           type: string
           enum: [ARCHIVED, SUPERSEDED, VOIDED]

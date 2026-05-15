@@ -12,7 +12,13 @@ public record ArchiveItemResponse(
     String archiveType,
     UUID fileId,
     String status,
-    Instant archivedAt
+    Instant archivedAt,
+    String projectBizNo,
+    String customerOrgName,
+    String entityBizNo,
+    String fileName,
+    String contentType,
+    Long sizeBytes
 ) {
 
   public static ArchiveItemResponse from(ArchiveItemRecord record) {
@@ -24,7 +30,13 @@ public record ArchiveItemResponse(
         record.archiveType(),
         record.fileId(),
         record.status(),
-        record.archivedAt()
+        record.archivedAt(),
+        record.projectBizNo(),
+        record.customerOrgName(),
+        record.entityBizNo(),
+        record.fileName(),
+        record.contentType(),
+        record.sizeBytes()
     );
   }
 }

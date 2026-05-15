@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Button,
+  Checkbox,
   Form,
   Input,
   Select,
@@ -17,6 +18,7 @@ import {
   downloadImportExportTaskResultFile,
   listImportExportTasks,
   runImportExportTask,
+  uploadFile,
   validateImportExportTask,
   useAuthStore,
   type ImportExportTask,
@@ -34,8 +36,25 @@ const TASK_TYPES: ImportExportTaskCreateRequest["taskType"][] = [
 type TaskFormValues = {
   taskType: ImportExportTaskCreateRequest["taskType"];
   entityType: string;
-  sourceFileId?: string;
-  parametersJson?: string;
+  keyword?: string;
+  includeDeliveryLog?: boolean;
+};
+
+const TASK_TYPE_LABELS: Record<ImportExportTaskCreateRequest["taskType"], string> = {
+  MASTER_IMPORT: "主数据导入",
+  MIGRATION_IMPORT: "迁移导入",
+  LIST_EXPORT: "列表导出",
+  REPORT_BATCH_DOWNLOAD: "报告批量下载",
+  AUDIT_EXPORT: "审计导出",
+};
+
+const TASK_STATUS_LABELS: Record<ImportExportTask["status"], string> = {
+  PENDING: "待执行",
+  VALIDATING: "校验中",
+  RUNNING: "执行中",
+  SUCCESS: "成功",
+  FAILED: "失败",
+  EXPIRED: "已过期",
 };
 
 export function ImportExportTaskPage() {
@@ -45,8 +64,11 @@ export function ImportExportTaskPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string>();
+  const [sourceFile, setSourceFile] = useState<File>();
+  const [sourceFileInputKey, setSourceFileInputKey] = useState(0);
   const [feedback, setFeedback] = useState<string>();
   const [error, setError] = useState<string>();
+  const taskType = (Form.useWatch("taskType", form) ?? "LIST_EXPORT") as ImportExportTaskCreateRequest["taskType"];
 
   async function load() {
     setLoading(true);
@@ -65,23 +87,37 @@ export function ImportExportTaskPage() {
     void load();
   }, []);
 
+  useEffect(() => {
+    if (!isImportTask(taskType)) {
+      setSourceFile(undefined);
+      setSourceFileInputKey((value) => value + 1);
+    }
+  }, [taskType]);
+
   async function submit(values: TaskFormValues) {
+    if (isImportTask(values.taskType) && !sourceFile) {
+      setError("导入任务需要先选择源文件");
+      return;
+    }
     setSubmitting(true);
     setError(undefined);
     setFeedback(undefined);
     try {
+      const uploaded = sourceFile ? await uploadFile("IMPORT_EXPORT", sourceFile) : undefined;
       const request: ImportExportTaskCreateRequest = {
         taskType: values.taskType,
         entityType: values.entityType.trim(),
-        sourceFileId: emptyToUndefined(values.sourceFileId),
-        parameters: parseParameters(values.parametersJson),
+        sourceFileId: uploaded?.fileId,
+        parameters: buildTaskParameters(values),
       };
       const created = await createImportExportTask(request);
       setFeedback(`任务 ${created.bizNo} 已创建`);
       form.resetFields();
+      setSourceFile(undefined);
+      setSourceFileInputKey((value) => value + 1);
       await load();
     } catch {
-      setError("任务创建失败，请确认参数 JSON、文件 ID 和权限");
+      setError("任务创建失败，请确认文件格式、任务参数和权限");
     } finally {
       setSubmitting(false);
     }
@@ -135,20 +171,23 @@ export function ImportExportTaskPage() {
       dataIndex: "taskType",
       key: "taskType",
       width: 180,
-      render: (value: ImportExportTask["taskType"]) => <Tag color="blue">{value}</Tag>,
+      render: (value: ImportExportTask["taskType"]) => <Tag color="blue">{TASK_TYPE_LABELS[value] ?? value}</Tag>,
     },
     {
       title: "对象",
       dataIndex: "entityType",
       key: "entityType",
       width: 130,
+      render: (value: string) => entityTypeLabel(value),
     },
     {
       title: "状态",
       dataIndex: "status",
       key: "status",
       width: 120,
-      render: (status: ImportExportTask["status"]) => <Tag color={statusColor(status)}>{status}</Tag>,
+      render: (status: ImportExportTask["status"]) => (
+        <Tag color={statusColor(status)}>{TASK_STATUS_LABELS[status] ?? status}</Tag>
+      ),
     },
     {
       title: "源文件",
@@ -273,20 +312,38 @@ export function ImportExportTaskPage() {
           <Form
             form={form}
             layout="vertical"
-            initialValues={{ taskType: "LIST_EXPORT", entityType: "PROJECT", parametersJson: "{\"keyword\":\"\"}" }}
+            initialValues={{ taskType: "LIST_EXPORT", entityType: "PROJECT", includeDeliveryLog: true }}
             onFinish={(values) => void submit(values)}
           >
             <Form.Item name="taskType" label="任务类型" rules={[{ required: true }]}>
-              <Select options={TASK_TYPES.map((value) => ({ label: value, value }))} disabled={!canCreate(roles)} />
+              <Select options={TASK_TYPES.map((value) => ({ label: TASK_TYPE_LABELS[value] ?? value, value }))} disabled={!canCreate(roles)} />
             </Form.Item>
             <Form.Item name="entityType" label="对象类型" rules={[{ required: true }]}>
-              <Input placeholder="PROJECT / REPORT / CUSTOMER_ORG" disabled={!canCreate(roles)} />
+              <Select
+                disabled={!canCreate(roles)}
+                options={[
+                  { label: "项目", value: "PROJECT" },
+                  { label: "报告", value: "REPORT" },
+                  { label: "客户", value: "CUSTOMER_ORG" },
+                  { label: "审计日志", value: "AUDIT_LOG" },
+                ]}
+              />
             </Form.Item>
-            <Form.Item name="sourceFileId" label="源文件 ID">
-              <Input placeholder="导入任务需要 file_metadata UUID" disabled={!canCreate(roles)} />
+            <Form.Item label="源文件" required={isImportTask(taskType)}>
+              <Input
+                key={sourceFileInputKey}
+                type="file"
+                accept=".pdf,.docx,.xlsx,.csv,.json,.png,.jpg,.jpeg"
+                disabled={!canCreate(roles) || !isImportTask(taskType)}
+                onChange={(event) => setSourceFile(event.target.files?.[0])}
+              />
+              {sourceFile ? <Typography.Text type="secondary">{sourceFile.name}</Typography.Text> : null}
             </Form.Item>
-            <Form.Item name="parametersJson" label="参数 JSON">
-              <Input.TextArea rows={5} disabled={!canCreate(roles)} />
+            <Form.Item name="keyword" label="筛选关键字">
+              <Input placeholder="项目号 / 报告号 / 客户关键字" disabled={!canCreate(roles)} />
+            </Form.Item>
+            <Form.Item name="includeDeliveryLog" valuePropName="checked">
+              <Checkbox disabled={!canCreate(roles) || taskType !== "REPORT_BATCH_DOWNLOAD"}>包含报告发放日志</Checkbox>
             </Form.Item>
             <Button type="primary" htmlType="submit" loading={submitting} disabled={!canCreate(roles)}>
               创建任务
@@ -298,12 +355,16 @@ export function ImportExportTaskPage() {
   );
 }
 
-function parseParameters(value?: string): ImportExportTaskCreateRequest["parameters"] {
-  const normalized = value?.trim();
-  if (!normalized) {
-    return {};
+function buildTaskParameters(values: TaskFormValues): ImportExportTaskCreateRequest["parameters"] {
+  const parameters: Record<string, unknown> = {};
+  const keyword = values.keyword?.trim();
+  if (keyword) {
+    parameters.keyword = keyword;
   }
-  return JSON.parse(normalized) as ImportExportTaskCreateRequest["parameters"];
+  if (values.taskType === "REPORT_BATCH_DOWNLOAD") {
+    parameters.includeDeliveryLog = values.includeDeliveryLog ?? true;
+  }
+  return parameters;
 }
 
 function emptyToUndefined(value?: string) {
@@ -321,6 +382,20 @@ function canValidateOrRun(roles: readonly string[]) {
 
 function canDownload(roles: readonly string[]) {
   return roles.includes("SYSTEM_ADMIN") || roles.includes("QUALITY_MANAGER") || roles.includes("ARCHIVE_MANAGER");
+}
+
+function isImportTask(taskType: ImportExportTaskCreateRequest["taskType"]) {
+  return taskType === "MASTER_IMPORT" || taskType === "MIGRATION_IMPORT";
+}
+
+function entityTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    PROJECT: "项目",
+    REPORT: "报告",
+    CUSTOMER_ORG: "客户",
+    AUDIT_LOG: "审计日志",
+  };
+  return labels[value] ?? value;
 }
 
 function taskActionReason(task: ImportExportTask, action: "validate" | "run" | "download", roles: readonly string[]) {

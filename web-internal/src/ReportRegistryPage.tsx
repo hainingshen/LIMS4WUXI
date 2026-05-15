@@ -29,6 +29,44 @@ const REPORT_STATUSES: ReportRegistryItem["status"][] = [
   "VOIDED",
 ];
 
+const REPORT_STATUS_LABELS: Partial<Record<ReportRegistryItem["status"], string>> = {
+  DRAFT: "草稿",
+  PENDING_GENERATE: "待生成",
+  QC_REVIEWING: "QC 审核",
+  QA_REVIEWING: "QA 审核",
+  SD_REVIEWING: "SD 审核",
+  PENDING_ISSUE: "待签发",
+  ISSUED_PAYMENT_LOCKED: "已签发待付款",
+  GREEN_RELEASED: "绿色通道放行",
+  RELEASED: "已发放",
+  ARCHIVED: "已归档",
+  REVISION_DRAFT: "重签草稿",
+  VOIDED: "已作废",
+};
+
+const GATE_LABELS: Record<ReportRegistryItem["paymentGateStatus"], string> = {
+  LOCKED: "付款锁定",
+  GREEN_UNLOCKED: "绿色通道",
+  UNLOCKED: "已解锁",
+};
+
+const DELIVERY_LABELS: Record<ReportDeliveryLog["deliveryType"], string> = {
+  PREVIEW: "预览",
+  OFFICIAL_DOWNLOAD: "正式下载",
+  INTERNAL_DOWNLOAD: "内部下载",
+  EMAIL: "邮件发送",
+  GREEN_CHANNEL_RELEASE: "绿色放行",
+  PAYMENT_UNLOCK_RELEASE: "付款解锁",
+  BATCH_DOWNLOAD: "批量下载",
+};
+
+const VERSION_STATUS_LABELS: Record<ReportRegistryVersion["status"], string> = {
+  DRAFT: "草稿",
+  ISSUED: "已签发",
+  VOIDED: "已作废",
+  SUPERSEDED: "已替换",
+};
+
 type RegistryFilters = {
   keyword?: string;
   status?: ReportRegistryItem["status"];
@@ -135,14 +173,14 @@ export function ReportRegistryPage() {
       dataIndex: "status",
       key: "status",
       width: 170,
-      render: (status: ReportRegistryItem["status"]) => <Tag color={statusColor(status)}>{status}</Tag>,
+      render: (status: ReportRegistryItem["status"]) => <Tag color={statusColor(status)}>{REPORT_STATUS_LABELS[status] ?? status}</Tag>,
     },
     {
       title: "门禁",
       dataIndex: "paymentGateStatus",
       key: "paymentGateStatus",
       width: 150,
-      render: (status: ReportRegistryItem["paymentGateStatus"]) => <Tag color={gateColor(status)}>{status}</Tag>,
+      render: (status: ReportRegistryItem["paymentGateStatus"]) => <Tag color={gateColor(status)}>{GATE_LABELS[status] ?? status}</Tag>,
     },
     {
       title: "模板",
@@ -197,7 +235,7 @@ export function ReportRegistryPage() {
       dataIndex: "status",
       key: "status",
       width: 130,
-      render: (status: ReportRegistryVersion["status"]) => <Tag>{status}</Tag>,
+      render: (status: ReportRegistryVersion["status"]) => <Tag>{VERSION_STATUS_LABELS[status] ?? status}</Tag>,
     },
     {
       title: "DOCX",
@@ -228,21 +266,21 @@ export function ReportRegistryPage() {
       dataIndex: "deliveryType",
       key: "deliveryType",
       width: 150,
-      render: (value: ReportDeliveryLog["deliveryType"]) => <Tag color={deliveryColor(value)}>{value}</Tag>,
+      render: (value: ReportDeliveryLog["deliveryType"]) => <Tag color={deliveryColor(value)}>{DELIVERY_LABELS[value] ?? value}</Tag>,
     },
     {
       title: "客户端",
       dataIndex: "clientType",
       key: "clientType",
       width: 110,
-      render: (value?: ReportDeliveryLog["clientType"]) => value ?? "-",
+      render: (value?: ReportDeliveryLog["clientType"]) => clientTypeLabel(value),
     },
     {
       title: "门禁",
       dataIndex: "paymentGateStatus",
       key: "paymentGateStatus",
       width: 150,
-      render: (value?: ReportDeliveryLog["paymentGateStatus"]) => value ? <Tag color={gateColor(value)}>{value}</Tag> : "-",
+      render: (value?: ReportDeliveryLog["paymentGateStatus"]) => value ? <Tag color={gateColor(value)}>{GATE_LABELS[value] ?? value}</Tag> : "-",
     },
     {
       title: "文件",
@@ -301,7 +339,7 @@ export function ReportRegistryPage() {
               placeholder="状态"
               value={filters.status}
               onChange={(status) => setFilters((current) => ({ ...current, status }))}
-              options={REPORT_STATUSES.map((status) => ({ label: status, value: status }))}
+              options={REPORT_STATUSES.map((status) => ({ label: REPORT_STATUS_LABELS[status] ?? status, value: status }))}
               className="registryStatusSelect"
             />
             <Button type="primary" onClick={() => void load(filters)}>查询</Button>
@@ -416,4 +454,17 @@ function deliveryColor(value: ReportDeliveryLog["deliveryType"]) {
     return "gold";
   }
   return "blue";
+}
+
+function clientTypeLabel(value?: ReportDeliveryLog["clientType"]) {
+  if (!value) {
+    return "-";
+  }
+  const labels: Record<NonNullable<ReportDeliveryLog["clientType"]>, string> = {
+    INTERNAL: "内部端",
+    PORTAL: "客户门户",
+    MOBILE: "移动端",
+    SYSTEM: "系统",
+  };
+  return labels[value] ?? value;
 }

@@ -12,6 +12,12 @@ public record ArchiveItemRecord(
     UUID fileId,
     String status,
     Instant archivedAt,
-    UUID archivedBy
+    UUID archivedBy,
+    String projectBizNo,
+    String customerOrgName,
+    String entityBizNo,
+    String fileName,
+    String contentType,
+    Long sizeBytes
 ) {
 }

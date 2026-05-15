@@ -19,6 +19,8 @@ export type ReportRegistryItem = components["schemas"]["ReportRegistryItem"];
 export type ReportRegistryVersion = components["schemas"]["ReportRegistryVersion"];
 export type ReportDeliveryLog = components["schemas"]["ReportDeliveryLog"];
 export type ImportExportTask = components["schemas"]["ImportExportTask"];
+export type CustomerOrg = components["schemas"]["CustomerOrg"];
+export type PortalUser = components["schemas"]["PortalUser"];
 export type Device = components["schemas"]["Device"];
 export type DeviceBooking = components["schemas"]["DeviceBooking"];
 export type DeviceFile = components["schemas"]["DeviceFile"];
@@ -64,6 +66,12 @@ export type ReportRegistryPage = Omit<components["schemas"]["PageResponse"], "it
 export type ReportDeliveryLogPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: ReportDeliveryLog[];
 };
+export type CustomerOrgPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: CustomerOrg[];
+};
+export type PortalUserPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: PortalUser[];
+};
 export type DevicePage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Device[];
 };
@@ -98,6 +106,8 @@ export type SampleRetentionExtendRequest = components["schemas"]["SampleRetentio
 export type SampleRetentionDisposeRequest = components["schemas"]["SampleRetentionDisposeRequest"];
 export type GreenChannelCreateRequest = components["schemas"]["GreenChannelCreateRequest"];
 export type ReportRegistryBatchDownloadRequest = components["schemas"]["ReportRegistryBatchDownloadRequest"];
+export type CustomerOrgUpsertRequest = components["schemas"]["CustomerOrgUpsertRequest"];
+export type PortalUserCreateRequest = components["schemas"]["PortalUserCreateRequest"];
 export type DeviceBookingCreateRequest = components["schemas"]["DeviceBookingCreateRequest"];
 export type DeviceBookingOverrideRequest = components["schemas"]["DeviceBookingOverrideRequest"];
 export type DeviceFileUploadRequest = components["schemas"]["DeviceFileUploadRequest"];
@@ -383,6 +393,26 @@ export async function createReportRegistryBatchDownload(request: ReportRegistryB
 
 export async function listReportDeliveryLogs(params: { page?: number; pageSize?: number; reportId?: string } = {}) {
   const response = await http.get<ReportDeliveryLogPage>("/report-delivery-logs", { params });
+  return response.data;
+}
+
+export async function listCustomerOrgs(params: { page?: number; pageSize?: number; keyword?: string } = {}) {
+  const response = await http.get<CustomerOrgPage>("/customer-orgs", { params });
+  return response.data;
+}
+
+export async function upsertCustomerOrg(request: CustomerOrgUpsertRequest) {
+  const response = await http.post<CustomerOrg>("/customer-orgs", request);
+  return response.data;
+}
+
+export async function listPortalUsers(params: { page?: number; pageSize?: number; customerOrgId?: string } = {}) {
+  const response = await http.get<PortalUserPage>("/portal-users", { params });
+  return response.data;
+}
+
+export async function createPortalUser(request: PortalUserCreateRequest) {
+  const response = await http.post<PortalUser>("/portal-users", request);
   return response.data;
 }
 

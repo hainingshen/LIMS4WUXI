@@ -30,6 +30,7 @@ import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { ArchiveItemPage } from "./ArchiveItemPage";
 import { ContractListPage } from "./ContractListPage";
+import { CustomerManagementPage } from "./CustomerManagementPage";
 import { DeviceBookingPage } from "./DeviceBookingPage";
 import { DeviceFilePage } from "./DeviceFilePage";
 import { GreenChannelPage } from "./GreenChannelPage";
@@ -61,6 +62,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "待办、风险和负荷",
     roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "QUALITY_MANAGER", "DEPT_MANAGER", "GENERAL_MANAGER"],
     actionCode: "WORK_CENTER_READ",
+  },
+  {
+    key: "customer-management",
+    label: "客户主数据",
+    detail: "委托单位、发票信息和门户账号",
+    roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER"],
+    actionCode: "MASTER_DATA_READ",
   },
   {
     key: "submissions",
@@ -328,6 +336,13 @@ function renderRoute(
     return (
       <RequireAction action="SAMPLE_RECEIVE">
         <SampleReceivingDesk />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "customer-management") {
+    return (
+      <RequireAction action="MASTER_DATA_READ">
+        <CustomerManagementPage />
       </RequireAction>
     );
   }

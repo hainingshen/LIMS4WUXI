@@ -21,18 +21,22 @@ import "antd-mobile/es/global";
 import {
   hasAnyRole,
   downloadOfficialReportPdf,
+  listContracts,
   listReports,
   loginForClient,
   limsAntdTheme,
+  markContractSigned,
   roleLabel,
   useAuthStore,
   type AuthSession,
+  type Contract,
   type Report,
 } from "@lims4wuxi/shared";
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { PortalProjectOverviewPage } from "./PortalProjectOverviewPage";
 import { SubmissionFormPage } from "./SubmissionFormPage";
+import { contractStatusColor, contractTypeLabel } from "./contractPresentation";
 import {
   isPaymentGateLocked,
   paymentGateColor,
@@ -42,7 +46,7 @@ import {
 } from "./reportPresentation";
 import "./styles.css";
 
-type PortalRouteKey = "dashboard" | "new-submission" | "projects" | "report-preview";
+type PortalRouteKey = "dashboard" | "new-submission" | "projects" | "contract-confirm" | "report-preview";
 
 type PortalRoute = {
   key: PortalRouteKey;
@@ -84,6 +88,14 @@ const PORTAL_ROUTES: readonly PortalRoute[] = [
     detail: "查看草稿和发放状态",
     roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
     path: "/portal/reports/:id/preview",
+    menu: false,
+  },
+  {
+    key: "contract-confirm",
+    label: "协议确认",
+    detail: "查看并确认合同协议",
+    roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
+    path: "/portal/contracts/:id/confirm",
     menu: false,
   },
 ] as const;
@@ -277,6 +289,7 @@ function portalContent(
         mode="dashboard"
         onNewSubmission={() => selectRoute("new-submission")}
         onOpenProjects={() => selectRoute("projects")}
+        onOpenContract={(contractId) => selectRoute("contract-confirm", `/portal/contracts/${contractId}/confirm`)}
       />
     );
   }
@@ -287,9 +300,14 @@ function portalContent(
         mode="projects"
         selectedProjectId={routeState.projectId}
         onNewSubmission={() => selectRoute("new-submission")}
+        onOpenContract={(contractId) => selectRoute("contract-confirm", `/portal/contracts/${contractId}/confirm`)}
         onPreviewReport={(reportId) => selectRoute("report-preview", `/portal/reports/${reportId}/preview`)}
       />
     );
+  }
+
+  if (activeKey === "contract-confirm") {
+    return <PortalContractConfirm contractId={routeState.contractId} onBack={() => selectRoute("projects")} />;
   }
 
   if (activeKey === "report-preview") {
@@ -306,6 +324,7 @@ function portalContent(
 }
 
 type PortalRouteState = {
+  contractId?: string;
   projectId?: string;
   reportId?: string;
 };
@@ -318,6 +337,10 @@ function portalRouteState(key: PortalRouteKey, pathname: string): PortalRouteSta
   if (key === "report-preview") {
     const match = pathname.match(/^\/portal\/reports\/([^/]+)\/preview$/);
     return { reportId: match?.[1] };
+  }
+  if (key === "contract-confirm") {
+    const match = pathname.match(/^\/portal\/contracts\/([^/]+)\/confirm$/);
+    return { contractId: match?.[1] };
   }
   return {};
 }
@@ -332,11 +355,150 @@ function portalKeyFromPath(pathname: string): PortalRouteKey {
   if (/^\/portal\/reports\/[^/]+\/preview$/.test(pathname)) {
     return "report-preview";
   }
+  if (/^\/portal\/contracts\/[^/]+\/confirm$/.test(pathname)) {
+    return "contract-confirm";
+  }
   return "dashboard";
 }
 
 function portalPathForKey(key: PortalRouteKey) {
   return PORTAL_ROUTES.find((route) => route.key === key)?.path.replace("/:id", "") ?? "/portal/";
+}
+
+function PortalContractConfirm({ contractId, onBack }: { contractId?: string; onBack?: () => void }) {
+  const roles = useAuthStore((state) => state.roles);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+  const [feedback, setFeedback] = useState<string>();
+  const [confirming, setConfirming] = useState(false);
+  const contract = useMemo(
+    () => contracts.find((item) => item.id === contractId),
+    [contracts, contractId],
+  );
+  const canConfirm = contract?.status === "PENDING_SIGN"
+    && hasAnyRole(roles, ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT"]);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      setLoading(true);
+      setError(undefined);
+      try {
+        const page = await listContracts({ page: 1, pageSize: 100 });
+        if (active) {
+          setContracts(page.items ?? []);
+        }
+      } catch {
+        if (active) {
+          setError("协议加载失败");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function confirmContract() {
+    if (!contract || !canConfirm) {
+      return;
+    }
+    setFeedback(undefined);
+    setConfirming(true);
+    try {
+      const signed = await markContractSigned(contract.id, { signedAt: new Date().toISOString() });
+      setContracts((items) => items.map((item) => (item.id === signed.id ? signed : item)));
+      setFeedback("协议已确认签署，项目进入已签约状态。");
+    } catch {
+      setFeedback("协议确认失败，请稍后重试。");
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="pageState">
+        <Spin />
+      </div>
+    );
+  }
+
+  return (
+    <section className="portalContractConfirmPage">
+      <header className="pageHeader">
+        <div>
+          <Typography.Text className="pageEyebrow">CONTRACT CONFIRM</Typography.Text>
+          <Typography.Title level={3}>协议确认</Typography.Title>
+        </div>
+        <Space wrap>
+          {onBack ? <Button onClick={onBack}>返回项目</Button> : null}
+          <Button type="primary" loading={confirming} disabled={!canConfirm} onClick={() => void confirmContract()}>
+            确认签署
+          </Button>
+        </Space>
+      </header>
+      {error ? <Alert type="error" showIcon message={error} className="portalFeedback" /> : null}
+      {feedback ? <Alert type="info" showIcon message={feedback} className="portalFeedback" /> : null}
+      {!contractId ? <Alert type="warning" showIcon message="未选择协议" className="portalFeedback" /> : null}
+      {contractId && !contract ? (
+        <Alert type="warning" showIcon message="当前协议不在你的授权范围内" className="portalFeedback" />
+      ) : null}
+      {contract ? (
+        <div className="portalContractSheet">
+          <div className="portalContractHeading">
+            <Typography.Text className="pageEyebrow">NJU XSBI LIMS</Typography.Text>
+            <Typography.Title level={4}>{contractTypeLabel(contract.contractType)}</Typography.Title>
+            <Typography.Text>{contract.bizNo}</Typography.Text>
+          </div>
+          <dl className="portalReportMetaGrid">
+            <div>
+              <dt>协议状态</dt>
+              <dd>
+                <Tag color={contractStatusColor(contract.status)}>{contract.status}</Tag>
+              </dd>
+            </div>
+            <div>
+              <dt>协议类型</dt>
+              <dd>{contractTypeLabel(contract.contractType)}</dd>
+            </div>
+            <div>
+              <dt>模板</dt>
+              <dd>{contract.templateCode ?? "-"}</dd>
+            </div>
+            <div>
+              <dt>项目 ID</dt>
+              <dd>{contract.projectId}</dd>
+            </div>
+            <div>
+              <dt>签署时间</dt>
+              <dd>{contract.signedAt ?? "-"}</dd>
+            </div>
+            <div>
+              <dt>签署文件</dt>
+              <dd>{contract.signedFileId ?? "-"}</dd>
+            </div>
+          </dl>
+          <div className="portalContractBody">
+            <Typography.Paragraph>
+              委托检测范围、双方责任、报告交付和费用条款以正式盖章合同或协议文件为准。
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              {contract.status === "PENDING_SIGN"
+                ? "当前协议待客户确认签署。"
+                : "当前协议已完成确认。"}
+            </Typography.Paragraph>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 function PortalReportPreview({ reportId, onBack }: { reportId?: string; onBack?: () => void }) {

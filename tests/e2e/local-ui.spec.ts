@@ -65,6 +65,17 @@ test("portal report preview deeplink shows watermarked report state", async ({ p
   await page.screenshot({ path: `${screenshotDir}/portal-report-preview-desktop.png`, fullPage: true });
 });
 
+test("portal contract confirmation deeplink shows scoped agreement", async ({ page }) => {
+  await page.goto("/portal/projects");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByRole("button", { name: /确认协议|查看协议/ }).first().click();
+  await expect(page.getByText("CONTRACT CONFIRM")).toBeVisible();
+  await expect(page).toHaveURL(/\/portal\/contracts\/[^/]+\/confirm$/);
+  await expect(page.getByText("协议状态")).toBeVisible();
+  await expect(page.getByText(/CON-\d{4}-/).first()).toBeVisible();
+  await page.screenshot({ path: `${screenshotDir}/portal-contract-confirm-desktop.png`, fullPage: true });
+});
+
 test("internal deeplink opens master data page after login", async ({ page }) => {
   await page.goto("/internal/master-data");
   await page.locator("#username").fill("internal.admin");

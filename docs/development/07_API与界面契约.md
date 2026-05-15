@@ -95,6 +95,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | 提交统一变更 | `POST /change-requests/{id}/submit` | 申请人 |
 | 审批统一变更 | `POST /change-requests/{id}/approve` | 目标对象对应审批人 |
 | 变更生效 | `POST /change-requests/{id}/effect` | 系统或授权管理员 |
+| 查询合同协议 | `GET /contracts` | 客户、内部授权人员；门户仅返回授权范围内协议 |
 | 样品到达登记 | `POST /samples/{id}/receive` | 样品管理员 |
 | 样品入库 | `POST /samples/{id}/stock-in` | 样品管理员 |
 | 登记留样 | `POST /sample-retentions/{id}/register` | 样品管理员 |

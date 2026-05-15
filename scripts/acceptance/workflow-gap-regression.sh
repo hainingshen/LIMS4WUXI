@@ -88,8 +88,7 @@ for path in \
   /roles \
   /legacy-status-mappings \
   /report-templates \
-  /quotations \
-  /contracts
+  /quotations
 do
   request GET "$path" 403 "$portal_token"
   jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "$path did not return FORBIDDEN"
@@ -102,6 +101,10 @@ jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BO
 request GET "/reports" 200 "$portal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/reports did not return a portal-scoped paged response"
+
+request GET "/contracts" 200 "$portal_token"
+jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
+  || fail "/contracts did not return a portal-scoped paged response"
 
 for path in /projects /quotations /contracts /archive-items /device-bookings /inventory-batches /inventory-transactions /customer-orgs /portal-users
 do

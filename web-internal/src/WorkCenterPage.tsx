@@ -87,6 +87,58 @@ const TREND_LABELS: Record<string, string> = {
   resourceLoadRate: "资源负荷",
 };
 
+const ROLE_GROUP_LABELS: Record<string, string> = {
+  SALES: "销售",
+  TECHNICAL: "技术",
+  BUSINESS: "业务",
+  SAMPLE: "样品",
+  INSPECTOR: "检测",
+  QC: "QC",
+  QA: "QA",
+  SD: "SD",
+  REPORT: "报告",
+  SIGNATORY: "签发",
+  FINANCE: "财务",
+  GREEN_CHANNEL: "绿色通道",
+  EQUIPMENT: "设备",
+  INVENTORY: "库存",
+  ARCHIVE: "档案",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  SUBMITTED: "待受理",
+  ACCEPTED: "已受理",
+  NONSTANDARD_REVIEW: "非标评审",
+  QUOTABLE: "待报价",
+  QUOTED: "已报价",
+  CONTRACTED: "已签约",
+  ARRIVED_PENDING_CHECK: "待核验",
+  PRE_IN_STOCK: "待入库",
+  PENDING_RETURN: "待退还",
+  PENDING_DISPOSAL: "待处置",
+  PENDING_REGISTER: "待登记",
+  EXPIRING: "临期",
+  REVIEWING: "审核中",
+  QC_REVIEWING: "QC 审核",
+  QA_REVIEWING: "QA 审核",
+  SD_REVIEWING: "SD 审核",
+  PENDING_ISSUE: "待签发",
+  REPORTING: "报告中",
+  LOCKED: "锁定",
+  GREEN_UNLOCKED: "绿色通道",
+  UNLOCKED: "已解锁",
+  DEPT_REVIEWING: "部门审批",
+  MANAGEMENT_REVIEWING: "管理层审批",
+  BOOKED: "已预约",
+  NEEDS_RESCHEDULE: "待重约",
+  ACTIVE: "有效",
+  IN_STOCK: "在库",
+  LOW_STOCK: "低库存",
+  EXPIRED: "已过期",
+  GREEN_RELEASED: "绿色放行",
+  RELEASED: "已发放",
+};
+
 export function WorkCenterPage() {
   const [summary, setSummary] = useState<WorkCenterSummary>();
   const [currentUser, setCurrentUser] = useState<CurrentUser>();
@@ -228,6 +280,7 @@ export function WorkCenterPage() {
       title: "状态",
       dataIndex: "status",
       width: 130,
+      render: (value: string) => statusLabel(value),
     },
     {
       title: "健康度",
@@ -247,8 +300,13 @@ export function WorkCenterPage() {
     },
     {
       title: "操作",
-      width: 120,
-      render: (_, project) => <Button size="small" onClick={() => openCreate(project)}>新增阻塞</Button>,
+      width: 190,
+      render: (_, project) => (
+        <Space wrap>
+          <Button size="small" type="link" href="/internal/projects">查看项目</Button>
+          <Button size="small" onClick={() => openCreate(project)}>新增阻塞</Button>
+        </Space>
+      ),
     },
   ];
 
@@ -268,7 +326,7 @@ export function WorkCenterPage() {
       title: "岗位",
       dataIndex: "roleGroup",
       width: 110,
-      render: (value: string) => <Tag color="blue">{value}</Tag>,
+      render: (value: string) => <Tag color="blue">{ROLE_GROUP_LABELS[value] ?? value}</Tag>,
     },
     {
       title: "客户/对象",
@@ -280,6 +338,7 @@ export function WorkCenterPage() {
       title: "状态",
       dataIndex: "status",
       width: 150,
+      render: (value: string) => statusLabel(value),
     },
     {
       title: "时间",
@@ -291,7 +350,7 @@ export function WorkCenterPage() {
       title: "操作",
       width: 90,
       render: (_, task) => (
-        <Button size="small" type="link" href={task.actionPath}>
+        <Button size="small" type="link" href={task.actionPath} title={`${task.title}：${task.bizNo}`}>
           进入
         </Button>
       ),
@@ -406,11 +465,11 @@ export function WorkCenterPage() {
       {error ? <Alert type="error" message={error} showIcon closable onClose={() => setError(undefined)} /> : null}
 
       <div className="workCenterSummary">
-        <MetricCard label="正常项目" helper="80-100" value={summary?.normalProjects ?? 0} tone="normal" />
-        <MetricCard label="预警项目" helper="60-79" value={summary?.warningProjects ?? 0} tone="warning" />
-        <MetricCard label="风险项目" helper="<60" value={summary?.riskProjects ?? 0} tone="risk" />
+        <MetricCard label="正常项目" helper="80-100" value={summary?.normalProjects ?? 0} tone="normal" onClick={() => setFilter("normal")} />
+        <MetricCard label="预警项目" helper="60-79" value={summary?.warningProjects ?? 0} tone="warning" onClick={() => setFilter("warning")} />
+        <MetricCard label="风险项目" helper="<60" value={summary?.riskProjects ?? 0} tone="risk" onClick={() => setFilter("risk")} />
         <MetricCard label="我的待办" helper="Today" value={summary?.myTodos ?? 0} tone="todo" />
-        <MetricCard label="超期任务" helper="Overdue" value={summary?.overdueTasks ?? 0} tone="overdue" />
+        <MetricCard label="超期任务" helper="Overdue" value={summary?.overdueTasks ?? 0} tone="overdue" onClick={() => setFilter("overdue")} />
       </div>
 
       <div className="workCenterGrid">
@@ -538,9 +597,28 @@ type BlockerCloseValues = {
   resolution: string;
 };
 
-function MetricCard({ label, helper, value, tone }: { label: string; helper: string; value: number; tone: string }) {
+function MetricCard(
+  { label, helper, value, tone, onClick }: {
+    label: string;
+    helper: string;
+    value: number;
+    tone: string;
+    onClick?: () => void;
+  },
+) {
   return (
-    <Card className={`metricCard metric-${tone}`}>
+    <Card
+      className={`metricCard metric-${tone}${onClick ? " metricCardAction" : ""}`}
+      hoverable={Boolean(onClick)}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(event) => {
+        if (onClick && (event.key === "Enter" || event.key === " ")) {
+          onClick();
+        }
+      }}
+    >
       <span className="metricAccent" />
       <div className="metricLabel">
         <Typography.Text type="secondary">{label}</Typography.Text>
@@ -559,6 +637,10 @@ function HealthTag({ status }: { status: WorkCenterProject["healthStatus"] }) {
 function SeverityTag({ severity }: { severity: WorkCenterBlocker["severity"] }) {
   const color = severity === "HIGH" ? "red" : severity === "MEDIUM" ? "gold" : "blue";
   return <Tag color={color}>{severity}</Tag>;
+}
+
+function statusLabel(status: string) {
+  return STATUS_LABELS[status] ?? status;
 }
 
 function blockerActionReason(

@@ -513,6 +513,15 @@ body {
   overflow: hidden;
 }
 
+.metricCardAction {
+  cursor: pointer;
+}
+
+.metricCardAction:focus-visible {
+  outline: 2px solid var(--lims-primary);
+  outline-offset: 2px;
+}
+
 .metricCard h3,
 .trendItem h4 {
   margin: 4px 0 0;

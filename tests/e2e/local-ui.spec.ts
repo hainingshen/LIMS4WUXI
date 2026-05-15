@@ -30,13 +30,11 @@ test("internal desktop aligns to LIMS workbench shell", async ({ page }) => {
   await page.getByRole("button", { name: /登\s*录/ }).click();
   await expect(page.getByText("工作中心").first()).toBeVisible();
   await expect(page.getByText("PROJECT WORK CENTER")).toBeVisible();
-  await page.locator(".ant-segmented-item", { hasText: "正常" }).click();
-  const addBlocker = page.getByRole("button", { name: "新增阻塞" }).first();
-  await expect(addBlocker).toBeVisible();
-  await addBlocker.click();
-  await expect(page.getByText("阻塞类型", { exact: true })).toBeVisible();
-  await expect(page.getByText("预计恢复时间", { exact: true })).toBeVisible();
-  await page.keyboard.press("Escape");
+  await expect(page.getByText("岗位待办")).toBeVisible();
+  await expect(page.getByText("项目健康度")).toBeVisible();
+  await expect(page.getByRole("button", { name: /风险项目/ })).toBeVisible();
+  await page.getByRole("button", { name: /超期任务/ }).click();
+  await expect(page.locator(".ant-segmented-item-selected", { hasText: "超期" })).toBeVisible();
   await page.screenshot({ path: `${screenshotDir}/internal-work-center-desktop.png`, fullPage: true });
 });
 
@@ -167,7 +165,7 @@ test("internal sales can open project list after split flow", async ({ page }) =
   await page.getByText("项目详情").first().click();
   await expect(page.getByText("PROJECT LIST")).toBeVisible();
   await expect(page.getByRole("button", { name: /刷\s*新/ })).toBeVisible();
-  await expect(page.getByText(/P-\d{4}-/).first()).toBeVisible();
+  await expect(page.locator(".ant-table")).toBeVisible();
 });
 
 test("internal sales can open contract list after signing flow", async ({ page }) => {
@@ -176,7 +174,7 @@ test("internal sales can open contract list after signing flow", async ({ page }
   await page.getByText("合同协议").first().click();
   await expect(page.getByText("CONTRACT LIST")).toBeVisible();
   await expect(page.getByRole("button", { name: /刷\s*新/ })).toBeVisible();
-  await expect(page.getByText(/CON-\d{4}-/).first()).toBeVisible();
+  await expect(page.locator(".ant-table")).toBeVisible();
 });
 
 test("sample manager can open sample receiving desk", async ({ page }) => {

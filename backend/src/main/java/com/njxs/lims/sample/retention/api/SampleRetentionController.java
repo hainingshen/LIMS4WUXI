@@ -1,9 +1,11 @@
 package com.njxs.lims.sample.retention.api;
 
 import com.njxs.lims.audit.Audited;
+import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.permission.RequiresAction;
+import com.njxs.lims.permission.RequiresClient;
 import com.njxs.lims.sample.retention.service.SampleRetentionService;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -30,6 +32,7 @@ public class SampleRetentionController {
   }
 
   @GetMapping
+  @RequiresClient(ClientType.INTERNAL)
   public PageResponse<SampleRetentionResponse> list(
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize

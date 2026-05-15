@@ -1,10 +1,12 @@
 package com.njxs.lims.report.api;
 
 import com.njxs.lims.audit.Audited;
+import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.file.domain.StoredFile;
 import com.njxs.lims.permission.RequiresAction;
+import com.njxs.lims.permission.RequiresClient;
 import com.njxs.lims.report.service.ReportPdfService;
 import com.njxs.lims.report.service.ReportService;
 import jakarta.validation.Valid;
@@ -38,6 +40,7 @@ public class ReportController {
   }
 
   @GetMapping
+  @RequiresClient(ClientType.INTERNAL)
   public PageResponse<ReportResponse> list(
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize

@@ -1,6 +1,7 @@
 package com.njxs.lims.contract.persistence;
 
 import com.njxs.lims.contract.domain.Contract;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,6 +12,10 @@ public interface ContractRepository {
   void save(Contract contract);
 
   Optional<Contract> findById(UUID id);
+
+  List<Contract> list(int limit, int offset);
+
+  int count();
 
   Contract markSigned(Contract contract, UUID actorUserId);
 

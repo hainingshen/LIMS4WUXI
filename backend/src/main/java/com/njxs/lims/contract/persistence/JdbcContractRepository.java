@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -87,6 +88,34 @@ public class JdbcContractRepository implements ContractRepository {
         (rs, rowNum) -> contract(rs),
         id
     ).stream().findFirst();
+  }
+
+  @Override
+  public List<Contract> list(int limit, int offset) {
+    return jdbcTemplate.query(
+        "select " + SELECT_COLUMNS + """
+        from contract
+        where deleted_at is null
+        order by updated_at desc, created_at desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> contract(rs),
+        limit,
+        offset
+    );
+  }
+
+  @Override
+  public int count() {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from contract
+        where deleted_at is null
+        """,
+        Integer.class
+    );
+    return count == null ? 0 : count;
   }
 
   @Override

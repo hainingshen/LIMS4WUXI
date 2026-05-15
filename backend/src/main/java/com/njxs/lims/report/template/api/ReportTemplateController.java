@@ -1,9 +1,11 @@
 package com.njxs.lims.report.template.api;
 
 import com.njxs.lims.audit.Audited;
+import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.permission.RequiresAction;
+import com.njxs.lims.permission.RequiresClient;
 import com.njxs.lims.report.template.service.ReportTemplateService;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -30,6 +32,7 @@ public class ReportTemplateController {
   }
 
   @GetMapping
+  @RequiresClient(ClientType.INTERNAL)
   public PageResponse<ReportTemplateResponse> list(
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize

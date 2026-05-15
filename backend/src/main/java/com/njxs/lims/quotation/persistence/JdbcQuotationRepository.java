@@ -5,7 +5,10 @@ import static com.njxs.lims.common.persistence.BaseEntityJdbcSupport.timestamp;
 
 import com.njxs.lims.quotation.domain.Quotation;
 import com.njxs.lims.quotation.domain.QuotationItem;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -13,6 +16,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 @ConditionalOnProperty(prefix = "lims.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class JdbcQuotationRepository implements QuotationRepository {
+
+  private static final String SELECT_COLUMNS = """
+      id, biz_no, project_id, customer_org_id, status, currency, subtotal_amount,
+      discount_amount, total_amount, valid_until, note, created_at, created_by, updated_at, updated_by,
+      deleted_at, version, tenant_org_id, legacy_id, source_type, migration_batch, data_quality_score
+      """;
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -82,5 +91,64 @@ public class JdbcQuotationRepository implements QuotationRepository {
           item.sortOrder()
       );
     }
+  }
+
+  @Override
+  public List<Quotation> list(int limit, int offset) {
+    return jdbcTemplate.query(
+        "select " + SELECT_COLUMNS + """
+        from quotation
+        where deleted_at is null
+        order by updated_at desc, created_at desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> quotation(rs),
+        limit,
+        offset
+    );
+  }
+
+  @Override
+  public int count() {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from quotation
+        where deleted_at is null
+        """,
+        Integer.class
+    );
+    return count == null ? 0 : count;
+  }
+
+  private Quotation quotation(ResultSet rs) throws SQLException {
+    Quotation quotation = new Quotation();
+    quotation.setId(rs.getObject("id", UUID.class));
+    quotation.setBizNo(rs.getString("biz_no"));
+    quotation.setProjectId(rs.getObject("project_id", UUID.class));
+    quotation.setCustomerOrgId(rs.getObject("customer_org_id", UUID.class));
+    quotation.setStatus(rs.getString("status"));
+    quotation.setCurrency(rs.getString("currency"));
+    quotation.setSubtotalAmount(rs.getBigDecimal("subtotal_amount"));
+    quotation.setDiscountAmount(rs.getBigDecimal("discount_amount"));
+    quotation.setTotalAmount(rs.getBigDecimal("total_amount"));
+    quotation.setValidUntil(rs.getObject("valid_until", java.time.LocalDate.class));
+    quotation.setNote(rs.getString("note"));
+    quotation.setCreatedAt(instant(rs.getTimestamp("created_at")));
+    quotation.setCreatedBy(rs.getObject("created_by", UUID.class));
+    quotation.setUpdatedAt(instant(rs.getTimestamp("updated_at")));
+    quotation.setUpdatedBy(rs.getObject("updated_by", UUID.class));
+    quotation.setDeletedAt(instant(rs.getTimestamp("deleted_at")));
+    quotation.setVersion((Integer) rs.getObject("version"));
+    quotation.setTenantOrgId(rs.getObject("tenant_org_id", UUID.class));
+    quotation.setLegacyId(rs.getString("legacy_id"));
+    quotation.setSourceType(rs.getString("source_type"));
+    quotation.setMigrationBatch(rs.getString("migration_batch"));
+    quotation.setDataQualityScore((Integer) rs.getObject("data_quality_score"));
+    return quotation;
+  }
+
+  private java.time.Instant instant(java.sql.Timestamp timestamp) {
+    return timestamp == null ? null : timestamp.toInstant();
   }
 }

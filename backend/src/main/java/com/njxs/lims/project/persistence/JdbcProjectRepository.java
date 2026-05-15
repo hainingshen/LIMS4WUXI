@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -17,6 +18,15 @@ import org.springframework.stereotype.Repository;
 @Repository
 @ConditionalOnProperty(prefix = "lims.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class JdbcProjectRepository implements ProjectRepository {
+
+  private static final String SELECT_COLUMNS = """
+      id, biz_no, submission_id, customer_org_id, project_type, qualification_type, service_type,
+      urgent_extra_fee_percent, urgent_tat_days, requires_glp, requires_animal_test,
+      requires_ethics_review, requires_nonstandard_review, business_owner_id, technical_owner_id,
+      sd_user_id, status, planned_finish_at, actual_finish_at, health_status, health_score,
+      payment_status, created_at, created_by, updated_at, updated_by, deleted_at, version,
+      tenant_org_id, legacy_id, source_type, migration_batch, data_quality_score
+      """;
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -89,19 +99,41 @@ public class JdbcProjectRepository implements ProjectRepository {
   @Override
   public Optional<Project> findById(UUID id) {
     return jdbcTemplate.query(
-        """
-        select id, biz_no, submission_id, customer_org_id, project_type, qualification_type, service_type,
-          urgent_extra_fee_percent, urgent_tat_days, requires_glp, requires_animal_test,
-          requires_ethics_review, requires_nonstandard_review, business_owner_id, technical_owner_id,
-          sd_user_id, status, planned_finish_at, actual_finish_at, health_status, health_score,
-          payment_status, created_at, created_by, updated_at, updated_by, deleted_at, version,
-          tenant_org_id, legacy_id, source_type, migration_batch, data_quality_score
+        "select " + SELECT_COLUMNS + """
         from project
         where id = ? and deleted_at is null
         """,
         (rs, rowNum) -> project(rs),
         id
     ).stream().findFirst();
+  }
+
+  @Override
+  public List<Project> list(int limit, int offset) {
+    return jdbcTemplate.query(
+        "select " + SELECT_COLUMNS + """
+        from project
+        where deleted_at is null
+        order by updated_at desc, created_at desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> project(rs),
+        limit,
+        offset
+    );
+  }
+
+  @Override
+  public int count() {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from project
+        where deleted_at is null
+        """,
+        Integer.class
+    );
+    return count == null ? 0 : count;
   }
 
   @Override

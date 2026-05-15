@@ -1,10 +1,12 @@
 package com.njxs.lims.payment.api;
 
 import com.njxs.lims.audit.Audited;
+import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.payment.service.PaymentReceiptService;
 import com.njxs.lims.permission.RequiresAction;
+import com.njxs.lims.permission.RequiresClient;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -29,6 +31,7 @@ public class PaymentReceiptController {
   }
 
   @GetMapping
+  @RequiresClient(ClientType.INTERNAL)
   public PageResponse<PaymentReceiptResponse> list(
       @RequestParam(required = false) UUID projectId,
       @RequestParam(defaultValue = "1") int page,

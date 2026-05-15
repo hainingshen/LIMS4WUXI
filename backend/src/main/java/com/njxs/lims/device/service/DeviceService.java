@@ -92,13 +92,28 @@ public class DeviceService {
 
   @Transactional
   public DeviceFileResponse disableFile(UUID id, AuthPrincipal principal) {
-    return deviceRepository.disableFile(id, principal.userId())
-        .map(DeviceFileResponse::from)
+    DeviceFileRecord current = deviceRepository.findFileById(id)
         .orElseThrow(() -> new BusinessException(
             "NOT_FOUND",
             "资源不存在",
             HttpStatus.NOT_FOUND,
             Map.of("entityType", "device_file", "entityId", id)
+        ));
+    if ("DISABLED".equals(current.status())) {
+      throw new BusinessException(
+          "DEVICE_FILE_STATUS_CONFLICT",
+          "设备文件已作废，不能重复作废",
+          HttpStatus.CONFLICT,
+          Map.of("deviceFileId", id, "status", current.status())
+      );
+    }
+    return deviceRepository.disableFile(id, principal.userId())
+        .map(DeviceFileResponse::from)
+        .orElseThrow(() -> new BusinessException(
+            "DEVICE_FILE_STATUS_CONFLICT",
+            "设备文件当前状态不可作废",
+            HttpStatus.CONFLICT,
+            Map.of("deviceFileId", id, "status", current.status())
         ));
   }
 

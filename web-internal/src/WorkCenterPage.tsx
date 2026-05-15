@@ -13,6 +13,7 @@ import {
   Space,
   Table,
   Tag,
+  Tooltip,
   Typography,
   type TableProps,
 } from "antd";
@@ -323,31 +324,48 @@ export function WorkCenterPage() {
     {
       title: "操作",
       width: 220,
-      render: (_, blocker) => (
-        <Space wrap>
-          <Button
-            size="small"
-            disabled={blocker.status !== "OPEN" || mutating}
-            onClick={() => void changeBlockerStatus(blocker, "IN_PROGRESS")}
-          >
-            处理中
-          </Button>
-          <Button
-            size="small"
-            disabled={blocker.status === "CLOSED" || blocker.status === "RESOLVED" || mutating}
-            onClick={() => void changeBlockerStatus(blocker, "RESOLVED")}
-          >
-            解决
-          </Button>
-          <Button
-            size="small"
-            disabled={blocker.status === "CLOSED" || mutating}
-            onClick={() => openClose(blocker)}
-          >
-            关闭
-          </Button>
-        </Space>
-      ),
+      render: (_, blocker) => {
+        const inProgressReason = blockerActionReason(blocker, "IN_PROGRESS", mutating);
+        const resolveReason = blockerActionReason(blocker, "RESOLVED", mutating);
+        const closeReason = blockerActionReason(blocker, "CLOSE", mutating);
+        return (
+          <Space wrap>
+            <Tooltip title={inProgressReason}>
+              <span>
+                <Button
+                  size="small"
+                  disabled={Boolean(inProgressReason)}
+                  onClick={() => void changeBlockerStatus(blocker, "IN_PROGRESS")}
+                >
+                  处理中
+                </Button>
+              </span>
+            </Tooltip>
+            <Tooltip title={resolveReason}>
+              <span>
+                <Button
+                  size="small"
+                  disabled={Boolean(resolveReason)}
+                  onClick={() => void changeBlockerStatus(blocker, "RESOLVED")}
+                >
+                  解决
+                </Button>
+              </span>
+            </Tooltip>
+            <Tooltip title={closeReason}>
+              <span>
+                <Button
+                  size="small"
+                  disabled={Boolean(closeReason)}
+                  onClick={() => openClose(blocker)}
+                >
+                  关闭
+                </Button>
+              </span>
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -541,6 +559,26 @@ function HealthTag({ status }: { status: WorkCenterProject["healthStatus"] }) {
 function SeverityTag({ severity }: { severity: WorkCenterBlocker["severity"] }) {
   const color = severity === "HIGH" ? "red" : severity === "MEDIUM" ? "gold" : "blue";
   return <Tag color={color}>{severity}</Tag>;
+}
+
+function blockerActionReason(
+  blocker: WorkCenterBlocker,
+  action: "IN_PROGRESS" | "RESOLVED" | "CLOSE",
+  mutating: boolean,
+) {
+  if (mutating) {
+    return "操作处理中，请稍候";
+  }
+  if (action === "IN_PROGRESS" && blocker.status !== "OPEN") {
+    return "只有未处理阻塞可以转为处理中";
+  }
+  if (action === "RESOLVED" && (blocker.status === "RESOLVED" || blocker.status === "CLOSED")) {
+    return blocker.status === "RESOLVED" ? "阻塞已解决，不能重复解决" : "阻塞已关闭，不能再解决";
+  }
+  if (action === "CLOSE" && blocker.status === "CLOSED") {
+    return "阻塞已关闭，不能重复关闭";
+  }
+  return undefined;
 }
 
 function formatTime(value: string) {

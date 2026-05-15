@@ -103,6 +103,15 @@ class WorkCenterBlockerTests {
         .andExpect(jsonPath("$.status").value("CLOSED"))
         .andExpect(jsonPath("$.resolution").value("Retested positive control and released the work order"));
 
+    mockMvc.perform(post("/work-center/blockers/{id}/close", blockerId)
+            .header(HttpHeaders.AUTHORIZATION, bearer(qualityToken))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"resolution":"Duplicate close"}
+                """))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("BLOCKER_STATUS_CONFLICT"));
+
     assertProjectHealth(projectId, 100, "NORMAL");
 
     mockMvc.perform(get("/work-center/blockers")

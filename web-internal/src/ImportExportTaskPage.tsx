@@ -8,6 +8,7 @@ import {
   Space,
   Table,
   Tag,
+  Tooltip,
   Typography,
   type TableColumnsType,
 } from "antd";
@@ -182,35 +183,52 @@ export function ImportExportTaskPage() {
       key: "action",
       width: 260,
       fixed: "right",
-      render: (_, task) => (
-        <Space>
-          <Button
-            size="small"
-            disabled={!canValidateOrRun(roles) || task.status !== "PENDING"}
-            loading={actionLoadingId === `${task.id}:validate`}
-            onClick={() => void runAction(task, "validate")}
-          >
-            预校验
-          </Button>
-          <Button
-            size="small"
-            type="primary"
-            disabled={!canValidateOrRun(roles) || task.status !== "PENDING"}
-            loading={actionLoadingId === `${task.id}:run`}
-            onClick={() => void runAction(task, "run")}
-          >
-            执行
-          </Button>
-          <Button
-            size="small"
-            disabled={!canDownload(roles) || !task.resultFileId}
-            loading={actionLoadingId === `${task.id}:download`}
-            onClick={() => void downloadResult(task)}
-          >
-            下载
-          </Button>
-        </Space>
-      ),
+      render: (_, task) => {
+        const validateReason = taskActionReason(task, "validate", roles);
+        const runReason = taskActionReason(task, "run", roles);
+        const downloadReason = taskActionReason(task, "download", roles);
+        return (
+          <Space>
+            <Tooltip title={validateReason}>
+              <span>
+                <Button
+                  size="small"
+                  disabled={Boolean(validateReason)}
+                  loading={actionLoadingId === `${task.id}:validate`}
+                  onClick={() => void runAction(task, "validate")}
+                >
+                  预校验
+                </Button>
+              </span>
+            </Tooltip>
+            <Tooltip title={runReason}>
+              <span>
+                <Button
+                  size="small"
+                  type="primary"
+                  disabled={Boolean(runReason)}
+                  loading={actionLoadingId === `${task.id}:run`}
+                  onClick={() => void runAction(task, "run")}
+                >
+                  执行
+                </Button>
+              </span>
+            </Tooltip>
+            <Tooltip title={downloadReason}>
+              <span>
+                <Button
+                  size="small"
+                  disabled={Boolean(downloadReason)}
+                  loading={actionLoadingId === `${task.id}:download`}
+                  onClick={() => void downloadResult(task)}
+                >
+                  下载
+                </Button>
+              </span>
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ], [actionLoadingId, roles]);
 
@@ -303,6 +321,27 @@ function canValidateOrRun(roles: readonly string[]) {
 
 function canDownload(roles: readonly string[]) {
   return roles.includes("SYSTEM_ADMIN") || roles.includes("QUALITY_MANAGER") || roles.includes("ARCHIVE_MANAGER");
+}
+
+function taskActionReason(task: ImportExportTask, action: "validate" | "run" | "download", roles: readonly string[]) {
+  if (action === "download") {
+    if (!canDownload(roles)) {
+      return "当前账号没有导入导出结果下载权限";
+    }
+    if (!task.resultFileId) {
+      return "任务结果文件尚未生成";
+    }
+    return undefined;
+  }
+  if (!canValidateOrRun(roles)) {
+    return "当前账号没有导入导出任务执行权限";
+  }
+  if (task.status !== "PENDING") {
+    return task.status === "SUCCESS"
+      ? "任务已成功，只能下载或查看结果，不能重复执行"
+      : `当前状态 ${task.status} 不允许执行`;
+  }
+  return undefined;
 }
 
 function statusColor(status: ImportExportTask["status"]) {

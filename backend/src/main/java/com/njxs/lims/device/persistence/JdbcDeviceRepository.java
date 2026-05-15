@@ -123,6 +123,19 @@ public class JdbcDeviceRepository implements DeviceRepository {
   }
 
   @Override
+  public Optional<DeviceFileRecord> findFileById(UUID id) {
+    return jdbcTemplate.query(
+        "select " + FILE_COLUMNS + """
+        from device_file
+        where id = ?
+          and deleted_at is null
+        """,
+        (rs, rowNum) -> file(rs),
+        id
+    ).stream().findFirst();
+  }
+
+  @Override
   public DeviceFileRecord saveFile(DeviceFileRecord record, UUID actorUserId) {
     jdbcTemplate.update(
         """
@@ -159,6 +172,7 @@ public class JdbcDeviceRepository implements DeviceRepository {
             updated_by = ?,
             version = version + 1
         where id = ?
+          and status = 'ACTIVE'
           and deleted_at is null
         returning
         """ + FILE_COLUMNS,

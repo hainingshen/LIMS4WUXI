@@ -541,6 +541,10 @@ request POST "/work-center/blockers/$blocker_id/close" 200 "$admin_token" '{"res
 jq -e '.status == "CLOSED" and .resolution == "Local smoke blocker resolved"' "$LAST_BODY" >/dev/null \
   || fail "work center blocker close did not return closed blocker"
 
+request POST "/work-center/blockers/$blocker_id/close" 409 "$admin_token" '{"resolution":"Local smoke blocker duplicate close"}'
+jq -e '.code == "BLOCKER_STATUS_CONFLICT"' "$LAST_BODY" >/dev/null \
+  || fail "closed blocker did not reject duplicate close"
+
 request GET "/work-center/blockers?page=1&pageSize=100" 200 "$admin_token"
 jq -e --arg id "$blocker_id" \
   '.items[] | select(.id == $id and .status == "CLOSED")' "$LAST_BODY" >/dev/null \
@@ -1016,6 +1020,10 @@ request POST "/import-export-tasks/$registry_task_id/run" 202 "$admin_token"
 jq -e '.status == "SUCCESS" and .resultFileId != null and .errorSummary == "SUCCESS: REPORT_BATCH_DOWNLOAD completed"' "$LAST_BODY" >/dev/null \
   || fail "import/export report batch task did not complete with result file"
 
+request POST "/import-export-tasks/$registry_task_id/run" 409 "$admin_token"
+jq -e '.code == "IMPORT_EXPORT_TASK_STATUS_CONFLICT"' "$LAST_BODY" >/dev/null \
+  || fail "successful import/export task did not reject duplicate run"
+
 request GET "/import-export-tasks/$registry_task_id/result-file" 200 "$admin_token"
 grep -q "$registry_task_id" "$LAST_BODY" || fail "import/export result file did not contain task id"
 
@@ -1168,6 +1176,10 @@ request POST "/device-bookings/$external_booking_id/override" 200 "$equipment_to
 jq -e '.status == "NEEDS_RESCHEDULE" and .overrideReason == "Local smoke internal priority"' "$LAST_BODY" >/dev/null \
   || fail "device booking override did not mark external reservation as needs reschedule"
 
+request POST "/device-bookings/$external_booking_id/override" 409 "$equipment_token" "$override_payload"
+jq -e '.code == "DEVICE_BOOKING_OVERRIDE_INVALID"' "$LAST_BODY" >/dev/null \
+  || fail "device booking override did not reject duplicate override"
+
 device_file_payload="$(jq -nc --arg file_id "$generic_pdf_file_id" '{
   fileType: "CALIBRATION_CERT",
   fileId: $file_id,
@@ -1190,6 +1202,10 @@ jq -e --arg id "$device_file_id" \
 request POST "/device-files/$device_file_id/disable" 200 "$admin_token"
 jq -e '.status == "DISABLED" and .isCurrent == false' "$LAST_BODY" >/dev/null \
   || fail "device file disable did not return disabled file"
+
+request POST "/device-files/$device_file_id/disable" 409 "$admin_token"
+jq -e '.code == "DEVICE_FILE_STATUS_CONFLICT"' "$LAST_BODY" >/dev/null \
+  || fail "device file disable did not reject duplicate disable"
 
 retention_payload="$(jq -nc --arg sample_id "$sample_id" --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" '{
   sampleId: $sample_id,

@@ -125,6 +125,11 @@ class DeviceFileTests {
         .andExpect(jsonPath("$.status").value("DISABLED"))
         .andExpect(jsonPath("$.isCurrent").value(false));
 
+    mockMvc.perform(post("/device-files/{id}/disable", secondDeviceFileId)
+            .header(HttpHeaders.AUTHORIZATION, bearer(equipmentToken)))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("DEVICE_FILE_STATUS_CONFLICT"));
+
     assertCurrentFileState(deviceId, secondDeviceFileId);
   }
 

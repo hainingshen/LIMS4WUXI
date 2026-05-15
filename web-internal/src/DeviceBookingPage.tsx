@@ -147,6 +147,7 @@ export function DeviceBookingPage() {
   const overrideEnabled = canOverride(roles)
       && selectedBooking?.bookerType === "EXTERNAL_USER"
       && selectedBooking.status === "BOOKED";
+  const overrideDisabledReason = bookingOverrideReason(selectedBooking, roles);
 
   return (
     <section className="deviceBookingPage">
@@ -201,6 +202,9 @@ export function DeviceBookingPage() {
               </Typography.Text>
             </div>
           </div>
+          {overrideDisabledReason ? (
+            <Alert type="info" showIcon message={overrideDisabledReason} className="deskFeedback" />
+          ) : null}
           <Form form={form} layout="vertical" onFinish={(values) => void submit(values)}>
             <Form.Item name="reason" label="覆盖原因" rules={[{ required: true }]}>
               <Input disabled={!overrideEnabled} />
@@ -228,6 +232,24 @@ function deviceName(devices: readonly Device[], id: string) {
 
 function canOverride(roles: readonly string[]) {
   return roles.includes("EQUIPMENT_MANAGER") || roles.includes("TECHNICAL_LEADER");
+}
+
+function bookingOverrideReason(booking: DeviceBooking | undefined, roles: readonly string[]) {
+  if (!canOverride(roles)) {
+    return "当前账号没有覆盖设备预约权限";
+  }
+  if (!booking) {
+    return "请先选择一条设备预约";
+  }
+  if (booking.bookerType !== "EXTERNAL_USER") {
+    return "只能覆盖客户门户提交的外部预约";
+  }
+  if (booking.status !== "BOOKED") {
+    return booking.status === "NEEDS_RESCHEDULE"
+      ? "该预约已进入待重约状态，不能重复覆盖"
+      : `当前状态 ${booking.status} 不允许覆盖`;
+  }
+  return undefined;
 }
 
 function bookingStatusColor(status: DeviceBooking["status"]) {

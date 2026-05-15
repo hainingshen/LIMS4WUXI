@@ -89,6 +89,11 @@ class ImportExportTaskTests {
         .andExpect(jsonPath("$.resultFileId").isString())
         .andExpect(jsonPath("$.errorSummary").value("SUCCESS: LIST_EXPORT completed"));
 
+    mockMvc.perform(post("/import-export-tasks/{id}/run", exportTaskId)
+            .header(HttpHeaders.AUTHORIZATION, bearer(qualityToken)))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("IMPORT_EXPORT_TASK_STATUS_CONFLICT"));
+
     mockMvc.perform(get("/import-export-tasks/{id}/result-file", exportTaskId)
             .header(HttpHeaders.AUTHORIZATION, bearer(qualityToken)))
         .andExpect(status().isOk());

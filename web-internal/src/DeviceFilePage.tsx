@@ -9,6 +9,7 @@ import {
   Space,
   Table,
   Tag,
+  Tooltip,
   Typography,
   type TableColumnsType,
 } from "antd";
@@ -232,16 +233,23 @@ export function DeviceFilePage() {
       key: "action",
       width: 100,
       fixed: "right",
-      render: (_, file) => (
-        <Button
-          danger
-          size="small"
-          disabled={!canDisable(roles) || file.status === "DISABLED"}
-          onClick={() => void disableFile(file)}
-        >
-          作废
-        </Button>
-      ),
+      render: (_, file) => {
+        const reason = disableReason(file, roles);
+        return (
+          <Tooltip title={reason}>
+            <span>
+              <Button
+                danger
+                size="small"
+                disabled={Boolean(reason)}
+                onClick={() => void disableFile(file)}
+              >
+                作废
+              </Button>
+            </span>
+          </Tooltip>
+        );
+      },
     },
   ], [roles]);
 
@@ -363,6 +371,16 @@ function canUpload(roles: readonly string[]) {
 
 function canDisable(roles: readonly string[]) {
   return roles.includes("EQUIPMENT_MANAGER") || roles.includes("QUALITY_MANAGER");
+}
+
+function disableReason(file: DeviceFile, roles: readonly string[]) {
+  if (!canDisable(roles)) {
+    return "当前账号没有设备文件作废权限";
+  }
+  if (file.status === "DISABLED") {
+    return "设备文件已作废，不能重复作废";
+  }
+  return undefined;
 }
 
 function deviceStatusColor(status: Device["status"]) {

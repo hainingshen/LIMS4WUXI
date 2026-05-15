@@ -18,6 +18,8 @@ public interface DeviceRepository {
 
   List<DeviceFileRecord> listFiles(UUID deviceId);
 
+  Optional<DeviceFileRecord> findFileById(UUID id);
+
   DeviceFileRecord saveFile(DeviceFileRecord record, UUID actorUserId);
 
   Optional<DeviceFileRecord> disableFile(UUID id, UUID actorUserId);

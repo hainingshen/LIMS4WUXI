@@ -125,6 +125,11 @@ export type PortalUserCreateRequest = components["schemas"]["PortalUserCreateReq
 export type SystemConfigUpsertRequest = components["schemas"]["SystemConfigUpsertRequest"];
 export type BusinessRuleUpsertRequest = components["schemas"]["BusinessRuleUpsertRequest"];
 export type HolidayUpsertRequest = components["schemas"]["Holiday"];
+export type InternalUserCreateRequest = components["schemas"]["InternalUserCreateRequest"];
+export type InternalUserUpdateRequest = components["schemas"]["InternalUserUpdateRequest"];
+export type InternalUserRolesReplaceRequest = components["schemas"]["InternalUserRolesReplaceRequest"];
+export type InternalUserPasswordResetRequest = components["schemas"]["InternalUserPasswordResetRequest"];
+export type StatusUpdateRequest = components["schemas"]["StatusUpdateRequest"];
 export type LegacyStatusMappingUpsertRequest = components["schemas"]["LegacyStatusMapping"];
 export type DeviceBookingCreateRequest = components["schemas"]["DeviceBookingCreateRequest"];
 export type DeviceBookingOverrideRequest = components["schemas"]["DeviceBookingOverrideRequest"];
@@ -484,8 +489,38 @@ export async function listInternalUsers(params: { page?: number; pageSize?: numb
   return response.data;
 }
 
+export async function createInternalUser(request: InternalUserCreateRequest) {
+  const response = await http.post<InternalUser>("/users", request);
+  return response.data;
+}
+
+export async function updateInternalUser(id: string, request: InternalUserUpdateRequest) {
+  const response = await http.patch<InternalUser>(`/users/${id}`, request);
+  return response.data;
+}
+
+export async function updateInternalUserStatus(id: string, request: StatusUpdateRequest) {
+  const response = await http.post<InternalUser>(`/users/${id}/status`, request);
+  return response.data;
+}
+
+export async function replaceInternalUserRoles(id: string, request: InternalUserRolesReplaceRequest) {
+  const response = await http.post<InternalUser>(`/users/${id}/roles`, request);
+  return response.data;
+}
+
+export async function resetInternalUserPassword(id: string, request: InternalUserPasswordResetRequest) {
+  const response = await http.post<InternalUser>(`/users/${id}/reset-password`, request);
+  return response.data;
+}
+
 export async function listRoles() {
   const response = await http.get<Role[]>("/roles");
+  return response.data;
+}
+
+export async function updateRoleStatus(roleCode: string, request: StatusUpdateRequest) {
+  const response = await http.post<Role>(`/roles/${roleCode}/status`, request);
   return response.data;
 }
 

@@ -118,6 +118,14 @@ request POST "/payment-receipts" 400 "$finance_token" '{}'
 jq -e '.code == "VALIDATION_FAILED"' "$LAST_BODY" >/dev/null \
   || fail "authorized payment create with invalid body should return validation error"
 
+request POST "/users" 403 "$portal_token" '{}'
+jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null \
+  || fail "unauthorized internal user create should be blocked before body validation"
+
+request POST "/users" 400 "$internal_token" '{}'
+jq -e '.code == "VALIDATION_FAILED"' "$LAST_BODY" >/dev/null \
+  || fail "authorized internal user create with invalid body should return validation error"
+
 fake_id="00000000-0000-0000-0000-00000000ffff"
 request POST "/samples/$fake_id/receive" 403 "$portal_token" '{}'
 jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null \
@@ -132,7 +140,7 @@ request POST "/samples/$fake_id/receive" 404 "$sample_token" "$sample_receive_pa
 jq -e '.code == "NOT_FOUND"' "$LAST_BODY" >/dev/null \
   || fail "authorized sample receive with missing id should return NOT_FOUND"
 
-for path in /dictionaries /users /roles
+for path in /dictionaries /roles
 do
   request POST "$path" 405 "$internal_token" '{}'
   jq -e '.code == "METHOD_NOT_ALLOWED"' "$LAST_BODY" >/dev/null \

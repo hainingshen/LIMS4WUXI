@@ -84,7 +84,14 @@ public class JdbcAuthUserRepository implements AuthUserRepository {
 
   private AuthUser withRoles(AuthUser user) {
     List<String> roles = jdbcTemplate.queryForList(
-        "select role_code from user_role where user_id = ? order by role_code",
+        """
+        select ur.role_code
+        from user_role ur
+        join role_definition rd on rd.role_code = ur.role_code
+        where ur.user_id = ?
+          and rd.status = 'ACTIVE'
+        order by ur.role_code
+        """,
         String.class,
         user.id()
     );

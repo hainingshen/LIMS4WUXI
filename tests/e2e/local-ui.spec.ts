@@ -225,6 +225,10 @@ test("system admin can open master data admin page", async ({ page }) => {
   await page.getByRole("button", { name: /登\s*录/ }).click();
   await page.getByText("主数据维护").first().click();
   await expect(page.getByText("MASTER DATA", { exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "组织用户" }).click();
+  await expect(page.getByRole("heading", { name: "创建内部用户" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "用户操作" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "角色状态" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "旧状态映射" })).toBeVisible();
 });
 

@@ -93,6 +93,12 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | 生成报价 | `POST /projects/{id}/quotations` | 业务员 |
 | 合同签署确认 | `POST /contracts/{id}/mark-signed` | 业务员、客户 |
 | 提交统一变更 | `POST /change-requests/{id}/submit` | 申请人 |
+| 创建内部用户 | `POST /users` | 系统管理员 |
+| 更新内部用户资料和角色 | `PATCH /users/{id}` | 系统管理员 |
+| 替换内部用户角色 | `POST /users/{id}/roles` | 系统管理员 |
+| 停用或启用内部用户 | `POST /users/{id}/status` | 系统管理员 |
+| 重置内部用户密码 | `POST /users/{id}/reset-password` | 系统管理员 |
+| 停用或启用角色 | `POST /roles/{roleCode}/status` | 系统管理员 |
 | 审批统一变更 | `POST /change-requests/{id}/approve` | 目标对象对应审批人 |
 | 变更生效 | `POST /change-requests/{id}/effect` | 系统或授权管理员 |
 | 查询合同协议 | `GET /contracts` | 客户、内部授权人员；门户仅返回授权范围内协议 |
@@ -331,6 +337,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 功能：
 
 - 维护组织架构、内部用户、角色绑定。
+- 内部用户支持创建、资料更新、角色替换、停启用和密码重置；角色停用后不得再分配，且不再参与登录后的权限判定。
 - 维护系统字典和业务配置。
 - 维护节假日，用于 SLA、预约日历和工作中心计算。
 - 所有主数据变更写审计日志，关键字典发布后不得物理删除。

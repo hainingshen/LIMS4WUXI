@@ -28,11 +28,13 @@ public class JdbcPermissionRepository implements PermissionRepository {
     }
     return jdbcTemplate.query(
         """
-        select action_code, role_code, access, scope
-        from permission_matrix
-        where action_code = ?
-          and role_code in (%s)
-        order by role_code
+        select pm.action_code, pm.role_code, pm.access, pm.scope
+        from permission_matrix pm
+        join role_definition rd on rd.role_code = pm.role_code
+        where pm.action_code = ?
+          and pm.role_code in (%s)
+          and rd.status = 'ACTIVE'
+        order by pm.role_code
         """.formatted(placeholders),
         (rs, rowNum) -> new PermissionRule(
             rs.getString("action_code"),

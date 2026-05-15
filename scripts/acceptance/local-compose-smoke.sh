@@ -291,12 +291,98 @@ jq -e '.date == "2026-12-31" and .type == "HOLIDAY"' "$LAST_BODY" >/dev/null \
 
 request GET "/organization-units" 200 "$admin_token"
 jq -e 'type == "array" and length >= 1' "$LAST_BODY" >/dev/null || fail "organization unit list is empty"
+org_unit_id="$(jq -er '.[0].id' "$LAST_BODY")"
 
 request GET "/users?page=1&pageSize=20" 200 "$admin_token"
 jq -e '.items and (.total >= 1)' "$LAST_BODY" >/dev/null || fail "internal user list is empty"
 
 request GET "/roles" 200 "$admin_token"
 jq -e 'type == "array" and length >= 1' "$LAST_BODY" >/dev/null || fail "role list is empty"
+jq -e 'all(.[]; (.side == "INTERNAL" or .side == "PORTAL"))' "$LAST_BODY" >/dev/null \
+  || fail "role list did not expose side"
+
+internal_user_username="internal.smoke.$suffix"
+internal_user_password="Temp12345!"
+internal_user_new_password="Reset12345!"
+internal_user_payload="$(jq -nc \
+  --arg username "$internal_user_username" \
+  --arg org_unit_id "$org_unit_id" \
+  --arg suffix "$suffix" \
+  --arg password "$internal_user_password" '{
+    username: $username,
+    displayName: "Local Smoke Internal User",
+    email: ("internal-smoke-" + $suffix + "@example.com"),
+    organizationUnitId: $org_unit_id,
+    password: $password,
+    roleCodes: ["INSPECTOR"]
+  }')"
+request POST "/users" 201 "$admin_token" "$internal_user_payload"
+internal_user_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg username "$internal_user_username" '.username == $username and .status == "ACTIVE" and .roleCodes == ["INSPECTOR"]' "$LAST_BODY" >/dev/null \
+  || fail "internal user creation did not return active inspector"
+
+internal_user_update_payload="$(jq -nc --arg org_unit_id "$org_unit_id" --arg suffix "$suffix" '{
+  displayName: "Local Smoke Internal User Updated",
+  email: ("internal-smoke-updated-" + $suffix + "@example.com"),
+  organizationUnitId: $org_unit_id,
+  roleCodes: ["INSPECTOR"]
+}')"
+request PATCH "/users/$internal_user_id" 200 "$admin_token" "$internal_user_update_payload"
+jq -e '.displayName == "Local Smoke Internal User Updated" and .roleCodes == ["INSPECTOR"]' "$LAST_BODY" >/dev/null \
+  || fail "internal user update did not return updated profile"
+
+created_internal_token="$(login internal "$internal_user_username" "$internal_user_password")"
+request GET "/auth/me" 200 "$created_internal_token"
+jq -e '.roleCodes == ["INSPECTOR"]' "$LAST_BODY" >/dev/null \
+  || fail "created internal user did not login with INSPECTOR role"
+
+request POST "/users/$internal_user_id/roles" 200 "$admin_token" '{"roleCodes":["QC"]}'
+jq -e '.roleCodes == ["QC"]' "$LAST_BODY" >/dev/null || fail "internal user role replacement did not return QC"
+
+created_qc_token="$(login internal "$internal_user_username" "$internal_user_password")"
+request GET "/auth/me" 200 "$created_qc_token"
+jq -e '.roleCodes == ["QC"]' "$LAST_BODY" >/dev/null \
+  || fail "created internal user did not login with replaced QC role"
+
+request POST "/users/$internal_user_id/status" 200 "$admin_token" '{"status":"INACTIVE"}'
+jq -e '.status == "INACTIVE"' "$LAST_BODY" >/dev/null || fail "internal user disable did not return INACTIVE"
+disabled_login_payload="$(jq -nc --arg username "$internal_user_username" --arg password "$internal_user_password" \
+  '{username:$username,password:$password}')"
+request POST "/auth/internal/login" 401 "" "$disabled_login_payload"
+jq -e '.code == "INVALID_CREDENTIALS"' "$LAST_BODY" >/dev/null || fail "disabled internal user login did not fail"
+
+request POST "/users/$internal_user_id/reset-password" 200 "$admin_token" \
+  "$(jq -nc --arg password "$internal_user_new_password" '{password:$password}')"
+request POST "/users/$internal_user_id/status" 200 "$admin_token" '{"status":"ACTIVE"}'
+request POST "/auth/internal/login" 401 "" "$disabled_login_payload"
+jq -e '.code == "INVALID_CREDENTIALS"' "$LAST_BODY" >/dev/null || fail "old internal user password still works after reset"
+created_reset_token="$(login internal "$internal_user_username" "$internal_user_new_password")"
+request GET "/auth/me" 200 "$created_reset_token"
+jq -e --arg username "$internal_user_username" '.username == $username and .roleCodes == ["QC"]' "$LAST_BODY" >/dev/null \
+  || fail "reset password internal user login did not return QC role"
+
+request POST "/roles/ETHICS_COMMITTEE/status" 200 "$admin_token" '{"status":"INACTIVE"}'
+jq -e '.roleCode == "ETHICS_COMMITTEE" and .status == "INACTIVE"' "$LAST_BODY" >/dev/null \
+  || fail "role status update did not disable ETHICS_COMMITTEE"
+disabled_role_user_payload="$(jq -nc --arg suffix "$suffix" --arg password "$internal_user_password" '{
+  username: ("internal.ethics.smoke." + $suffix),
+  displayName: "Local Smoke Disabled Role User",
+  password: $password,
+  roleCodes: ["ETHICS_COMMITTEE"]
+}')"
+request POST "/users" 400 "$admin_token" "$disabled_role_user_payload"
+jq -e '.code == "INTERNAL_USER_ROLE_INVALID"' "$LAST_BODY" >/dev/null \
+  || fail "disabled internal role was still assignable"
+request POST "/roles/ETHICS_COMMITTEE/status" 200 "$admin_token" '{"status":"ACTIVE"}'
+jq -e '.roleCode == "ETHICS_COMMITTEE" and .status == "ACTIVE"' "$LAST_BODY" >/dev/null \
+  || fail "role status update did not re-enable ETHICS_COMMITTEE"
+
+request GET "/audit-logs?page=1&pageSize=200" 200 "$admin_token"
+for action_code in USER_CREATE USER_UPDATE USER_ROLE_REPLACE USER_STATUS_UPDATE USER_PASSWORD_RESET ROLE_STATUS_UPDATE
+do
+  jq -e --arg action "$action_code" '.items[] | select(.actionCode == $action and .result == "SUCCESS")' "$LAST_BODY" >/dev/null \
+    || fail "audit logs did not contain successful $action_code entry"
+done
 
 request GET "/legacy-status-mappings" 200 "$admin_token"
 jq -e 'type == "array" and length >= 1' "$LAST_BODY" >/dev/null || fail "legacy status mapping list is empty"

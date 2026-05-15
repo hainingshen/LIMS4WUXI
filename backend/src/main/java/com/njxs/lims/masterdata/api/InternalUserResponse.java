@@ -8,6 +8,7 @@ public record InternalUserResponse(
     UUID id,
     String username,
     String displayName,
+    String email,
     UUID organizationUnitId,
     String status,
     List<String> roleCodes
@@ -17,6 +18,7 @@ public record InternalUserResponse(
         record.id(),
         record.username(),
         record.displayName(),
+        record.email(),
         record.organizationUnitId(),
         record.status(),
         record.roleCodes()

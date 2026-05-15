@@ -1447,7 +1447,76 @@ export interface paths {
         /** List internal users */
         get: operations["listInternalUsers"];
         put?: never;
+        /** Create internal user */
+        post: operations["createInternalUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update internal user profile and roles */
+        patch: operations["updateInternalUser"];
+        trace?: never;
+    };
+    "/users/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable or disable internal user */
+        post: operations["updateInternalUserStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace internal user roles */
+        post: operations["replaceInternalUserRoles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset internal user password */
+        post: operations["resetInternalUserPassword"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1465,6 +1534,23 @@ export interface paths {
         get: operations["listRoles"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles/{roleCode}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable or disable role */
+        post: operations["updateRoleStatus"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2566,15 +2652,44 @@ export interface components {
             id: string;
             username: string;
             displayName: string;
+            email?: string | null;
             /** Format: uuid */
             organizationUnitId?: string | null;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
             roleCodes: string[];
         };
+        InternalUserCreateRequest: {
+            username: string;
+            displayName: string;
+            email?: string | null;
+            /** Format: uuid */
+            organizationUnitId?: string | null;
+            password: string;
+            roleCodes: string[];
+        };
+        InternalUserUpdateRequest: {
+            displayName: string;
+            email?: string | null;
+            /** Format: uuid */
+            organizationUnitId?: string | null;
+            roleCodes: string[];
+        };
+        InternalUserRolesReplaceRequest: {
+            roleCodes: string[];
+        };
+        InternalUserPasswordResetRequest: {
+            password: string;
+        };
+        StatusUpdateRequest: {
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+        };
         Role: {
             roleCode: string;
             roleName: string;
+            /** @enum {string} */
+            side: "INTERNAL" | "PORTAL";
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
         };
@@ -5235,6 +5350,134 @@ export interface operations {
             };
         };
     };
+    createInternalUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalUserCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created internal user */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalUser"];
+                };
+            };
+        };
+    };
+    updateInternalUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalUserUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated internal user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalUser"];
+                };
+            };
+        };
+    };
+    updateInternalUserStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated internal user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalUser"];
+                };
+            };
+        };
+    };
+    replaceInternalUserRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalUserRolesReplaceRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated internal user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalUser"];
+                };
+            };
+        };
+    };
+    resetInternalUserPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalUserPasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated internal user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalUser"];
+                };
+            };
+        };
+    };
     listRoles: {
         parameters: {
             query?: never;
@@ -5251,6 +5494,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Role"][];
+                };
+            };
+        };
+    };
+    updateRoleStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated role */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
                 };
             };
         };

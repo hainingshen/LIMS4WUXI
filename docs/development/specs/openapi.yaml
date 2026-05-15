@@ -2075,6 +2075,103 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/InternalUser'
+    post:
+      summary: Create internal user
+      operationId: createInternalUser
+      tags: [MasterData]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InternalUserCreateRequest'
+      responses:
+        '201':
+          description: Created internal user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalUser'
+  /users/{id}:
+    patch:
+      summary: Update internal user profile and roles
+      operationId: updateInternalUser
+      tags: [MasterData]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InternalUserUpdateRequest'
+      responses:
+        '200':
+          description: Updated internal user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalUser'
+  /users/{id}/status:
+    post:
+      summary: Enable or disable internal user
+      operationId: updateInternalUserStatus
+      tags: [MasterData]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusUpdateRequest'
+      responses:
+        '200':
+          description: Updated internal user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalUser'
+  /users/{id}/roles:
+    post:
+      summary: Replace internal user roles
+      operationId: replaceInternalUserRoles
+      tags: [MasterData]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InternalUserRolesReplaceRequest'
+      responses:
+        '200':
+          description: Updated internal user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalUser'
+  /users/{id}/reset-password:
+    post:
+      summary: Reset internal user password
+      operationId: resetInternalUserPassword
+      tags: [MasterData]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InternalUserPasswordResetRequest'
+      responses:
+        '200':
+          description: Updated internal user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalUser'
   /roles:
     get:
       summary: List roles
@@ -2089,6 +2186,30 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Role'
+  /roles/{roleCode}/status:
+    post:
+      summary: Enable or disable role
+      operationId: updateRoleStatus
+      tags: [MasterData]
+      parameters:
+        - name: roleCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusUpdateRequest'
+      responses:
+        '200':
+          description: Updated role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
   /legacy-status-mappings:
     get:
       summary: List legacy status mappings
@@ -4117,6 +4238,9 @@ components:
           type: string
         displayName:
           type: string
+        email:
+          type: string
+          nullable: true
         organizationUnitId:
           type: string
           format: uuid
@@ -4128,14 +4252,81 @@ components:
           type: array
           items:
             type: string
+    InternalUserCreateRequest:
+      type: object
+      required: [username, displayName, password, roleCodes]
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          nullable: true
+        organizationUnitId:
+          type: string
+          format: uuid
+          nullable: true
+        password:
+          type: string
+          minLength: 8
+        roleCodes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    InternalUserUpdateRequest:
+      type: object
+      required: [displayName, roleCodes]
+      properties:
+        displayName:
+          type: string
+        email:
+          type: string
+          nullable: true
+        organizationUnitId:
+          type: string
+          format: uuid
+          nullable: true
+        roleCodes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    InternalUserRolesReplaceRequest:
+      type: object
+      required: [roleCodes]
+      properties:
+        roleCodes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    InternalUserPasswordResetRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 8
+    StatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
     Role:
       type: object
-      required: [roleCode, roleName, status]
+      required: [roleCode, roleName, side, status]
       properties:
         roleCode:
           type: string
         roleName:
           type: string
+        side:
+          type: string
+          enum: [INTERNAL, PORTAL]
         status:
           type: string
           enum: [ACTIVE, INACTIVE]

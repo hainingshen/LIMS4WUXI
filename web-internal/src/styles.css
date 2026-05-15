@@ -459,6 +459,14 @@ body {
   width: 100%;
 }
 
+.masterDataActionField {
+  margin-top: 16px;
+}
+
+.masterDataInlineSelect {
+  min-width: 260px;
+}
+
 .selectedRow > td {
   background: var(--lims-accent-50) !important;
 }

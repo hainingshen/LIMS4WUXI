@@ -7,6 +7,7 @@ public record InternalUserRecord(
     UUID id,
     String username,
     String displayName,
+    String email,
     UUID organizationUnitId,
     String status,
     List<String> roleCodes

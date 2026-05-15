@@ -75,6 +75,8 @@ for path in \
   /change-requests \
   /sample-retentions \
   /archive-items \
+  /inventory-batches \
+  /inventory-transactions \
   /report-templates \
   /projects \
   /quotations \
@@ -84,7 +86,7 @@ do
   jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "$path did not return FORBIDDEN"
 done
 
-for path in /projects /quotations /contracts /archive-items
+for path in /projects /quotations /contracts /archive-items /inventory-batches /inventory-transactions
 do
   request GET "$path" 200 "$internal_token"
   jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \

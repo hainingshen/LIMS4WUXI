@@ -21,6 +21,8 @@ export type ReportDeliveryLog = components["schemas"]["ReportDeliveryLog"];
 export type ImportExportTask = components["schemas"]["ImportExportTask"];
 export type Device = components["schemas"]["Device"];
 export type DeviceFile = components["schemas"]["DeviceFile"];
+export type InventoryBatch = components["schemas"]["InventoryBatch"];
+export type InventoryTransaction = components["schemas"]["InventoryTransaction"];
 export type ArchiveItem = components["schemas"]["ArchiveItem"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
@@ -64,6 +66,12 @@ export type ReportDeliveryLogPage = Omit<components["schemas"]["PageResponse"], 
 export type DevicePage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Device[];
 };
+export type InventoryBatchPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: InventoryBatch[];
+};
+export type InventoryTransactionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: InventoryTransaction[];
+};
 export type ImportExportTaskPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: ImportExportTask[];
 };
@@ -87,6 +95,8 @@ export type SampleRetentionDisposeRequest = components["schemas"]["SampleRetenti
 export type GreenChannelCreateRequest = components["schemas"]["GreenChannelCreateRequest"];
 export type ReportRegistryBatchDownloadRequest = components["schemas"]["ReportRegistryBatchDownloadRequest"];
 export type DeviceFileUploadRequest = components["schemas"]["DeviceFileUploadRequest"];
+export type InventoryBatchUpsertRequest = components["schemas"]["InventoryBatchUpsertRequest"];
+export type InventoryTransactionCreateRequest = components["schemas"]["InventoryTransactionCreateRequest"];
 export type ImportExportTaskCreateRequest = components["schemas"]["ImportExportTaskCreateRequest"];
 export type ArchiveItemCreateRequest = components["schemas"]["ArchiveItemCreateRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
@@ -387,6 +397,30 @@ export async function uploadDeviceFile(deviceId: string, request: DeviceFileUplo
 
 export async function disableDeviceFile(id: string) {
   const response = await http.post<DeviceFile>(`/device-files/${id}/disable`);
+  return response.data;
+}
+
+export async function listInventoryBatches(
+  params: { page?: number; pageSize?: number; keyword?: string } = {},
+) {
+  const response = await http.get<InventoryBatchPage>("/inventory-batches", { params });
+  return response.data;
+}
+
+export async function upsertInventoryBatch(request: InventoryBatchUpsertRequest) {
+  const response = await http.post<InventoryBatch>("/inventory-batches", request);
+  return response.data;
+}
+
+export async function listInventoryTransactions(
+  params: { page?: number; pageSize?: number; inventoryBatchId?: string } = {},
+) {
+  const response = await http.get<InventoryTransactionPage>("/inventory-transactions", { params });
+  return response.data;
+}
+
+export async function createInventoryTransaction(request: InventoryTransactionCreateRequest) {
+  const response = await http.post<InventoryTransaction>("/inventory-transactions", request);
   return response.data;
 }
 

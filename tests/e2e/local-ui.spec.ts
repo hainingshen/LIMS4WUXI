@@ -146,6 +146,16 @@ test("archive manager can open archive page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "归档登记" })).toBeVisible();
 });
 
+test("inventory manager can open inventory page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.inventory");
+  await page.locator("#password").fill("Sales123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("库存管理").first().click();
+  await expect(page.getByText("INVENTORY", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "库存流水" })).toBeVisible();
+});
+
 test("sample manager can open sample retention page", async ({ page }) => {
   await page.goto("/internal/");
   await page.locator("#username").fill("internal.sample");

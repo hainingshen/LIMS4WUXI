@@ -152,6 +152,7 @@ general_token="$(login internal internal.general_manager Sales123!)"
 finance_token="$(login internal internal.finance Sales123!)"
 equipment_token="$(login internal internal.equipment_manager Sales123!)"
 archive_token="$(login internal internal.archive Sales123!)"
+inventory_token="$(login internal internal.inventory Sales123!)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
@@ -590,6 +591,49 @@ jq -e --arg id "$archive_item_id" \
   '.items[] | select(.id == $id and .status == "ARCHIVED")' "$LAST_BODY" >/dev/null \
   || fail "archive item list did not contain created item"
 
+inventory_payload="$(jq -nc --arg suffix "$suffix" '{
+  batchNo: ("INV-SMOKE-" + $suffix),
+  name: "Local Smoke Reference Material",
+  casNo: "50-00-0",
+  specification: "100 mg",
+  manufacturer: "NJXS",
+  receivedAt: "2026-05-15",
+  expiryDate: "2026-12-31",
+  quantity: 10,
+  unit: "bottle",
+  storageCondition: "ROOM_TEMPERATURE",
+  storageLocation: "INV-SMOKE-01"
+}')"
+request POST "/inventory-batches" 200 "$inventory_token" "$inventory_payload"
+inventory_batch_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e '.status == "IN_STOCK" and .quantity == 10' "$LAST_BODY" >/dev/null \
+  || fail "inventory batch creation did not return in-stock batch"
+
+request GET "/inventory-batches?keyword=INV-SMOKE-$suffix&page=1&pageSize=20" 200 "$admin_token"
+jq -e --arg id "$inventory_batch_id" \
+  '.items[] | select(.id == $id and .status == "IN_STOCK" and .quantity == 10)' "$LAST_BODY" >/dev/null \
+  || fail "inventory batch list did not contain created batch"
+
+inventory_txn_payload="$(jq -nc --arg id "$inventory_batch_id" '{
+  inventoryBatchId: $id,
+  txnType: "USE",
+  quantity: 3,
+  reason: "Local smoke use"
+}')"
+request POST "/inventory-transactions" 201 "$inventory_token" "$inventory_txn_payload"
+jq -e '.txnType == "USE" and .quantity == 3' "$LAST_BODY" >/dev/null \
+  || fail "inventory transaction creation did not return USE transaction"
+
+request GET "/inventory-transactions?inventoryBatchId=$inventory_batch_id&page=1&pageSize=20" 200 "$admin_token"
+jq -e --arg id "$inventory_batch_id" \
+  '.items[] | select(.inventoryBatchId == $id and .txnType == "USE" and .quantity == 3)' "$LAST_BODY" >/dev/null \
+  || fail "inventory transaction list did not contain created transaction"
+
+request GET "/inventory-batches?keyword=INV-SMOKE-$suffix&page=1&pageSize=20" 200 "$inventory_token"
+jq -e --arg id "$inventory_batch_id" \
+  '.items[] | select(.id == $id and .quantity == 7 and .status == "IN_STOCK")' "$LAST_BODY" >/dev/null \
+  || fail "inventory batch quantity did not decrease after USE transaction"
+
 device_id="$(cat /proc/sys/kernel/random/uuid)"
 device_file_source_id="$(cat /proc/sys/kernel/random/uuid)"
 db_scalar "
@@ -712,5 +756,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s device_file %s retention %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$device_file_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_file %s retention %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_file_id" "$retention_id"

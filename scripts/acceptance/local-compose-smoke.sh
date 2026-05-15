@@ -503,6 +503,41 @@ jq -e --arg id "$report_id" \
   '.items[] | select(.reportId == $id and .deliveryType == "DOWNLOAD" and .paymentGateStatus == "UNLOCKED")' "$LAST_BODY" >/dev/null \
   || fail "official PDF download did not write delivery log"
 
+retention_payload="$(jq -nc --arg sample_id "$sample_id" --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" '{
+  sampleId: $sample_id,
+  projectId: $project_id,
+  reportId: $report_id,
+  retainedQuantity: 2,
+  quantityUnit: "pcs",
+  storageCondition: "ROOM_TEMPERATURE",
+  storageLocation: "RET-SMOKE-01",
+  retainUntil: "2026-08-01",
+  dispositionPlan: "DESTROY"
+}')"
+request POST "/sample-retentions" 201 "$sample_token" "$retention_payload"
+retention_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e '.status == "PENDING_REGISTER"' "$LAST_BODY" >/dev/null \
+  || fail "sample retention creation did not return PENDING_REGISTER"
+
+request POST "/sample-retentions/$retention_id/register" 200 "$sample_token"
+jq -e '.status == "RETAINED"' "$LAST_BODY" >/dev/null \
+  || fail "sample retention register did not return RETAINED"
+
+retention_extend_payload="$(jq -nc '{retainUntil:"2026-10-01",reason:"Local smoke retention extension"}')"
+request POST "/sample-retentions/$retention_id/extend" 200 "$sample_token" "$retention_extend_payload"
+jq -e '.status == "RETAINED" and .retainUntil == "2026-10-01"' "$LAST_BODY" >/dev/null \
+  || fail "sample retention extension did not return updated retainUntil"
+
+retention_dispose_payload="$(jq -nc '{disposition:"DESTROY",reason:"Local smoke disposal"}')"
+request POST "/sample-retentions/$retention_id/dispose" 200 "$sample_token" "$retention_dispose_payload"
+jq -e '.status == "DESTROYED"' "$LAST_BODY" >/dev/null \
+  || fail "sample retention disposal did not return DESTROYED"
+
+request GET "/sample-retentions?page=1&pageSize=100" 200 "$sample_token"
+jq -e --arg id "$retention_id" \
+  '.items[] | select(.id == $id and .status == "DESTROYED")' "$LAST_BODY" >/dev/null \
+  || fail "sample retention list does not contain disposed retention"
+
 locked_payload="$(submission_payload "$suffix-locked")"
 request PATCH "/submissions/$nonstandard_submission_id" 409 "$portal_token" "$locked_payload"
 jq -e '.code == "FIELD_CHANGE_REQUIRES_CHANGE_REQUEST"' "$LAST_BODY" >/dev/null \
@@ -512,5 +547,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s payment %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$payment_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s payment %s retention %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$payment_id" "$retention_id"

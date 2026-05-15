@@ -31,6 +31,7 @@ import "@lims4wuxi/shared/theme/limsTheme.css";
 import { ContractListPage } from "./ContractListPage";
 import { ProjectListPage } from "./ProjectListPage";
 import { ReportWorkbenchPage } from "./ReportWorkbenchPage";
+import { SampleRetentionPage } from "./SampleRetentionPage";
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
 import { StudyPlanPage } from "./StudyPlanPage";
 import { SubmissionAcceptanceDesk } from "./SubmissionAcceptanceDesk";
@@ -84,6 +85,12 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     label: "报告管理",
     detail: "草稿、审核、签发和收款",
     roles: ["REPORT_PREPARER", "QC", "QA", "SD", "AUTHORIZED_SIGNATORY", "FINANCE_CASHIER"],
+  },
+  {
+    key: "sample-retentions",
+    label: "留样管理",
+    detail: "登记、延期和处置",
+    roles: ["SAMPLE_MANAGER", "QUALITY_MANAGER", "ARCHIVE_MANAGER"],
   },
   {
     key: "contracts",
@@ -287,6 +294,9 @@ function renderRoute(
   }
   if (activeRoute?.key === "reports") {
     return <ReportWorkbenchPage />;
+  }
+  if (activeRoute?.key === "sample-retentions") {
+    return <SampleRetentionPage />;
   }
   if (activeRoute?.key === "contracts") {
     return <ContractListPage />;

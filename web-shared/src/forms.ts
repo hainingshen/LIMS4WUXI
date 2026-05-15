@@ -13,6 +13,7 @@ export type RawRecord = components["schemas"]["RawRecord"];
 export type Report = components["schemas"]["Report"];
 export type PaymentReceipt = components["schemas"]["PaymentReceipt"];
 export type ReportTemplate = components["schemas"]["ReportTemplate"];
+export type SampleRetention = components["schemas"]["SampleRetention"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
@@ -40,6 +41,9 @@ export type PaymentReceiptPage = Omit<components["schemas"]["PageResponse"], "it
 export type ReportTemplatePage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: ReportTemplate[];
 };
+export type SampleRetentionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: SampleRetention[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
@@ -51,6 +55,9 @@ export type RawRecordSubmitRequest = components["schemas"]["RawRecordSubmitReque
 export type ReportGenerateDraftRequest = components["schemas"]["ReportGenerateDraftRequest"];
 export type PaymentReceiptCreateRequest = components["schemas"]["PaymentReceiptCreateRequest"];
 export type ReportTemplateCreateRequest = components["schemas"]["ReportTemplateCreateRequest"];
+export type SampleRetentionCreateRequest = components["schemas"]["SampleRetentionCreateRequest"];
+export type SampleRetentionExtendRequest = components["schemas"]["SampleRetentionExtendRequest"];
+export type SampleRetentionDisposeRequest = components["schemas"]["SampleRetentionDisposeRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -260,6 +267,31 @@ export async function createReportTemplate(request: ReportTemplateCreateRequest)
 
 export async function publishReportTemplate(id: string) {
   const response = await http.post<ReportTemplate>(`/report-templates/${id}/publish`);
+  return response.data;
+}
+
+export async function listSampleRetentions(params: { page?: number; pageSize?: number } = {}) {
+  const response = await http.get<SampleRetentionPage>("/sample-retentions", { params });
+  return response.data;
+}
+
+export async function createSampleRetention(request: SampleRetentionCreateRequest) {
+  const response = await http.post<SampleRetention>("/sample-retentions", request);
+  return response.data;
+}
+
+export async function registerSampleRetention(id: string) {
+  const response = await http.post<SampleRetention>(`/sample-retentions/${id}/register`);
+  return response.data;
+}
+
+export async function extendSampleRetention(id: string, request: SampleRetentionExtendRequest) {
+  const response = await http.post<SampleRetention>(`/sample-retentions/${id}/extend`, request);
+  return response.data;
+}
+
+export async function disposeSampleRetention(id: string, request: SampleRetentionDisposeRequest) {
+  const response = await http.post<SampleRetention>(`/sample-retentions/${id}/dispose`, request);
   return response.data;
 }
 

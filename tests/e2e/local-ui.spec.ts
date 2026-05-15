@@ -86,6 +86,16 @@ test("SD can open study plan dispatch page", async ({ page }) => {
   await expect(page.getByText("试验工单")).toBeVisible();
 });
 
+test("inspector can open work order execution page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.inspector");
+  await page.locator("#password").fill("Sales123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("试验执行").first().click();
+  await expect(page.getByText("WORK ORDER EXECUTION")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "原始记录" })).toBeVisible();
+});
+
 test("mobile portal keeps 390px workflow usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

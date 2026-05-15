@@ -150,6 +150,7 @@ signatory_token="$(login internal internal.authorized_signatory Sales123!)"
 dept_token="$(login internal internal.dept_manager Sales123!)"
 general_token="$(login internal internal.general_manager Sales123!)"
 finance_token="$(login internal internal.finance Sales123!)"
+equipment_token="$(login internal internal.equipment_manager Sales123!)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
@@ -558,6 +559,84 @@ registry_task_id="$(jq -er '.id' "$LAST_BODY")"
 jq -e '.taskType == "REPORT_BATCH_DOWNLOAD" and .entityType == "REPORT" and .status == "PENDING"' "$LAST_BODY" >/dev/null \
   || fail "report registry batch download did not create pending report export task"
 
+device_id="$(cat /proc/sys/kernel/random/uuid)"
+device_file_source_id="$(cat /proc/sys/kernel/random/uuid)"
+db_scalar "
+insert into device (
+  id, device_no, name, model, manufacturer, location, owner_user_id,
+  metrology_required, status, created_at, created_by, updated_at, updated_by,
+  version, source_type, data_quality_score
+) values (
+  '$device_id',
+  'DEV-SMOKE-$suffix',
+  'Local Smoke Incubator',
+  'SMK-37',
+  'NJXS',
+  'Local Lab A',
+  '00000000-0000-0000-0000-000000000116',
+  true,
+  'ACTIVE',
+  now(),
+  '00000000-0000-0000-0000-000000000101',
+  now(),
+  '00000000-0000-0000-0000-000000000101',
+  0,
+  'NEW',
+  100
+)
+returning id;
+" >/dev/null
+db_scalar "
+insert into file_metadata (
+  id, file_name, object_key, content_type, size_bytes, sha256, uploaded_by,
+  created_at, created_by, updated_at, updated_by, version, source_type, data_quality_score
+) values (
+  '$device_file_source_id',
+  'local-smoke-device-calibration.pdf',
+  'devices/$device_id/$device_file_source_id.pdf',
+  'application/pdf',
+  2048,
+  'sha256-$device_file_source_id',
+  '00000000-0000-0000-0000-000000000116',
+  now(),
+  '00000000-0000-0000-0000-000000000116',
+  now(),
+  '00000000-0000-0000-0000-000000000116',
+  0,
+  'NEW',
+  100
+)
+returning id;
+" >/dev/null
+
+request GET "/devices?keyword=DEV-SMOKE-$suffix&page=1&pageSize=20" 200 "$equipment_token"
+jq -e --arg id "$device_id" --arg device_no "DEV-SMOKE-$suffix" \
+  '.items[] | select(.id == $id and .deviceNo == $device_no and .metrologyRequired == true and .status == "ACTIVE")' "$LAST_BODY" >/dev/null \
+  || fail "device list did not contain local smoke device"
+
+device_file_payload="$(jq -nc --arg file_id "$device_file_source_id" '{
+  fileType: "CALIBRATION_CERT",
+  fileId: $file_id,
+  versionNo: "SMOKE-V1",
+  validFrom: "2026-05-01",
+  validUntil: "2026-12-31",
+  isCurrent: true
+}')"
+request POST "/devices/$device_id/files" 201 "$equipment_token" "$device_file_payload"
+device_file_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg device_id "$device_id" --arg file_id "$device_file_source_id" \
+  '.deviceId == $device_id and .fileId == $file_id and .fileType == "CALIBRATION_CERT" and .isCurrent == true and .status == "ACTIVE"' "$LAST_BODY" >/dev/null \
+  || fail "device file upload did not return active current file"
+
+request GET "/devices/$device_id/files" 200 "$equipment_token"
+jq -e --arg id "$device_file_id" \
+  '.[] | select(.id == $id and .versionNo == "SMOKE-V1" and .validUntil == "2026-12-31")' "$LAST_BODY" >/dev/null \
+  || fail "device file list did not contain uploaded file"
+
+request POST "/device-files/$device_file_id/disable" 200 "$admin_token"
+jq -e '.status == "DISABLED" and .isCurrent == false' "$LAST_BODY" >/dev/null \
+  || fail "device file disable did not return disabled file"
+
 retention_payload="$(jq -nc --arg sample_id "$sample_id" --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" '{
   sampleId: $sample_id,
   projectId: $project_id,
@@ -602,5 +681,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s retention %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s device_file %s retention %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$device_file_id" "$retention_id"

@@ -19,6 +19,8 @@ export type ReportRegistryItem = components["schemas"]["ReportRegistryItem"];
 export type ReportRegistryVersion = components["schemas"]["ReportRegistryVersion"];
 export type ReportDeliveryLog = components["schemas"]["ReportDeliveryLog"];
 export type ImportExportTask = components["schemas"]["ImportExportTask"];
+export type Device = components["schemas"]["Device"];
+export type DeviceFile = components["schemas"]["DeviceFile"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
@@ -58,6 +60,9 @@ export type ReportRegistryPage = Omit<components["schemas"]["PageResponse"], "it
 export type ReportDeliveryLogPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: ReportDeliveryLog[];
 };
+export type DevicePage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: Device[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
@@ -74,6 +79,7 @@ export type SampleRetentionExtendRequest = components["schemas"]["SampleRetentio
 export type SampleRetentionDisposeRequest = components["schemas"]["SampleRetentionDisposeRequest"];
 export type GreenChannelCreateRequest = components["schemas"]["GreenChannelCreateRequest"];
 export type ReportRegistryBatchDownloadRequest = components["schemas"]["ReportRegistryBatchDownloadRequest"];
+export type DeviceFileUploadRequest = components["schemas"]["DeviceFileUploadRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -352,6 +358,26 @@ export async function createReportRegistryBatchDownload(request: ReportRegistryB
 
 export async function listReportDeliveryLogs(params: { page?: number; pageSize?: number; reportId?: string } = {}) {
   const response = await http.get<ReportDeliveryLogPage>("/report-delivery-logs", { params });
+  return response.data;
+}
+
+export async function listDevices(params: { page?: number; pageSize?: number; keyword?: string } = {}) {
+  const response = await http.get<DevicePage>("/devices", { params });
+  return response.data;
+}
+
+export async function listDeviceFiles(deviceId: string) {
+  const response = await http.get<DeviceFile[]>(`/devices/${deviceId}/files`);
+  return response.data;
+}
+
+export async function uploadDeviceFile(deviceId: string, request: DeviceFileUploadRequest) {
+  const response = await http.post<DeviceFile>(`/devices/${deviceId}/files`, request);
+  return response.data;
+}
+
+export async function disableDeviceFile(id: string) {
+  const response = await http.post<DeviceFile>(`/device-files/${id}/disable`);
   return response.data;
 }
 

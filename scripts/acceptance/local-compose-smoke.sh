@@ -244,6 +244,46 @@ request GET "/audit-logs?page=1&pageSize=50" 200 "$admin_token"
 jq -e '.items and (.total >= 1) and (.items[] | select(.actionCode == "SYSTEM_CONFIG" and .result == "SUCCESS"))' "$LAST_BODY" >/dev/null \
   || fail "audit logs did not contain successful SYSTEM_CONFIG entry"
 
+request GET "/holidays" 200 "$admin_token"
+jq -e 'type == "array" and length >= 1' "$LAST_BODY" >/dev/null || fail "holiday list is empty"
+
+holiday_id="00000000-0000-4000-8000-$(printf '%012d' "$((suffix % 1000000000000))")"
+holiday_payload="$(jq -nc --arg id "$holiday_id" '{
+  id: $id,
+  date: "2026-12-31",
+  type: "HOLIDAY",
+  name: "Local Smoke Holiday"
+}')"
+request POST "/holidays" 200 "$admin_token" "$holiday_payload"
+jq -e '.date == "2026-12-31" and .type == "HOLIDAY"' "$LAST_BODY" >/dev/null \
+  || fail "holiday upsert did not return saved holiday"
+
+request GET "/organization-units" 200 "$admin_token"
+jq -e 'type == "array" and length >= 1' "$LAST_BODY" >/dev/null || fail "organization unit list is empty"
+
+request GET "/users?page=1&pageSize=20" 200 "$admin_token"
+jq -e '.items and (.total >= 1)' "$LAST_BODY" >/dev/null || fail "internal user list is empty"
+
+request GET "/roles" 200 "$admin_token"
+jq -e 'type == "array" and length >= 1' "$LAST_BODY" >/dev/null || fail "role list is empty"
+
+request GET "/legacy-status-mappings" 200 "$admin_token"
+jq -e 'type == "array" and length >= 1' "$LAST_BODY" >/dev/null || fail "legacy status mapping list is empty"
+
+legacy_status_text="LOCAL_SMOKE_STATUS_$suffix"
+legacy_mapping_payload="$(jq -nc --arg legacy_status_text "$legacy_status_text" '{
+  legacyEntityType: "SUBMISSION",
+  legacyStatusText: $legacy_status_text,
+  targetEntityType: "SUBMISSION",
+  targetStatus: "SUBMITTED",
+  migrationMode: "MANUAL_REVIEW",
+  qualityScoreDelta: -5,
+  note: "Local smoke legacy status"
+}')"
+request POST "/legacy-status-mappings" 200 "$admin_token" "$legacy_mapping_payload"
+jq -e --arg legacy_status_text "$legacy_status_text" '.legacyStatusText == $legacy_status_text and .migrationMode == "MANUAL_REVIEW"' "$LAST_BODY" >/dev/null \
+  || fail "legacy status mapping upsert did not return saved mapping"
+
 payload="$(submission_payload "$suffix")"
 request POST "/submissions" 201 "$portal_token" "$payload"
 submission_id="$(jq -er '.id' "$LAST_BODY")"
@@ -884,5 +924,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: customer_org %s portal_user %s system_config %s business_rule %s submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
-  "$customer_org_id" "$portal_user_id" "$system_config_key" "$business_rule_code" "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: customer_org %s portal_user %s system_config %s business_rule %s holiday %s legacy_status %s submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
+  "$customer_org_id" "$portal_user_id" "$system_config_key" "$business_rule_code" "$holiday_id" "$legacy_status_text" "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"

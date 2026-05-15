@@ -83,6 +83,11 @@ for path in \
   /system-configs \
   /business-rules \
   /audit-logs \
+  /holidays \
+  /organization-units \
+  /users \
+  /roles \
+  /legacy-status-mappings \
   /report-templates \
   /projects \
   /quotations \
@@ -99,11 +104,15 @@ do
     || fail "$path did not return a paged response"
 done
 
-for path in /system-configs /business-rules
+for path in /system-configs /business-rules /holidays /organization-units /roles /legacy-status-mappings
 do
   request GET "$path" 200 "$internal_token"
   jq -e 'type == "array"' "$LAST_BODY" >/dev/null || fail "$path did not return an array response"
 done
+
+request GET "/users" 200 "$internal_token"
+jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
+  || fail "/users did not return a paged response"
 
 request GET "/audit-logs" 200 "$internal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \

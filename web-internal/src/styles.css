@@ -201,6 +201,11 @@ body {
   gap: 16px;
 }
 
+.masterDataAdminPage {
+  display: grid;
+  gap: 16px;
+}
+
 .studyPlanPage {
   display: grid;
   gap: 16px;
@@ -381,11 +386,16 @@ body {
 
 .customerManagementGrid,
 .customerManagementFormGrid,
-.systemGovernanceGrid {
+.systemGovernanceGrid,
+.masterDataAdminGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   align-items: start;
+}
+
+.masterDataWidePanel {
+  grid-column: 1 / -1;
 }
 
 .inventoryTxnGrid {
@@ -562,11 +572,16 @@ body {
   .customerManagementGrid,
   .customerManagementFormGrid,
   .systemGovernanceGrid,
+  .masterDataAdminGrid,
   .inventoryTxnGrid,
   .workCenterHeader,
   .workCenterGrid,
   .workCenterSummary {
     grid-template-columns: 1fr;
+  }
+
+  .masterDataWidePanel {
+    grid-column: auto;
   }
 
   .sampleDeskHeader,

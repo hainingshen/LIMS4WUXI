@@ -166,6 +166,16 @@ test("system admin can open system governance page", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "审计日志" })).toBeVisible();
 });
 
+test("system admin can open master data admin page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.admin");
+  await page.locator("#password").fill("Internal123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("主数据维护").first().click();
+  await expect(page.getByText("MASTER DATA", { exact: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "旧状态映射" })).toBeVisible();
+});
+
 test("archive manager can open archive page", async ({ page }) => {
   await page.goto("/internal/");
   await page.locator("#username").fill("internal.archive");

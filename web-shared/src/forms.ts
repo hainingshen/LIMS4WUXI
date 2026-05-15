@@ -24,6 +24,11 @@ export type PortalUser = components["schemas"]["PortalUser"];
 export type SystemConfig = components["schemas"]["SystemConfig"];
 export type BusinessRule = components["schemas"]["BusinessRule"];
 export type AuditLog = components["schemas"]["AuditLog"];
+export type Holiday = components["schemas"]["Holiday"];
+export type OrganizationUnit = components["schemas"]["OrganizationUnit"];
+export type InternalUser = components["schemas"]["InternalUser"];
+export type Role = components["schemas"]["Role"];
+export type LegacyStatusMapping = components["schemas"]["LegacyStatusMapping"];
 export type Device = components["schemas"]["Device"];
 export type DeviceBooking = components["schemas"]["DeviceBooking"];
 export type DeviceFile = components["schemas"]["DeviceFile"];
@@ -78,6 +83,9 @@ export type PortalUserPage = Omit<components["schemas"]["PageResponse"], "items"
 export type AuditLogPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: AuditLog[];
 };
+export type InternalUserPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: InternalUser[];
+};
 export type DevicePage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Device[];
 };
@@ -116,6 +124,8 @@ export type CustomerOrgUpsertRequest = components["schemas"]["CustomerOrgUpsertR
 export type PortalUserCreateRequest = components["schemas"]["PortalUserCreateRequest"];
 export type SystemConfigUpsertRequest = components["schemas"]["SystemConfigUpsertRequest"];
 export type BusinessRuleUpsertRequest = components["schemas"]["BusinessRuleUpsertRequest"];
+export type HolidayUpsertRequest = components["schemas"]["Holiday"];
+export type LegacyStatusMappingUpsertRequest = components["schemas"]["LegacyStatusMapping"];
 export type DeviceBookingCreateRequest = components["schemas"]["DeviceBookingCreateRequest"];
 export type DeviceBookingOverrideRequest = components["schemas"]["DeviceBookingOverrideRequest"];
 export type DeviceFileUploadRequest = components["schemas"]["DeviceFileUploadRequest"];
@@ -446,6 +456,41 @@ export async function upsertBusinessRule(request: BusinessRuleUpsertRequest) {
 
 export async function listAuditLogs(params: { page?: number; pageSize?: number } = {}) {
   const response = await http.get<AuditLogPage>("/audit-logs", { params });
+  return response.data;
+}
+
+export async function listHolidays() {
+  const response = await http.get<Holiday[]>("/holidays");
+  return response.data;
+}
+
+export async function upsertHoliday(request: HolidayUpsertRequest) {
+  const response = await http.post<Holiday>("/holidays", request);
+  return response.data;
+}
+
+export async function listOrganizationUnits() {
+  const response = await http.get<OrganizationUnit[]>("/organization-units");
+  return response.data;
+}
+
+export async function listInternalUsers(params: { page?: number; pageSize?: number } = {}) {
+  const response = await http.get<InternalUserPage>("/users", { params });
+  return response.data;
+}
+
+export async function listRoles() {
+  const response = await http.get<Role[]>("/roles");
+  return response.data;
+}
+
+export async function listLegacyStatusMappings() {
+  const response = await http.get<LegacyStatusMapping[]>("/legacy-status-mappings");
+  return response.data;
+}
+
+export async function upsertLegacyStatusMapping(request: LegacyStatusMappingUpsertRequest) {
+  const response = await http.post<LegacyStatusMapping>("/legacy-status-mappings", request);
   return response.data;
 }
 

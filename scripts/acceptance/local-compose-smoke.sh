@@ -153,6 +153,7 @@ finance_token="$(login internal internal.finance Sales123!)"
 equipment_token="$(login internal internal.equipment_manager Sales123!)"
 archive_token="$(login internal internal.archive Sales123!)"
 inventory_token="$(login internal internal.inventory Sales123!)"
+suffix="$(date +%s)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
@@ -166,7 +167,41 @@ jq -e 'length > 0' "$LAST_BODY" >/dev/null || fail "YES_NO dictionary is empty"
 request GET "/form-schemas?formCode=SUBMISSION_VER15&status=PUBLISHED" 200 "$portal_token"
 jq -e '.[0].formCode == "SUBMISSION_VER15"' "$LAST_BODY" >/dev/null || fail "SUBMISSION_VER15 schema not found"
 
-suffix="$(date +%s)"
+request GET "/customer-orgs?page=1&pageSize=20" 200 "$admin_token"
+jq -e '.items and (.total >= 1)' "$LAST_BODY" >/dev/null || fail "customer org list did not return seeded data"
+
+request GET "/customer-orgs?page=1&pageSize=20" 403 "$portal_token"
+jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "portal customer org list did not return FORBIDDEN"
+
+customer_payload="$(jq -nc --arg suffix "$suffix" '{
+  nameZh: ("Local Smoke Customer " + $suffix),
+  nameEn: ("Local Smoke Customer " + $suffix),
+  addressZh: "No. 19 Customer Master Road",
+  addressEn: "No. 19 Customer Master Road",
+  taxNo: ("TAX-" + $suffix),
+  invoiceTitle: ("Local Smoke Customer " + $suffix)
+}')"
+request POST "/customer-orgs" 200 "$admin_token" "$customer_payload"
+customer_org_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg suffix "$suffix" '.nameZh == ("Local Smoke Customer " + $suffix) and .status == "ACTIVE"' "$LAST_BODY" >/dev/null \
+  || fail "customer org upsert did not return active customer"
+
+portal_user_payload="$(jq -nc --arg customer_org_id "$customer_org_id" --arg suffix "$suffix" '{
+  customerOrgId: $customer_org_id,
+  username: ("portal.smoke." + $suffix),
+  displayName: "Local Smoke Portal User",
+  email: ("portal-smoke-" + $suffix + "@example.com"),
+  roleCodes: ["CUSTOMER_APPLICANT"]
+}')"
+request POST "/portal-users" 201 "$admin_token" "$portal_user_payload"
+portal_user_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e '.roleCodes == ["CUSTOMER_APPLICANT"] and .status == "ACTIVE"' "$LAST_BODY" >/dev/null \
+  || fail "portal user creation did not return active applicant"
+
+request GET "/portal-users?customerOrgId=$customer_org_id&page=1&pageSize=20" 200 "$admin_token"
+jq -e --arg id "$portal_user_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
+  || fail "portal user list does not contain created user"
+
 payload="$(submission_payload "$suffix")"
 request POST "/submissions" 201 "$portal_token" "$payload"
 submission_id="$(jq -er '.id' "$LAST_BODY")"
@@ -807,5 +842,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: customer_org %s portal_user %s submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
+  "$customer_org_id" "$portal_user_id" "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"

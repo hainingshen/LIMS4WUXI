@@ -146,6 +146,16 @@ test("system admin can open import export task page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "创建任务" })).toBeVisible();
 });
 
+test("system admin can open customer master data page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.admin");
+  await page.locator("#password").fill("Internal123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("客户主数据").first().click();
+  await expect(page.getByText("CUSTOMER MASTER DATA")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "新增门户账号" })).toBeVisible();
+});
+
 test("archive manager can open archive page", async ({ page }) => {
   await page.goto("/internal/");
   await page.locator("#username").fill("internal.archive");

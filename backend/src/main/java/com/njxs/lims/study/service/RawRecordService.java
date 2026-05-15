@@ -8,6 +8,7 @@ import com.njxs.lims.approval.service.ApprovalRecordService;
 import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.project.domain.Project;
 import com.njxs.lims.project.domain.ProjectStatus;
 import com.njxs.lims.project.persistence.ProjectRepository;
@@ -58,17 +59,18 @@ public class RawRecordService {
     this.objectMapper = objectMapper;
   }
 
-  public PageResponse<RawRecordResponse> list(UUID workOrderId, int page, int pageSize) {
+  public PageResponse<RawRecordResponse> list(AuthPrincipal principal, UUID workOrderId, int page, int pageSize) {
     int normalizedPage = Math.max(page, 1);
     int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
     int offset = (normalizedPage - 1) * normalizedPageSize;
+    InternalDataScope scope = InternalDataScope.from(principal);
     return new PageResponse<>(
-        rawRecordRepository.list(workOrderId, normalizedPageSize, offset).stream()
+        rawRecordRepository.listVisibleTo(scope, workOrderId, normalizedPageSize, offset).stream()
             .map(RawRecordResponse::from)
             .toList(),
         normalizedPage,
         normalizedPageSize,
-        rawRecordRepository.count(workOrderId)
+        rawRecordRepository.countVisibleTo(scope, workOrderId)
     );
   }
 

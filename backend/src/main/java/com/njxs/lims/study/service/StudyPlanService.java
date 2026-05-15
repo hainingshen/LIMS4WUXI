@@ -4,6 +4,7 @@ import com.njxs.lims.approval.service.ApprovalRecordService;
 import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.project.domain.Project;
 import com.njxs.lims.project.domain.ProjectStatus;
 import com.njxs.lims.project.persistence.ProjectRepository;
@@ -70,17 +71,18 @@ public class StudyPlanService {
     return StudyPlanResponse.from(studyPlanRepository.save(record, principal.userId()));
   }
 
-  public PageResponse<StudyPlanResponse> list(int page, int pageSize) {
+  public PageResponse<StudyPlanResponse> list(AuthPrincipal principal, int page, int pageSize) {
     int normalizedPage = Math.max(page, 1);
     int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
     int offset = (normalizedPage - 1) * normalizedPageSize;
+    InternalDataScope scope = InternalDataScope.from(principal);
     return new PageResponse<>(
-        studyPlanRepository.list(normalizedPageSize, offset).stream()
+        studyPlanRepository.listVisibleTo(scope, normalizedPageSize, offset).stream()
             .map(StudyPlanResponse::from)
             .toList(),
         normalizedPage,
         normalizedPageSize,
-        studyPlanRepository.count()
+        studyPlanRepository.countVisibleTo(scope)
     );
   }
 

@@ -1,10 +1,12 @@
 package com.njxs.lims.study.persistence;
 
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.study.domain.RawRecordRecord;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -145,6 +147,62 @@ public class JdbcRawRecordRepository implements RawRecordRepository {
   }
 
   @Override
+  public List<RawRecordRecord> listVisibleTo(
+      InternalDataScope scope,
+      UUID workOrderId,
+      int limit,
+      int offset
+  ) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visibleRawRecordPredicate(scope, args);
+    String workOrderFilter = "";
+    if (workOrderId != null) {
+      workOrderFilter = " and rr.work_order_id = ?\n";
+      args.add(workOrderId);
+    }
+    args.add(limit);
+    args.add(offset);
+    return jdbcTemplate.query(
+        "select rr." + SELECT_COLUMNS.strip().replaceAll("\\s+", " ").replace(", ", ", rr.") + " " + """
+        from raw_record rr
+        join project p on p.id = rr.project_id and p.deleted_at is null
+        left join work_order wo on wo.id = rr.work_order_id and wo.deleted_at is null
+        where rr.deleted_at is null
+          and (%s)
+        """.formatted(predicate) + workOrderFilter + """
+        order by rr.submitted_at desc, rr.biz_no desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> record(rs),
+        args.toArray()
+    );
+  }
+
+  @Override
+  public int countVisibleTo(InternalDataScope scope, UUID workOrderId) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visibleRawRecordPredicate(scope, args);
+    String workOrderFilter = "";
+    if (workOrderId != null) {
+      workOrderFilter = " and rr.work_order_id = ?\n";
+      args.add(workOrderId);
+    }
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from raw_record rr
+        join project p on p.id = rr.project_id and p.deleted_at is null
+        left join work_order wo on wo.id = rr.work_order_id and wo.deleted_at is null
+        where rr.deleted_at is null
+          and (%s)
+        """.formatted(predicate) + workOrderFilter,
+        Integer.class,
+        args.toArray()
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
   public RawRecordRecord updateReview(
       UUID id,
       String status,
@@ -170,6 +228,32 @@ public class JdbcRawRecordRepository implements RawRecordRepository {
         actorUserId,
         id
     );
+  }
+
+  private String visibleRawRecordPredicate(InternalDataScope scope, List<Object> args) {
+    if (scope.allAccess()) {
+      return "true";
+    }
+    List<String> clauses = new ArrayList<>();
+    if (scope.hasRole("INSPECTOR")) {
+      clauses.add("rr.tester_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("QC")) {
+      clauses.add("(rr.status = 'REVIEWING' or rr.checker_id = ?)");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("TECHNICAL_LEADER")) {
+      clauses.add("p.technical_owner_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("REPORT_PREPARER")) {
+      clauses.add("rr.status = 'APPROVED'");
+    }
+    if (clauses.isEmpty()) {
+      return "false";
+    }
+    return String.join(" or ", clauses);
   }
 
   private RawRecordRecord record(ResultSet rs) throws SQLException {

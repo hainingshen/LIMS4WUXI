@@ -5,6 +5,7 @@ import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.permission.RequiresAction;
 import com.njxs.lims.portal.PortalAccessPolicy;
 import com.njxs.lims.portal.PortalListScope;
@@ -61,11 +62,14 @@ public class ProjectController {
     if (principal.clientType() == ClientType.PORTAL) {
       return listPortalProjects(principal, normalizedPage, normalizedPageSize, offset);
     }
+    InternalDataScope scope = InternalDataScope.from(principal);
     return new PageResponse<>(
-        projectRepository.list(normalizedPageSize, offset).stream().map(ProjectResponse::from).toList(),
+        projectRepository.listVisibleTo(scope, normalizedPageSize, offset).stream()
+            .map(ProjectResponse::from)
+            .toList(),
         normalizedPage,
         normalizedPageSize,
-        projectRepository.count()
+        projectRepository.countVisibleTo(scope)
     );
   }
 

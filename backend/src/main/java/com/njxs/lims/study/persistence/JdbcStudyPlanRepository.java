@@ -1,11 +1,13 @@
 package com.njxs.lims.study.persistence;
 
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.study.domain.StudyPlanRecord;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -110,6 +112,46 @@ public class JdbcStudyPlanRepository implements StudyPlanRepository {
     Integer count = jdbcTemplate.queryForObject(
         "select count(*) from study_plan where deleted_at is null",
         Integer.class
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
+  public List<StudyPlanRecord> listVisibleTo(InternalDataScope scope, int limit, int offset) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visiblePlanPredicate(scope, args);
+    args.add(limit);
+    args.add(offset);
+    return jdbcTemplate.query(
+        "select sp." + SELECT_COLUMNS.strip().replaceAll("\\s+", " ").replace(", ", ", sp.") + " " + """
+        from study_plan sp
+        join project p on p.id = sp.project_id and p.deleted_at is null
+        left join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where sp.deleted_at is null
+          and (%s)
+        order by sp.created_at desc, sp.biz_no desc
+        limit ? offset ?
+        """.formatted(predicate),
+        (rs, rowNum) -> record(rs),
+        args.toArray()
+    );
+  }
+
+  @Override
+  public int countVisibleTo(InternalDataScope scope) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visiblePlanPredicate(scope, args);
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from study_plan sp
+        join project p on p.id = sp.project_id and p.deleted_at is null
+        left join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where sp.deleted_at is null
+          and (%s)
+        """.formatted(predicate),
+        Integer.class,
+        args.toArray()
     );
     return count == null ? 0 : count;
   }
@@ -239,6 +281,38 @@ public class JdbcStudyPlanRepository implements StudyPlanRepository {
         projectId
     );
     return count != null && count > 0;
+  }
+
+  private String visiblePlanPredicate(InternalDataScope scope, List<Object> args) {
+    if (scope.allAccess()) {
+      return "true";
+    }
+    List<String> clauses = new ArrayList<>();
+    if (scope.hasRole("SALES_REP")) {
+      clauses.add("sub.assigned_sales_user_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("BUSINESS_OWNER")) {
+      clauses.add("p.business_owner_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("TECHNICAL_LEADER")) {
+      clauses.add("p.technical_owner_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("SD")) {
+      clauses.add("sp.status in ('REVIEWING', 'PENDING_DISPATCH', 'READY_TO_DISPATCH', 'DISPATCHED', 'COMPLETED')");
+    }
+    if (scope.hasRole("QA")) {
+      clauses.add("sp.requires_glp = true");
+    }
+    if (scope.hasRole("ETHICS_COMMITTEE")) {
+      clauses.add("sp.requires_animal_test = true");
+    }
+    if (clauses.isEmpty()) {
+      return "false";
+    }
+    return String.join(" or ", clauses);
   }
 
   private StudyPlanRecord record(ResultSet rs) throws SQLException {

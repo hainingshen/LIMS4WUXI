@@ -1,6 +1,7 @@
 package com.njxs.lims.project.persistence;
 
 import com.njxs.lims.project.domain.Project;
+import com.njxs.lims.permission.InternalDataScope;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,6 +17,10 @@ public interface ProjectRepository {
   List<Project> list(int limit, int offset);
 
   int count();
+
+  List<Project> listVisibleTo(InternalDataScope scope, int limit, int offset);
+
+  int countVisibleTo(InternalDataScope scope);
 
   List<Project> listForCustomerOrg(UUID customerOrgId, int limit, int offset);
 

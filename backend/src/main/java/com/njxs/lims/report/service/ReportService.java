@@ -10,6 +10,7 @@ import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
 import com.njxs.lims.portal.PortalAccessPolicy;
 import com.njxs.lims.portal.PortalListScope;
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.project.domain.Project;
 import com.njxs.lims.project.domain.ProjectStatus;
 import com.njxs.lims.project.persistence.ProjectRepository;
@@ -89,7 +90,7 @@ public class ReportService {
     if (principal.clientType() == ClientType.PORTAL) {
       return listPortal(principal, normalizedPage, normalizedPageSize);
     }
-    return listInternal(normalizedPage, normalizedPageSize);
+    return listInternal(principal, normalizedPage, normalizedPageSize);
   }
 
   private PageResponse<ReportResponse> listInternal(int normalizedPage, int normalizedPageSize) {
@@ -101,6 +102,23 @@ public class ReportService {
         normalizedPage,
         normalizedPageSize,
         reportRepository.count()
+    );
+  }
+
+  private PageResponse<ReportResponse> listInternal(
+      AuthPrincipal principal,
+      int normalizedPage,
+      int normalizedPageSize
+  ) {
+    int offset = (normalizedPage - 1) * normalizedPageSize;
+    InternalDataScope scope = InternalDataScope.from(principal);
+    return new PageResponse<>(
+        reportRepository.listVisibleTo(scope, normalizedPageSize, offset).stream()
+            .map(ReportResponse::from)
+            .toList(),
+        normalizedPage,
+        normalizedPageSize,
+        reportRepository.countVisibleTo(scope)
     );
   }
 

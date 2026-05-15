@@ -37,7 +37,7 @@ public class StudyPlanController {
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize
   ) {
-    return studyPlanService.list(page, pageSize);
+    return studyPlanService.list(AuthContext.require(), page, pageSize);
   }
 
   @PostMapping

@@ -37,7 +37,7 @@ public class PaymentReceiptController {
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize
   ) {
-    return paymentReceiptService.list(projectId, page, pageSize);
+    return paymentReceiptService.list(AuthContext.require(), projectId, page, pageSize);
   }
 
   @PostMapping

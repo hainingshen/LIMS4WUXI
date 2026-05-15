@@ -3,6 +3,7 @@ package com.njxs.lims.study.service;
 import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.study.api.WorkOrderResponse;
 import com.njxs.lims.study.domain.WorkOrderRecord;
 import com.njxs.lims.study.persistence.WorkOrderRepository;
@@ -24,17 +25,18 @@ public class WorkOrderService {
     this.workOrderRepository = workOrderRepository;
   }
 
-  public PageResponse<WorkOrderResponse> list(int page, int pageSize) {
+  public PageResponse<WorkOrderResponse> list(AuthPrincipal principal, int page, int pageSize) {
     int normalizedPage = Math.max(page, 1);
     int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
     int offset = (normalizedPage - 1) * normalizedPageSize;
+    InternalDataScope scope = InternalDataScope.from(principal);
     return new PageResponse<>(
-        workOrderRepository.list(normalizedPageSize, offset).stream()
+        workOrderRepository.listVisibleTo(scope, normalizedPageSize, offset).stream()
             .map(WorkOrderResponse::from)
             .toList(),
         normalizedPage,
         normalizedPageSize,
-        workOrderRepository.count()
+        workOrderRepository.countVisibleTo(scope)
     );
   }
 

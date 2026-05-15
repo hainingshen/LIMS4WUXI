@@ -1,11 +1,13 @@
 package com.njxs.lims.payment.persistence;
 
 import com.njxs.lims.payment.domain.PaymentReceiptRecord;
+import com.njxs.lims.permission.InternalDataScope;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -119,6 +121,62 @@ public class JdbcPaymentReceiptRepository implements PaymentReceiptRepository {
   }
 
   @Override
+  public List<PaymentReceiptRecord> listVisibleTo(
+      InternalDataScope scope,
+      UUID projectId,
+      int limit,
+      int offset
+  ) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visiblePaymentPredicate(scope, args);
+    String projectFilter = "";
+    if (projectId != null) {
+      projectFilter = " and pr.project_id = ?\n";
+      args.add(projectId);
+    }
+    args.add(limit);
+    args.add(offset);
+    return jdbcTemplate.query(
+        "select pr." + SELECT_COLUMNS.strip().replaceAll("\\s+", " ").replace(", ", ", pr.") + " " + """
+        from payment_receipt pr
+        join project p on p.id = pr.project_id and p.deleted_at is null
+        left join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where pr.deleted_at is null
+          and (%s)
+        """.formatted(predicate) + projectFilter + """
+        order by pr.received_at desc, pr.biz_no desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> record(rs),
+        args.toArray()
+    );
+  }
+
+  @Override
+  public int countVisibleTo(InternalDataScope scope, UUID projectId) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visiblePaymentPredicate(scope, args);
+    String projectFilter = "";
+    if (projectId != null) {
+      projectFilter = " and pr.project_id = ?\n";
+      args.add(projectId);
+    }
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from payment_receipt pr
+        join project p on p.id = pr.project_id and p.deleted_at is null
+        left join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where pr.deleted_at is null
+          and (%s)
+        """.formatted(predicate) + projectFilter,
+        Integer.class,
+        args.toArray()
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
   public BigDecimal recordedAmountForReport(UUID reportId) {
     BigDecimal amount = jdbcTemplate.queryForObject(
         """
@@ -136,6 +194,25 @@ public class JdbcPaymentReceiptRepository implements PaymentReceiptRepository {
         reportId
     );
     return amount == null ? BigDecimal.ZERO : amount;
+  }
+
+  private String visiblePaymentPredicate(InternalDataScope scope, List<Object> args) {
+    if (scope.allAccess() || scope.hasAnyRole("FINANCE_CASHIER", "FINANCE_MANAGER")) {
+      return "true";
+    }
+    List<String> clauses = new ArrayList<>();
+    if (scope.hasRole("SALES_REP")) {
+      clauses.add("sub.assigned_sales_user_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("BUSINESS_OWNER")) {
+      clauses.add("p.business_owner_id = ?");
+      args.add(scope.userId());
+    }
+    if (clauses.isEmpty()) {
+      return "false";
+    }
+    return String.join(" or ", clauses);
   }
 
   @Override

@@ -1,5 +1,6 @@
 package com.njxs.lims.study.persistence;
 
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.study.domain.RawRecordRecord;
 import java.time.Instant;
 import java.util.List;
@@ -17,6 +18,10 @@ public interface RawRecordRepository {
   List<RawRecordRecord> list(UUID workOrderId, int limit, int offset);
 
   int count(UUID workOrderId);
+
+  List<RawRecordRecord> listVisibleTo(InternalDataScope scope, UUID workOrderId, int limit, int offset);
+
+  int countVisibleTo(InternalDataScope scope, UUID workOrderId);
 
   RawRecordRecord updateReview(
       UUID id,

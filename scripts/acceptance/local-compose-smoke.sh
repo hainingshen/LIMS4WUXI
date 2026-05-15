@@ -192,6 +192,12 @@ portal_org_id="$(jq -er '.customerOrgId' "$LAST_BODY")"
 request GET "/auth/me" 200 "$internal_token"
 jq -e '.clientType == "INTERNAL"' "$LAST_BODY" >/dev/null || fail "internal auth/me did not return INTERNAL clientType"
 
+request GET "/auth/me" 200 "$inspector_token"
+inspector_user_id="$(jq -er '.id' "$LAST_BODY")"
+
+request GET "/auth/me" 200 "$finance_token"
+finance_user_id="$(jq -er '.id' "$LAST_BODY")"
+
 request GET "/dictionaries?dictCode=YES_NO" 200 "$portal_token"
 jq -e 'length > 0' "$LAST_BODY" >/dev/null || fail "YES_NO dictionary is empty"
 
@@ -668,6 +674,14 @@ work_order_id="$(jq -er --arg project_id "$nonstandard_project_id" \
   '.items[] | select(.projectId == $project_id) | .id' "$LAST_BODY" | head -n 1)"
 [[ -n "$work_order_id" ]] || fail "work order list does not contain project work order for $nonstandard_project_id"
 
+request GET "/work-orders?page=1&pageSize=100" 200 "$inspector_token"
+jq -e --arg user_id "$inspector_user_id" 'all(.items[]?; .ownerUserId == $user_id)' "$LAST_BODY" >/dev/null \
+  || fail "inspector work order list returned work orders owned by another user"
+
+request GET "/work-orders?page=1&pageSize=100" 200 "$finance_token"
+jq -e '.total == 0 and (.items | length == 0)' "$LAST_BODY" >/dev/null \
+  || fail "finance user should not see work orders"
+
 request GET "/projects?page=1&pageSize=100" 200 "$internal_token"
 jq -e --arg id "$nonstandard_project_id" \
   '.items[] | select(.id == $id and .status == "IN_TESTING")' "$LAST_BODY" >/dev/null \
@@ -719,6 +733,14 @@ jq -e '.status == "REVIEWING" and .templateCode == "RAW_RECORD_STERILITY"' "$LAS
 raw_record_review_payload="$(jq -nc '{stage:"QC",outcome:"APPROVED",comment:"Local smoke raw record approved"}')"
 request POST "/raw-records/$raw_record_id/review" 200 "$qc_token" "$raw_record_review_payload"
 jq -e '.status == "APPROVED"' "$LAST_BODY" >/dev/null || fail "raw record review did not return APPROVED"
+
+request GET "/raw-records?page=1&pageSize=100" 200 "$inspector_token"
+jq -e --arg user_id "$inspector_user_id" 'all(.items[]?; .testerId == $user_id)' "$LAST_BODY" >/dev/null \
+  || fail "inspector raw record list returned records from another tester"
+
+request GET "/raw-records?page=1&pageSize=100" 200 "$finance_token"
+jq -e '.total == 0 and (.items | length == 0)' "$LAST_BODY" >/dev/null \
+  || fail "finance user should not see raw records"
 
 request GET "/work-orders?page=1&pageSize=100" 200 "$sd_token"
 jq -e --arg id "$work_order_id" \
@@ -851,6 +873,10 @@ jq -e --arg id "$report_id" \
   '.items[] | select(.id == $id and .status == "GREEN_RELEASED" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
   || fail "green channel did not unlock report"
 
+request GET "/reports?page=1&pageSize=100" 200 "$finance_token"
+jq -e '.total == 0 and (.items | length == 0)' "$LAST_BODY" >/dev/null \
+  || fail "finance user should not see report workbench records"
+
 request GET "/projects?page=1&pageSize=100" 200 "$portal_token"
 cp "$LAST_BODY" "$TMP_DIR/portal-projects.json"
 request GET "/reports?page=1&pageSize=100" 200 "$portal_token"
@@ -892,6 +918,14 @@ request POST "/payment-receipts" 201 "$finance_token" "$payment_payload"
 payment_id="$(jq -er '.id' "$LAST_BODY")"
 jq -e '.status == "RECORDED" and .amount == 1200' "$LAST_BODY" >/dev/null \
   || fail "payment receipt did not return RECORDED"
+
+request GET "/payment-receipts?page=1&pageSize=100" 200 "$finance_token"
+jq -e --arg id "$payment_id" '.items[] | select(.id == $id and .status == "RECORDED")' "$LAST_BODY" >/dev/null \
+  || fail "finance payment receipt list did not contain recorded payment"
+
+request GET "/payment-receipts?page=1&pageSize=100" 200 "$inspector_token"
+jq -e '.total == 0 and (.items | length == 0)' "$LAST_BODY" >/dev/null \
+  || fail "inspector should not see payment receipts"
 
 request GET "/reports/$report_id/official-pdf" 200 "$portal_token"
 grep -q "%PDF-1.4" "$LAST_BODY" || fail "official PDF download did not return PDF bytes"
@@ -959,6 +993,11 @@ request GET "/archive-items?projectId=$nonstandard_project_id&page=1&pageSize=20
 jq -e --arg id "$archive_item_id" \
   '.items[] | select(.id == $id and .status == "ARCHIVED")' "$LAST_BODY" >/dev/null \
   || fail "archive item list did not contain created item"
+
+request GET "/archive-items?projectId=$nonstandard_project_id&page=1&pageSize=20" 200 "$archive_token"
+jq -e --arg id "$archive_item_id" \
+  '.items[] | select(.id == $id and .status == "ARCHIVED")' "$LAST_BODY" >/dev/null \
+  || fail "archive manager scoped list did not contain created item"
 
 inventory_payload="$(jq -nc --arg suffix "$suffix" '{
   batchNo: ("INV-SMOKE-" + $suffix),

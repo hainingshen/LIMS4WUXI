@@ -7,6 +7,7 @@ import com.njxs.lims.payment.api.PaymentReceiptCreateRequest;
 import com.njxs.lims.payment.api.PaymentReceiptResponse;
 import com.njxs.lims.payment.domain.PaymentReceiptRecord;
 import com.njxs.lims.payment.persistence.PaymentReceiptRepository;
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.project.domain.Project;
 import com.njxs.lims.project.domain.ProjectStatus;
 import com.njxs.lims.project.persistence.ProjectRepository;
@@ -46,17 +47,18 @@ public class PaymentReceiptService {
     this.reportDeliveryLogService = reportDeliveryLogService;
   }
 
-  public PageResponse<PaymentReceiptResponse> list(UUID projectId, int page, int pageSize) {
+  public PageResponse<PaymentReceiptResponse> list(AuthPrincipal principal, UUID projectId, int page, int pageSize) {
     int normalizedPage = Math.max(page, 1);
     int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
     int offset = (normalizedPage - 1) * normalizedPageSize;
+    InternalDataScope scope = InternalDataScope.from(principal);
     return new PageResponse<>(
-        paymentReceiptRepository.list(projectId, normalizedPageSize, offset).stream()
+        paymentReceiptRepository.listVisibleTo(scope, projectId, normalizedPageSize, offset).stream()
             .map(PaymentReceiptResponse::from)
             .toList(),
         normalizedPage,
         normalizedPageSize,
-        paymentReceiptRepository.count(projectId)
+        paymentReceiptRepository.countVisibleTo(scope, projectId)
     );
   }
 

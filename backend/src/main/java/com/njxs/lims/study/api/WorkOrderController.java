@@ -38,7 +38,7 @@ public class WorkOrderController {
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize
   ) {
-    return workOrderService.list(page, pageSize);
+    return workOrderService.list(AuthContext.require(), page, pageSize);
   }
 
   @PostMapping("/{id}/pick-sample")

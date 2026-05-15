@@ -1,6 +1,7 @@
 package com.njxs.lims.payment.persistence;
 
 import com.njxs.lims.payment.domain.PaymentReceiptRecord;
+import com.njxs.lims.permission.InternalDataScope;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -14,6 +15,10 @@ public interface PaymentReceiptRepository {
   List<PaymentReceiptRecord> list(UUID projectId, int limit, int offset);
 
   int count(UUID projectId);
+
+  List<PaymentReceiptRecord> listVisibleTo(InternalDataScope scope, UUID projectId, int limit, int offset);
+
+  int countVisibleTo(InternalDataScope scope, UUID projectId);
 
   BigDecimal recordedAmountForReport(UUID reportId);
 

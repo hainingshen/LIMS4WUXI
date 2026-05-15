@@ -1,10 +1,12 @@
 package com.njxs.lims.study.persistence;
 
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.study.domain.WorkOrderRecord;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +58,46 @@ public class JdbcWorkOrderRepository implements WorkOrderRepository {
     Integer count = jdbcTemplate.queryForObject(
         "select count(*) from work_order where deleted_at is null",
         Integer.class
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
+  public List<WorkOrderRecord> listVisibleTo(InternalDataScope scope, int limit, int offset) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visibleWorkOrderPredicate(scope, args);
+    args.add(limit);
+    args.add(offset);
+    return jdbcTemplate.query(
+        "select wo." + SELECT_COLUMNS.strip().replaceAll("\\s+", " ").replace(", ", ", wo.") + " " + """
+        from work_order wo
+        join project p on p.id = wo.project_id and p.deleted_at is null
+        left join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where wo.deleted_at is null
+          and (%s)
+        order by wo.created_at desc, wo.biz_no desc
+        limit ? offset ?
+        """.formatted(predicate),
+        (rs, rowNum) -> record(rs),
+        args.toArray()
+    );
+  }
+
+  @Override
+  public int countVisibleTo(InternalDataScope scope) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visibleWorkOrderPredicate(scope, args);
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from work_order wo
+        join project p on p.id = wo.project_id and p.deleted_at is null
+        left join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where wo.deleted_at is null
+          and (%s)
+        """.formatted(predicate),
+        Integer.class,
+        args.toArray()
     );
     return count == null ? 0 : count;
   }
@@ -120,6 +162,35 @@ public class JdbcWorkOrderRepository implements WorkOrderRepository {
         projectId
     );
     return count != null && count > 0 && incompleteCount != null && incompleteCount == 0;
+  }
+
+  private String visibleWorkOrderPredicate(InternalDataScope scope, List<Object> args) {
+    if (scope.allAccess()) {
+      return "true";
+    }
+    List<String> clauses = new ArrayList<>();
+    if (scope.hasRole("INSPECTOR")) {
+      clauses.add("wo.owner_user_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("TECHNICAL_LEADER")) {
+      clauses.add("p.technical_owner_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("SALES_REP")) {
+      clauses.add("sub.assigned_sales_user_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("SD")) {
+      clauses.add("wo.status in ('PENDING_EXECUTION', 'SAMPLE_PICKED', 'IN_PROGRESS', 'RESULT_ENTERED', 'RAW_REVIEWING', 'COMPLETED')");
+    }
+    if (scope.hasRole("QC")) {
+      clauses.add("wo.status = 'RAW_REVIEWING'");
+    }
+    if (clauses.isEmpty()) {
+      return "false";
+    }
+    return String.join(" or ", clauses);
   }
 
   private WorkOrderRecord record(ResultSet rs) throws SQLException {

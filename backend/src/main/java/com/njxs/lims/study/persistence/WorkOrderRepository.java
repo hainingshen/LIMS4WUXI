@@ -1,5 +1,6 @@
 package com.njxs.lims.study.persistence;
 
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.study.domain.WorkOrderRecord;
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +13,10 @@ public interface WorkOrderRepository {
   List<WorkOrderRecord> list(int limit, int offset);
 
   int count();
+
+  List<WorkOrderRecord> listVisibleTo(InternalDataScope scope, int limit, int offset);
+
+  int countVisibleTo(InternalDataScope scope);
 
   WorkOrderRecord updateStatus(UUID id, String status, int progressPercent, UUID actorUserId);
 

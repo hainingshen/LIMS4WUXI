@@ -1,5 +1,6 @@
 package com.njxs.lims.study.persistence;
 
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.study.domain.StudyPlanRecord;
 import java.time.Instant;
 import java.util.List;
@@ -19,6 +20,10 @@ public interface StudyPlanRepository {
   List<StudyPlanRecord> list(int limit, int offset);
 
   int count();
+
+  List<StudyPlanRecord> listVisibleTo(InternalDataScope scope, int limit, int offset);
+
+  int countVisibleTo(InternalDataScope scope);
 
   StudyPlanRecord markReviewed(UUID id, String status, Instant reviewedAt, UUID actorUserId);
 

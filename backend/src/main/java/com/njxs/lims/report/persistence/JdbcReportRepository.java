@@ -1,10 +1,12 @@
 package com.njxs.lims.report.persistence;
 
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.report.domain.ReportRecord;
 import com.njxs.lims.report.domain.ReportVersionRecord;
 import com.njxs.lims.report.domain.ReportWorkOrderRecord;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -177,6 +179,46 @@ public class JdbcReportRepository implements ReportRepository {
     Integer count = jdbcTemplate.queryForObject(
         "select count(*) from report where deleted_at is null",
         Integer.class
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
+  public List<ReportRecord> listVisibleTo(InternalDataScope scope, int limit, int offset) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visibleReportPredicate(scope, args);
+    args.add(limit);
+    args.add(offset);
+    return jdbcTemplate.query(
+        "select " + SELECT_REPORT_COLUMNS + " " + """
+        from report r
+        join project p on p.id = r.project_id and p.deleted_at is null
+        left join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where r.deleted_at is null
+          and (%s)
+        order by r.created_at desc, r.biz_no desc
+        limit ? offset ?
+        """.formatted(predicate),
+        (rs, rowNum) -> report(rs),
+        args.toArray()
+    );
+  }
+
+  @Override
+  public int countVisibleTo(InternalDataScope scope) {
+    List<Object> args = new ArrayList<>();
+    String predicate = visibleReportPredicate(scope, args);
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report r
+        join project p on p.id = r.project_id and p.deleted_at is null
+        left join submission sub on sub.id = p.submission_id and sub.deleted_at is null
+        where r.deleted_at is null
+          and (%s)
+        """.formatted(predicate),
+        Integer.class,
+        args.toArray()
     );
     return count == null ? 0 : count;
   }
@@ -537,6 +579,48 @@ public class JdbcReportRepository implements ReportRepository {
         rs.getString("watermark_type"),
         rs.getString("payment_gate_status")
     );
+  }
+
+  private String visibleReportPredicate(InternalDataScope scope, List<Object> args) {
+    if (scope.allAccess()) {
+      return "true";
+    }
+    List<String> clauses = new ArrayList<>();
+    if (scope.hasRole("SALES_REP")) {
+      clauses.add("sub.assigned_sales_user_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("BUSINESS_OWNER")) {
+      clauses.add("p.business_owner_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("TECHNICAL_LEADER")) {
+      clauses.add("p.technical_owner_id = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("REPORT_PREPARER")) {
+      clauses.add("r.created_by = ?");
+      args.add(scope.userId());
+    }
+    if (scope.hasRole("QC")) {
+      clauses.add("r.status = 'QC_REVIEWING'");
+    }
+    if (scope.hasRole("QA")) {
+      clauses.add("r.status = 'QA_REVIEWING'");
+    }
+    if (scope.hasRole("SD")) {
+      clauses.add("r.status = 'SD_REVIEWING'");
+    }
+    if (scope.hasRole("AUTHORIZED_SIGNATORY")) {
+      clauses.add("r.status = 'PENDING_ISSUE'");
+    }
+    if (scope.hasRole("ARCHIVE_MANAGER")) {
+      clauses.add("r.is_official = true");
+    }
+    if (clauses.isEmpty()) {
+      return "false";
+    }
+    return String.join(" or ", clauses);
   }
 
   private ReportVersionRecord version(ResultSet rs) throws SQLException {

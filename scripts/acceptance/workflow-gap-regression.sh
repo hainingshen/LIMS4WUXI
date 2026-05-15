@@ -201,6 +201,17 @@ request GET "/users" 200 "$internal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/users did not return a paged response"
 
+for path in /work-orders /raw-records /reports
+do
+  request GET "$path?page=1&pageSize=100" 200 "$finance_token"
+  jq -e '.total == 0 and (.items | length == 0)' "$LAST_BODY" >/dev/null \
+    || fail "$path should be empty for finance role"
+done
+
+request GET "/payment-receipts?page=1&pageSize=100" 200 "$sample_token"
+jq -e '.total == 0 and (.items | length == 0)' "$LAST_BODY" >/dev/null \
+  || fail "/payment-receipts should be empty for sample manager role"
+
 request GET "/audit-logs" 200 "$internal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/audit-logs did not return a paged response"

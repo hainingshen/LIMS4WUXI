@@ -36,7 +36,7 @@ public class RawRecordController {
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize
   ) {
-    return rawRecordService.list(workOrderId, page, pageSize);
+    return rawRecordService.list(AuthContext.require(), workOrderId, page, pageSize);
   }
 
   @PostMapping("/{id}/review")

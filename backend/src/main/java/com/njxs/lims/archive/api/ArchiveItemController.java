@@ -38,7 +38,7 @@ public class ArchiveItemController {
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize
   ) {
-    return archiveItemService.list(projectId, page, pageSize);
+    return archiveItemService.list(AuthContext.require(), projectId, page, pageSize);
   }
 
   @PostMapping

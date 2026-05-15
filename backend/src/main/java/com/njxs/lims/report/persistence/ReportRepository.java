@@ -1,5 +1,6 @@
 package com.njxs.lims.report.persistence;
 
+import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.report.domain.ReportRecord;
 import com.njxs.lims.report.domain.ReportVersionRecord;
 import com.njxs.lims.report.domain.ReportWorkOrderRecord;
@@ -27,6 +28,10 @@ public interface ReportRepository {
   List<ReportRecord> list(int limit, int offset);
 
   int count();
+
+  List<ReportRecord> listVisibleTo(InternalDataScope scope, int limit, int offset);
+
+  int countVisibleTo(InternalDataScope scope);
 
   List<ReportRecord> listForCustomerOrg(UUID customerOrgId, int limit, int offset);
 

@@ -7,6 +7,7 @@ import com.njxs.lims.archive.persistence.ArchiveItemRepository;
 import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
+import com.njxs.lims.permission.InternalDataScope;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
@@ -25,17 +26,18 @@ public class ArchiveItemService {
     this.archiveItemRepository = archiveItemRepository;
   }
 
-  public PageResponse<ArchiveItemResponse> list(UUID projectId, int page, int pageSize) {
+  public PageResponse<ArchiveItemResponse> list(AuthPrincipal principal, UUID projectId, int page, int pageSize) {
     int normalizedPage = Math.max(page, 1);
     int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
     int offset = (normalizedPage - 1) * normalizedPageSize;
+    InternalDataScope scope = InternalDataScope.from(principal);
     return new PageResponse<>(
-        archiveItemRepository.list(projectId, normalizedPageSize, offset).stream()
+        archiveItemRepository.listVisibleTo(scope, projectId, normalizedPageSize, offset).stream()
             .map(ArchiveItemResponse::from)
             .toList(),
         normalizedPage,
         normalizedPageSize,
-        archiveItemRepository.count(projectId)
+        archiveItemRepository.countVisibleTo(scope, projectId)
     );
   }
 

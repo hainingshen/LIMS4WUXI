@@ -30,6 +30,7 @@ import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { ContractListPage } from "./ContractListPage";
 import { ProjectListPage } from "./ProjectListPage";
+import { ReportWorkbenchPage } from "./ReportWorkbenchPage";
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
 import { StudyPlanPage } from "./StudyPlanPage";
 import { SubmissionAcceptanceDesk } from "./SubmissionAcceptanceDesk";
@@ -77,6 +78,12 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     label: "试验执行",
     detail: "领样、结果和原始记录",
     roles: ["INSPECTOR", "QC"],
+  },
+  {
+    key: "reports",
+    label: "报告管理",
+    detail: "草稿、审核、签发和收款",
+    roles: ["REPORT_PREPARER", "QC", "QA", "SD", "AUTHORIZED_SIGNATORY", "FINANCE_CASHIER"],
   },
   {
     key: "contracts",
@@ -277,6 +284,9 @@ function renderRoute(
   }
   if (activeRoute?.key === "work-orders") {
     return <WorkOrderExecutionPage />;
+  }
+  if (activeRoute?.key === "reports") {
+    return <ReportWorkbenchPage />;
   }
   if (activeRoute?.key === "contracts") {
     return <ContractListPage />;

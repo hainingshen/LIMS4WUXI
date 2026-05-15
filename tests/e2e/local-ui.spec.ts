@@ -96,6 +96,16 @@ test("inspector can open work order execution page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "原始记录" })).toBeVisible();
 });
 
+test("report preparer can open report workbench", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.report_preparer");
+  await page.locator("#password").fill("Sales123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("报告管理").first().click();
+  await expect(page.getByText("REPORT WORKBENCH")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "报告列表" })).toBeVisible();
+});
+
 test("mobile portal keeps 390px workflow usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

@@ -19,6 +19,8 @@ import {
   getSubmissionFormFields,
   loadDictionaryLookup,
   loadPublishedFormSchema,
+  submitSubmission,
+  updateSubmissionDraft,
   type DictionaryLookup,
   type FormSchema,
   type Submission,
@@ -30,6 +32,7 @@ const SUBMISSION_FORM_CODE = "SUBMISSION_VER15" satisfies SubmissionFormCode;
 
 type FieldValue = boolean | number | string | unknown[] | undefined;
 type FormValues = Record<string, FieldValue>;
+type FormMode = "draft" | "submit";
 
 export function SubmissionFormPage() {
   const { schema, loading, error, reload } = useFormSchema(SUBMISSION_FORM_CODE);
@@ -75,7 +78,8 @@ export function SubmissionFormPage() {
       <SchemaForm
         fields={fields}
         dictionaries={dictionaries}
-        onSubmit={(values) => createSubmissionDraft(SUBMISSION_FORM_CODE, schema.versionNo, values)}
+        formCode={SUBMISSION_FORM_CODE}
+        schemaVersion={schema.versionNo}
       />
     </section>
   );
@@ -84,25 +88,36 @@ export function SubmissionFormPage() {
 function SchemaForm({
   fields,
   dictionaries,
-  onSubmit,
+  formCode,
+  schemaVersion,
 }: {
   fields: SubmissionFormField[];
   dictionaries: DictionaryLookup;
-  onSubmit: (values: Record<string, unknown>) => Promise<Submission>;
+  formCode: SubmissionFormCode;
+  schemaVersion: number;
 }) {
   const [form] = Form.useForm<FormValues>();
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
   const [createdSubmission, setCreatedSubmission] = useState<Submission>();
+  const [mode, setMode] = useState<FormMode>("draft");
   const groups = useMemo(() => groupByPart(fields), [fields]);
 
-  async function submit(values: FormValues) {
+  async function saveDraft(values: FormValues) {
+    const payload = normalizePayload(values, fields);
+    if (createdSubmission?.status === "DRAFT") {
+      return updateSubmissionDraft(createdSubmission.id, formCode, schemaVersion, payload);
+    }
+    return createSubmissionDraft(formCode, schemaVersion, payload);
+  }
+
+  async function handleSaveDraft() {
     setSaving(true);
+    setMode("draft");
     setSubmitError(undefined);
-    setCreatedSubmission(undefined);
     try {
-      const created = await onSubmit(normalizePayload(values, fields));
-      setCreatedSubmission(created);
+      const saved = await saveDraft(form.getFieldsValue(true));
+      setCreatedSubmission(saved);
     } catch {
       setSubmitError("送检单保存失败");
     } finally {
@@ -110,9 +125,25 @@ function SchemaForm({
     }
   }
 
+  async function handleSubmitSubmission() {
+    setSaving(true);
+    setMode("submit");
+    setSubmitError(undefined);
+    try {
+      const values = await form.validateFields();
+      const saved = await saveDraft(values);
+      const submitted = await submitSubmission(saved.id);
+      setCreatedSubmission(submitted);
+    } catch {
+      setSubmitError("送检单提交失败，请检查必填字段和当前草稿状态");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <Card className="schemaFormSurface">
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={submit}>
+      <Form form={form} layout="vertical" requiredMark={false}>
         {groups.map((group) => (
           <section key={group.part} className="formPart">
             <div className="formPartHeader">
@@ -137,13 +168,24 @@ function SchemaForm({
         <Space direction="vertical" size={12} className="formFeedback">
           {submitError ? <Alert type="error" showIcon message={submitError} /> : null}
           {createdSubmission ? (
-            <Alert type="success" showIcon message={`草稿 ${createdSubmission.bizNo} 已保存`} />
+            <Alert
+              type="success"
+              showIcon
+              message={
+                createdSubmission.status === "SUBMITTED"
+                  ? `送检单 ${createdSubmission.bizNo} 已提交，内部端可进入送检受理`
+                  : `草稿 ${createdSubmission.bizNo} 已保存`
+              }
+            />
           ) : null}
         </Space>
         <div className="formActions">
           <Button onClick={() => form.resetFields()}>重置</Button>
-          <Button type="primary" htmlType="submit" loading={saving}>
+          <Button loading={saving && mode === "draft"} onClick={handleSaveDraft}>
             保存草稿
+          </Button>
+          <Button type="primary" loading={saving && mode === "submit"} onClick={handleSubmitSubmission}>
+            提交送检单
           </Button>
         </div>
       </Form>

@@ -31,6 +31,23 @@ test("portal desktop aligns to customer portal shell", async ({ page }) => {
   await page.screenshot({ path: `${screenshotDir}/portal-dashboard-desktop.png`, fullPage: true });
 });
 
+test("portal submission form exposes separate draft and submit actions", async ({ page }) => {
+  await page.goto("/portal/");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("新建送检单").first().click();
+  await expect(page.getByText("SUBMISSION VER.15")).toBeVisible();
+  await expect(page.getByRole("button", { name: "保存草稿" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "提交送检单" })).toBeVisible();
+});
+
+test("internal sales can open submission acceptance desk", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("送检受理").first().click();
+  await expect(page.getByText("SUBMISSION ACCEPTANCE")).toBeVisible();
+  await expect(page.getByRole("button", { name: /刷\s*新/ })).toBeVisible();
+});
+
 test("mobile portal keeps 390px workflow usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

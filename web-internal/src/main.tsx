@@ -29,6 +29,7 @@ import {
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
+import { SubmissionAcceptanceDesk } from "./SubmissionAcceptanceDesk";
 import { WorkCenterPage } from "./WorkCenterPage";
 import "./styles.css";
 
@@ -236,6 +237,13 @@ function renderRoute(
     return (
       <RequireAction action="SAMPLE_RECEIVE">
         <SampleReceivingDesk />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "submissions") {
+    return (
+      <RequireAction action="SUBMISSION_ACCEPT">
+        <SubmissionAcceptanceDesk />
       </RequireAction>
     );
   }

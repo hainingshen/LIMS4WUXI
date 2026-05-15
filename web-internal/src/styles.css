@@ -196,6 +196,11 @@ body {
   gap: 16px;
 }
 
+.systemGovernancePage {
+  display: grid;
+  gap: 16px;
+}
+
 .studyPlanPage {
   display: grid;
   gap: 16px;
@@ -375,7 +380,8 @@ body {
 }
 
 .customerManagementGrid,
-.customerManagementFormGrid {
+.customerManagementFormGrid,
+.systemGovernanceGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
@@ -555,6 +561,7 @@ body {
   .inventoryGrid,
   .customerManagementGrid,
   .customerManagementFormGrid,
+  .systemGovernanceGrid,
   .inventoryTxnGrid,
   .workCenterHeader,
   .workCenterGrid,

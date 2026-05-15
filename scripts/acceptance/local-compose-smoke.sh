@@ -202,6 +202,48 @@ request GET "/portal-users?customerOrgId=$customer_org_id&page=1&pageSize=20" 20
 jq -e --arg id "$portal_user_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
   || fail "portal user list does not contain created user"
 
+request GET "/system-configs" 200 "$admin_token"
+jq -e 'type == "array" and length >= 1' "$LAST_BODY" >/dev/null || fail "system config list is empty"
+
+request GET "/system-configs" 403 "$portal_token"
+jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "portal system config list did not return FORBIDDEN"
+
+system_config_key="LOCAL_SMOKE_CONFIG_$suffix"
+system_config_payload="$(jq -nc --arg key "$system_config_key" '{
+  configKey: $key,
+  configValue: "true",
+  valueType: "BOOLEAN",
+  category: "LOCAL_SMOKE",
+  editableByRole: "SYSTEM_ADMIN",
+  descriptionZh: "Local smoke config"
+}')"
+request POST "/system-configs" 200 "$admin_token" "$system_config_payload"
+jq -e --arg key "$system_config_key" '.configKey == $key and .valueType == "BOOLEAN"' "$LAST_BODY" >/dev/null \
+  || fail "system config upsert did not return saved config"
+
+request GET "/business-rules" 200 "$admin_token"
+jq -e 'type == "array" and length >= 1' "$LAST_BODY" >/dev/null || fail "business rule list is empty"
+
+business_rule_code="LOCAL_SMOKE_RULE_$suffix"
+business_rule_payload="$(jq -nc --arg code "$business_rule_code" '{
+  ruleCode: $code,
+  nameZh: "Local Smoke Rule",
+  triggerType: "LOCAL_SMOKE",
+  conditionExpr: "true == true",
+  actionCode: "LOCAL_SMOKE_ACTION",
+  actionPayload: {stage: "LOCAL"},
+  priority: 999,
+  enabled: true,
+  note: "Local smoke rule"
+}')"
+request POST "/business-rules" 200 "$admin_token" "$business_rule_payload"
+jq -e --arg code "$business_rule_code" '.ruleCode == $code and .enabled == true and .actionPayload.stage == "LOCAL"' "$LAST_BODY" >/dev/null \
+  || fail "business rule upsert did not return saved rule"
+
+request GET "/audit-logs?page=1&pageSize=50" 200 "$admin_token"
+jq -e '.items and (.total >= 1) and (.items[] | select(.actionCode == "SYSTEM_CONFIG" and .result == "SUCCESS"))' "$LAST_BODY" >/dev/null \
+  || fail "audit logs did not contain successful SYSTEM_CONFIG entry"
+
 payload="$(submission_payload "$suffix")"
 request POST "/submissions" 201 "$portal_token" "$payload"
 submission_id="$(jq -er '.id' "$LAST_BODY")"
@@ -842,5 +884,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: customer_org %s portal_user %s submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
-  "$customer_org_id" "$portal_user_id" "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: customer_org %s portal_user %s system_config %s business_rule %s submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
+  "$customer_org_id" "$portal_user_id" "$system_config_key" "$business_rule_code" "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"

@@ -43,6 +43,7 @@ import { SampleRetentionPage } from "./SampleRetentionPage";
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
 import { StudyPlanPage } from "./StudyPlanPage";
 import { SubmissionAcceptanceDesk } from "./SubmissionAcceptanceDesk";
+import { SystemGovernancePage } from "./SystemGovernancePage";
 import { WorkOrderExecutionPage } from "./WorkOrderExecutionPage";
 import { WorkCenterPage } from "./WorkCenterPage";
 import "./styles.css";
@@ -67,6 +68,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     key: "customer-management",
     label: "客户主数据",
     detail: "委托单位、发票信息和门户账号",
+    roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER"],
+    actionCode: "MASTER_DATA_READ",
+  },
+  {
+    key: "system-governance",
+    label: "系统治理",
+    detail: "系统配置、规则和审计日志",
     roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER"],
     actionCode: "MASTER_DATA_READ",
   },
@@ -343,6 +351,13 @@ function renderRoute(
     return (
       <RequireAction action="MASTER_DATA_READ">
         <CustomerManagementPage />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "system-governance") {
+    return (
+      <RequireAction action="MASTER_DATA_READ">
+        <SystemGovernancePage />
       </RequireAction>
     );
   }

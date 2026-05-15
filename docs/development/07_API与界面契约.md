@@ -182,6 +182,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 - 项目健康度。
 - 当前卡点。
 - 我的待办。
+- 岗位待办队列：销售、非标评审、样品、检测、审核、报告、财务、设备、库存、档案。
 - 人员负荷。
 - 趋势图。
 - 超期和预警列表。
@@ -397,7 +398,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | `PortalProjectDetail` | `/portal/projects/:id` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
 | `PortalReportPreview` | `/portal/reports/:id/preview` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
 | `InternalLogin` | `/internal/login` | `BlankLayout` | none |
-| `InternalWorkCenter` | `/internal/work-center` | `InternalLayout` | `SALES_REP,BUSINESS_OWNER,TECHNICAL_LEADER,SD,QA,QC,QUALITY_MANAGER,DEPT_MANAGER,GENERAL_MANAGER` |
+| `InternalWorkCenter` | `/internal/work-center` | `InternalLayout` | `SALES_REP,BUSINESS_OWNER,TECHNICAL_LEADER,SD,QA,QC,SAMPLE_MANAGER,INSPECTOR,REPORT_PREPARER,AUTHORIZED_SIGNATORY,FINANCE_CASHIER,FINANCE_MANAGER,EQUIPMENT_MANAGER,INVENTORY_MANAGER,ARCHIVE_MANAGER,SYSTEM_ADMIN,QUALITY_MANAGER,DEPT_MANAGER,GENERAL_MANAGER` |
 | `InternalSubmissionList` | `/internal/submissions` | `InternalLayout` | `SALES_REP,SAMPLE_MANAGER,TECHNICAL_LEADER` |
 | `InternalProjectDetail` | `/internal/projects/:id` | `InternalLayout` | `SALES_REP,BUSINESS_OWNER,TECHNICAL_LEADER,SD,QA,QC,SAMPLE_MANAGER,REPORT_PREPARER` |
 | `InternalSampleDesk` | `/internal/samples/receiving` | `InternalLayout` | `SAMPLE_MANAGER` |

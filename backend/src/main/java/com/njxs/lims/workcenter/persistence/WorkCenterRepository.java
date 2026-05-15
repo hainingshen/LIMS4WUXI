@@ -4,6 +4,7 @@ import com.njxs.lims.workcenter.domain.WorkCenterProjectRecord;
 import com.njxs.lims.workcenter.domain.WorkCenterResourceLoadRecord;
 import com.njxs.lims.workcenter.domain.WorkCenterScope;
 import com.njxs.lims.workcenter.domain.WorkCenterSummaryRecord;
+import com.njxs.lims.workcenter.domain.WorkCenterTaskRecord;
 import com.njxs.lims.workcenter.domain.WorkCenterTrendRecord;
 import java.util.List;
 
@@ -18,4 +19,6 @@ public interface WorkCenterRepository {
   List<WorkCenterResourceLoadRecord> resourceLoad(WorkCenterScope scope);
 
   List<WorkCenterTrendRecord> trends(WorkCenterScope scope);
+
+  List<WorkCenterTaskRecord> tasks(WorkCenterScope scope, int limit);
 }

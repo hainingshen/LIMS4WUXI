@@ -201,6 +201,18 @@ request GET "/users" 200 "$internal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/users did not return a paged response"
 
+for token_name in internal finance sample
+do
+  case "$token_name" in
+    internal) token="$internal_token" ;;
+    finance) token="$finance_token" ;;
+    sample) token="$sample_token" ;;
+  esac
+  request GET "/work-center/tasks?limit=20" 200 "$token"
+  jq -e 'type == "array" and all(.[]?; .taskKey and .roleGroup and .taskType and .actionPath)' "$LAST_BODY" >/dev/null \
+    || fail "/work-center/tasks did not return role-scoped task rows for $token_name"
+done
+
 for path in /work-orders /raw-records /reports
 do
   request GET "$path?page=1&pageSize=100" 200 "$finance_token"

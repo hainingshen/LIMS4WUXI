@@ -11,7 +11,8 @@ public class WorkCenterDataScopeEvaluator implements DataScopeEvaluator {
 
   @Override
   public boolean supports(String actionCode, String scope) {
-    return "WORK_CENTER_READ".equals(actionCode) && "PROJECT_PARTICIPANT".equals(scope);
+    return "WORK_CENTER_READ".equals(actionCode)
+        && ("PROJECT_PARTICIPANT".equals(scope) || "TASK".equals(scope));
   }
 
   @Override

@@ -22,6 +22,7 @@ import {
   getCurrentUser,
   getWorkCenterResourceLoad,
   getWorkCenterSummary,
+  getWorkCenterTasks,
   getWorkCenterTrends,
   listWorkCenterBlockers,
   listWorkCenterProjects,
@@ -32,6 +33,7 @@ import {
   type WorkCenterProjectFilter,
   type WorkCenterResourceLoad,
   type WorkCenterSummary,
+  type WorkCenterTask,
   type WorkCenterTrend,
 } from "@lims4wuxi/shared";
 
@@ -89,6 +91,7 @@ export function WorkCenterPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser>();
   const [projects, setProjects] = useState<WorkCenterProject[]>([]);
   const [blockers, setBlockers] = useState<WorkCenterBlocker[]>([]);
+  const [tasks, setTasks] = useState<WorkCenterTask[]>([]);
   const [resourceLoad, setResourceLoad] = useState<WorkCenterResourceLoad[]>([]);
   const [trends, setTrends] = useState<WorkCenterTrend[]>([]);
   const [filter, setFilter] = useState<WorkCenterProjectFilter>("risk");
@@ -105,11 +108,12 @@ export function WorkCenterPage() {
     setLoading(true);
     setError(undefined);
     try {
-      const [nextUser, nextSummary, nextProjects, nextBlockers, nextResourceLoad, nextTrends] = await Promise.all([
+      const [nextUser, nextSummary, nextProjects, nextBlockers, nextTasks, nextResourceLoad, nextTrends] = await Promise.all([
         getCurrentUser(),
         getWorkCenterSummary(),
         listWorkCenterProjects({ filter, page: 1, pageSize: 20 }),
         listWorkCenterBlockers({ page: 1, pageSize: 20 }),
+        getWorkCenterTasks({ limit: 40 }),
         getWorkCenterResourceLoad(),
         getWorkCenterTrends(),
       ]);
@@ -117,6 +121,7 @@ export function WorkCenterPage() {
       setSummary(nextSummary);
       setProjects(nextProjects.items);
       setBlockers(nextBlockers.items);
+      setTasks(nextTasks);
       setResourceLoad(nextResourceLoad);
       setTrends(nextTrends);
     } catch {
@@ -246,6 +251,52 @@ export function WorkCenterPage() {
     },
   ];
 
+  const taskColumns: TableProps<WorkCenterTask>["columns"] = [
+    {
+      title: "待办",
+      dataIndex: "title",
+      width: 220,
+      render: (value, task) => (
+        <Space direction="vertical" size={0}>
+          <Typography.Text strong>{value}</Typography.Text>
+          <Typography.Text type="secondary">{task.bizNo}</Typography.Text>
+        </Space>
+      ),
+    },
+    {
+      title: "岗位",
+      dataIndex: "roleGroup",
+      width: 110,
+      render: (value: string) => <Tag color="blue">{value}</Tag>,
+    },
+    {
+      title: "客户/对象",
+      dataIndex: "customerOrgName",
+      ellipsis: true,
+      render: (value) => value || "-",
+    },
+    {
+      title: "状态",
+      dataIndex: "status",
+      width: 150,
+    },
+    {
+      title: "时间",
+      dataIndex: "dueAt",
+      width: 140,
+      render: (value?: string | null) => (value ? formatTime(value) : "-"),
+    },
+    {
+      title: "操作",
+      width: 90,
+      render: (_, task) => (
+        <Button size="small" type="link" href={task.actionPath}>
+          进入
+        </Button>
+      ),
+    },
+  ];
+
   const blockerColumns: TableProps<WorkCenterBlocker>["columns"] = [
     {
       title: "类型",
@@ -345,6 +396,19 @@ export function WorkCenterPage() {
       </div>
 
       <div className="workCenterGrid">
+        <Card title="岗位待办" className="workCenterPanel workCenterPanelWide">
+          <Table
+            rowKey="taskKey"
+            size="middle"
+            loading={loading}
+            columns={taskColumns}
+            dataSource={tasks}
+            pagination={false}
+            locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+            scroll={{ x: 820 }}
+          />
+        </Card>
+
         <Card title="项目健康度" className="workCenterPanel">
           <Table
             rowKey="projectId"

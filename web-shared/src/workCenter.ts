@@ -10,6 +10,19 @@ export type WorkCenterBlockerCreateRequest = components["schemas"]["WorkCenterBl
 export type WorkCenterBlockerUpdateRequest = components["schemas"]["WorkCenterBlockerUpdateRequest"];
 export type WorkCenterBlockerCloseRequest = components["schemas"]["WorkCenterBlockerCloseRequest"];
 
+export type WorkCenterTask = {
+  taskKey: string;
+  roleGroup: string;
+  taskType: string;
+  title: string;
+  bizNo: string;
+  customerOrgName?: string;
+  status: string;
+  priority: number;
+  dueAt?: string | null;
+  actionPath: string;
+};
+
 export type WorkCenterProjectPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: WorkCenterProject[];
 };
@@ -61,5 +74,10 @@ export async function getWorkCenterResourceLoad() {
 
 export async function getWorkCenterTrends() {
   const response = await http.get<WorkCenterTrend[]>("/work-center/trends");
+  return response.data;
+}
+
+export async function getWorkCenterTasks(params: { limit?: number } = {}) {
+  const response = await http.get<WorkCenterTask[]>("/work-center/tasks", { params });
   return response.data;
 }

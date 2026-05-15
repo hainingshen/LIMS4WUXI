@@ -49,4 +49,12 @@ public class WorkCenterController {
   public List<WorkCenterTrendResponse> trends() {
     return workCenterService.trends(AuthContext.require());
   }
+
+  @GetMapping("/tasks")
+  @RequiresAction("WORK_CENTER_READ")
+  public List<WorkCenterTaskResponse> tasks(
+      @RequestParam(defaultValue = "40") int limit
+  ) {
+    return workCenterService.tasks(AuthContext.require(), limit);
+  }
 }

@@ -5,6 +5,7 @@ import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.workcenter.api.WorkCenterProjectResponse;
 import com.njxs.lims.workcenter.api.WorkCenterResourceLoadResponse;
 import com.njxs.lims.workcenter.api.WorkCenterSummaryResponse;
+import com.njxs.lims.workcenter.api.WorkCenterTaskResponse;
 import com.njxs.lims.workcenter.api.WorkCenterTrendResponse;
 import com.njxs.lims.workcenter.domain.WorkCenterScope;
 import com.njxs.lims.workcenter.persistence.WorkCenterRepository;
@@ -55,6 +56,13 @@ public class WorkCenterService {
   public List<WorkCenterTrendResponse> trends(AuthPrincipal principal) {
     return workCenterRepository.trends(WorkCenterScope.from(principal)).stream()
         .map(WorkCenterTrendResponse::from)
+        .toList();
+  }
+
+  public List<WorkCenterTaskResponse> tasks(AuthPrincipal principal, int limit) {
+    int normalizedLimit = Math.min(Math.max(limit, 1), 100);
+    return workCenterRepository.tasks(WorkCenterScope.from(principal), normalizedLimit).stream()
+        .map(WorkCenterTaskResponse::from)
         .toList();
   }
 }

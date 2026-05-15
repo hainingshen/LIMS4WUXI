@@ -1650,6 +1650,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkCenterSummary'
+  /work-center/tasks:
+    get:
+      summary: List role-scoped work center tasks
+      operationId: listWorkCenterTasks
+      tags: [WorkCenter]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 40
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Role-scoped task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkCenterTask'
   /work-center/projects:
     get:
       summary: List projects for work center with health and blocker fields
@@ -3788,6 +3810,72 @@ components:
         generatedAt:
           type: string
           format: date-time
+    WorkCenterTask:
+      type: object
+      required: [taskKey, roleGroup, taskType, title, bizNo, status, priority, actionPath]
+      properties:
+        taskKey:
+          type: string
+        roleGroup:
+          type: string
+        taskType:
+          type: string
+        title:
+          type: string
+        bizNo:
+          type: string
+        customerOrgName:
+          type: string
+        status:
+          type: string
+          enum:
+            - SUBMITTED
+            - ACCEPTED
+            - NONSTANDARD_REVIEW
+            - QUOTABLE
+            - QUOTED
+            - ARRIVED_PENDING_CHECK
+            - PRE_IN_STOCK
+            - PENDING_RETURN
+            - PENDING_DISPOSAL
+            - PENDING_REGISTER
+            - EXPIRING
+            - PENDING_CONFIRM
+            - PENDING_ASSIGN
+            - PENDING_EXECUTION
+            - SAMPLE_PICKED
+            - IN_PROGRESS
+            - PAUSED
+            - RESULT_ENTERED
+            - RAW_REVIEWING
+            - COMPLETED
+            - REVIEWING
+            - QC_REVIEWING
+            - QA_REVIEWING
+            - SD_REVIEWING
+            - PENDING_ISSUE
+            - REPORTING
+            - LOCKED
+            - GREEN_UNLOCKED
+            - UNLOCKED
+            - DEPT_REVIEWING
+            - MANAGEMENT_REVIEWING
+            - BOOKED
+            - NEEDS_RESCHEDULE
+            - ACTIVE
+            - IN_STOCK
+            - LOW_STOCK
+            - EXPIRED
+            - GREEN_RELEASED
+            - RELEASED
+        priority:
+          type: integer
+        dueAt:
+          type: string
+          format: date-time
+          nullable: true
+        actionPath:
+          type: string
     WorkCenterProject:
       type: object
       required: [projectId, projectBizNo, status, healthStatus, healthScore]

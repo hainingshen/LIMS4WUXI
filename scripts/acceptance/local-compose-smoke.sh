@@ -8,11 +8,20 @@ cd "$ROOT_DIR"
 . "$ROOT_DIR/scripts/local/docker-env.sh"
 
 API_BASE="${API_BASE:-http://localhost:8080/api/v1}"
+LIMS_CLEAN_SMOKE_BEFORE="${LIMS_CLEAN_SMOKE_BEFORE:-1}"
+LIMS_KEEP_SMOKE_DATA="${LIMS_KEEP_SMOKE_DATA:-0}"
 TMP_DIR="$(mktemp -d)"
 LAST_BODY="$TMP_DIR/body.json"
 
 cleanup() {
+  local status=$?
   rm -rf "$TMP_DIR"
+  if [[ "$LIMS_KEEP_SMOKE_DATA" != "1" ]]; then
+    if ! scripts/local/cleanup-smoke-data.sh >/dev/null; then
+      printf 'WARN: smoke data cleanup failed; run scripts/local/cleanup-smoke-data.sh manually\n' >&2
+    fi
+  fi
+  exit "$status"
 }
 trap cleanup EXIT
 
@@ -35,6 +44,10 @@ need jq
 need cmp
 need sha256sum
 select_docker_cmd || fail "docker daemon is not reachable"
+
+if [[ "$LIMS_CLEAN_SMOKE_BEFORE" == "1" ]]; then
+  scripts/local/cleanup-smoke-data.sh >/dev/null
+fi
 
 request() {
   local method="$1"
@@ -183,7 +196,7 @@ finance_token="$(login internal internal.finance Sales123!)"
 equipment_token="$(login internal internal.equipment_manager Sales123!)"
 archive_token="$(login internal internal.archive Sales123!)"
 inventory_token="$(login internal internal.inventory Sales123!)"
-suffix="$(date +%s)"
+suffix="${LIMS_SMOKE_SUFFIX:-$(date +%s)}"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"

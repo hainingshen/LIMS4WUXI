@@ -29,6 +29,7 @@ import {
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { ContractListPage } from "./ContractListPage";
+import { GreenChannelPage } from "./GreenChannelPage";
 import { ProjectListPage } from "./ProjectListPage";
 import { ReportWorkbenchPage } from "./ReportWorkbenchPage";
 import { SampleRetentionPage } from "./SampleRetentionPage";
@@ -85,6 +86,12 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     label: "报告管理",
     detail: "草稿、审核、签发和收款",
     roles: ["REPORT_PREPARER", "QC", "QA", "SD", "AUTHORIZED_SIGNATORY", "FINANCE_CASHIER"],
+  },
+  {
+    key: "green-channels",
+    label: "绿色通道",
+    detail: "申请、部门审批和管理审批",
+    roles: ["SALES_REP", "DEPT_MANAGER", "GENERAL_MANAGER", "FINANCE_MANAGER"],
   },
   {
     key: "sample-retentions",
@@ -294,6 +301,9 @@ function renderRoute(
   }
   if (activeRoute?.key === "reports") {
     return <ReportWorkbenchPage />;
+  }
+  if (activeRoute?.key === "green-channels") {
+    return <GreenChannelPage />;
   }
   if (activeRoute?.key === "sample-retentions") {
     return <SampleRetentionPage />;

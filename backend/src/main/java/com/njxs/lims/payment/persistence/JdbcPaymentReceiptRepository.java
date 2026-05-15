@@ -188,7 +188,10 @@ public class JdbcPaymentReceiptRepository implements PaymentReceiptRepository {
         """
         update report
         set payment_gate_status = 'UNLOCKED',
-            status = case when status = 'ISSUED_PAYMENT_LOCKED' then 'RELEASED' else status end,
+            status = case
+              when status in ('ISSUED_PAYMENT_LOCKED', 'GREEN_RELEASED') then 'RELEASED'
+              else status
+            end,
             updated_at = now(),
             updated_by = ?,
             version = version + 1
@@ -207,7 +210,10 @@ public class JdbcPaymentReceiptRepository implements PaymentReceiptRepository {
         """
         update report
         set payment_gate_status = 'UNLOCKED',
-            status = case when status = 'ISSUED_PAYMENT_LOCKED' then 'RELEASED' else status end,
+            status = case
+              when status in ('ISSUED_PAYMENT_LOCKED', 'GREEN_RELEASED') then 'RELEASED'
+              else status
+            end,
             updated_at = now(),
             updated_by = ?,
             version = version + 1

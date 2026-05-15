@@ -95,6 +95,39 @@ class PaymentGateTests {
     assertUnlocked(reportId, projectId);
   }
 
+  @Test
+  void paymentAfterGreenChannelTurnsReportIntoFinalRelease() throws Exception {
+    String portalToken = login("portal", "portal.admin", "Portal123!");
+    String financeToken = login("internal", "internal.finance", "Sales123!");
+    UUID projectId = insertProject();
+    UUID docxFileId = insertFile(
+        "todo70-green-official.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
+    UUID reportId = insertReport(projectId, docxFileId, "GREEN_RELEASED", "GREEN_UNLOCKED");
+
+    mockMvc.perform(post("/payment-receipts")
+            .header(HttpHeaders.AUTHORIZATION, bearer(financeToken))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "projectId": "%s",
+                  "reportId": "%s",
+                  "amount": 1200.00,
+                  "receivedAt": "2026-05-15T18:00:00Z",
+                  "method": "BANK_TRANSFER"
+                }
+                """.formatted(projectId, reportId)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.status").value("RECORDED"));
+
+    mockMvc.perform(get("/reports/{id}/official-pdf", reportId)
+            .header(HttpHeaders.AUTHORIZATION, bearer(portalToken)))
+        .andExpect(status().isOk());
+
+    assertUnlocked(reportId, projectId);
+  }
+
   private UUID insertProject() {
     UUID projectId = UUID.randomUUID();
     jdbcTemplate.update(
@@ -104,13 +137,14 @@ class PaymentGateTests {
           requires_glp, requires_animal_test, requires_ethics_review, requires_nonstandard_review,
           business_owner_id, technical_owner_id, sd_user_id, status, health_status, health_score,
           payment_status, created_at, created_by, updated_at, updated_by, version, source_type, data_quality_score
-        ) values (?, 'P-TODO70', '00000000-0000-0000-0000-000000000401',
+        ) values (?, ?, '00000000-0000-0000-0000-000000000401',
           '00000000-0000-0000-0000-000000000301', 'STD_ACCREDITED', 'CMA', 'NORMAL',
           false, false, false, false, '00000000-0000-0000-0000-000000000104',
           '00000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000106',
           'PAYMENT_HOLD', 'NORMAL', 100, 'UNPAID', now(), ?, now(), ?, 0, 'NEW', 100)
         """,
         projectId,
+        "P-TODO70-" + projectId,
         ADMIN_ID,
         ADMIN_ID
     );
@@ -139,6 +173,10 @@ class PaymentGateTests {
   }
 
   private UUID insertIssuedReport(UUID projectId, UUID docxFileId) {
+    return insertReport(projectId, docxFileId, "ISSUED_PAYMENT_LOCKED", "LOCKED");
+  }
+
+  private UUID insertReport(UUID projectId, UUID docxFileId, String status, String paymentGateStatus) {
     UUID reportId = UUID.randomUUID();
     jdbcTemplate.update(
         """
@@ -146,12 +184,15 @@ class PaymentGateTests {
           id, biz_no, project_id, report_template_id, template_code, template_version,
           status, current_version_no, is_official, watermark_type, payment_gate_status,
           issued_at, created_at, created_by, updated_at, updated_by, version, source_type, data_quality_score
-        ) values (?, 'RPT-TODO70', ?, null, 'STERILITY_REPORT', '1.0',
-          'ISSUED_PAYMENT_LOCKED', 1, true, 'NONE', 'LOCKED',
+        ) values (?, ?, ?, null, 'STERILITY_REPORT', '1.0',
+          ?, 1, true, 'NONE', ?,
           now(), now(), ?, now(), ?, 0, 'NEW', 100)
         """,
         reportId,
+        "RPT-TODO70-" + reportId,
         projectId,
+        status,
+        paymentGateStatus,
         ADMIN_ID,
         ADMIN_ID
     );

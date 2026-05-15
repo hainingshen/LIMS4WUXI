@@ -211,6 +211,11 @@ body {
   gap: 16px;
 }
 
+.greenChannelPage {
+  display: grid;
+  gap: 16px;
+}
+
 .pageHeader {
   display: flex;
   align-items: end;

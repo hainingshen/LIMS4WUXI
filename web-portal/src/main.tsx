@@ -11,6 +11,7 @@ import {
   Layout,
   Menu,
   Space,
+  Spin,
   Tag,
   Typography,
 } from "antd";
@@ -19,16 +20,26 @@ import { Button as MobileButton, Form as MobileForm, Input as MobileInput, List,
 import "antd-mobile/es/global";
 import {
   hasAnyRole,
+  downloadOfficialReportPdf,
+  listReports,
   loginForClient,
   limsAntdTheme,
   roleLabel,
   useAuthStore,
   type AuthSession,
+  type Report,
 } from "@lims4wuxi/shared";
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { PortalProjectOverviewPage } from "./PortalProjectOverviewPage";
 import { SubmissionFormPage } from "./SubmissionFormPage";
+import {
+  isPaymentGateLocked,
+  paymentGateColor,
+  previewWatermark,
+  reportStatusColor,
+  triggerPdfDownload,
+} from "./reportPresentation";
 import "./styles.css";
 
 type PortalRouteKey = "dashboard" | "new-submission" | "projects" | "report-preview";
@@ -187,9 +198,9 @@ function PortalShell() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  function navigate(key: PortalRouteKey) {
+  function navigate(key: PortalRouteKey, path?: string) {
     setSelectedKey(key);
-    const nextPath = portalPathForKey(key);
+    const nextPath = path ?? portalPathForKey(key);
     if (nextPath !== window.location.pathname) {
       window.history.pushState({}, "", nextPath);
     }
@@ -253,7 +264,7 @@ function PortalShell() {
 function portalContent(
   activeKey: PortalRouteKey,
   entries: readonly PortalRoute[],
-  selectRoute: (key: PortalRouteKey) => void,
+  selectRoute: (key: PortalRouteKey, path?: string) => void,
   routeState: PortalRouteState,
 ) {
   if (activeKey === "new-submission") {
@@ -276,12 +287,13 @@ function portalContent(
         mode="projects"
         selectedProjectId={routeState.projectId}
         onNewSubmission={() => selectRoute("new-submission")}
+        onPreviewReport={(reportId) => selectRoute("report-preview", `/portal/reports/${reportId}/preview`)}
       />
     );
   }
 
   if (activeKey === "report-preview") {
-    return <PortalReportPreview reportId={routeState.reportId} />;
+    return <PortalReportPreview reportId={routeState.reportId} onBack={() => selectRoute("projects")} />;
   }
 
   const entry = entries.find((item) => item.key === activeKey);
@@ -327,12 +339,142 @@ function portalPathForKey(key: PortalRouteKey) {
   return PORTAL_ROUTES.find((route) => route.key === key)?.path.replace("/:id", "") ?? "/portal/";
 }
 
-function PortalReportPreview({ reportId }: { reportId?: string }) {
+function PortalReportPreview({ reportId, onBack }: { reportId?: string; onBack?: () => void }) {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+  const [downloadFeedback, setDownloadFeedback] = useState<string>();
+  const [downloading, setDownloading] = useState(false);
+  const report = useMemo(
+    () => reports.find((item) => item.id === reportId),
+    [reports, reportId],
+  );
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      setLoading(true);
+      setError(undefined);
+      try {
+        const page = await listReports({ page: 1, pageSize: 100 });
+        if (active) {
+          setReports(page.items ?? []);
+        }
+      } catch {
+        if (active) {
+          setError("报告预览加载失败");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function downloadReport() {
+    if (!report) {
+      return;
+    }
+    setDownloadFeedback(undefined);
+    setDownloading(true);
+    try {
+      const pdf = await downloadOfficialReportPdf(report.id);
+      triggerPdfDownload(pdf, `${report.bizNo}.pdf`);
+      setDownloadFeedback("正式报告已开始下载，发放日志会记录本次下载。");
+    } catch (err) {
+      setDownloadFeedback(
+        isPaymentGateLocked(err)
+          ? "未付款或绿色通道未解锁，正式报告暂不可下载；当前预览保留水印。"
+          : "正式报告下载失败，请稍后重试。",
+      );
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="pageState">
+        <Spin />
+      </div>
+    );
+  }
+
   return (
-    <section className="routePanel">
-      <Typography.Text className="pageEyebrow">REPORT PREVIEW</Typography.Text>
-      <Typography.Title level={3}>报告预览</Typography.Title>
-      <Typography.Text>{reportId ?? "未选择报告"}</Typography.Text>
+    <section className="portalReportPreviewPage">
+      <header className="pageHeader">
+        <div>
+          <Typography.Text className="pageEyebrow">REPORT PREVIEW</Typography.Text>
+          <Typography.Title level={3}>报告预览</Typography.Title>
+        </div>
+        <Space wrap>
+          {onBack ? <Button onClick={onBack}>返回项目</Button> : null}
+          <Button type="primary" loading={downloading} disabled={!report} onClick={() => void downloadReport()}>
+            下载正式报告
+          </Button>
+        </Space>
+      </header>
+      {error ? <Alert type="error" showIcon message={error} className="portalFeedback" /> : null}
+      {downloadFeedback ? <Alert type="info" showIcon message={downloadFeedback} className="portalFeedback" /> : null}
+      {!reportId ? <Alert type="warning" showIcon message="未选择报告" className="portalFeedback" /> : null}
+      {reportId && !report ? (
+        <Alert type="warning" showIcon message="当前报告不在你的授权范围内" className="portalFeedback" />
+      ) : null}
+      {report ? (
+        <div className="portalReportSheet">
+          <div className="portalReportWatermark">{previewWatermark(report)}</div>
+          <div className="portalReportHeading">
+            <Typography.Text className="pageEyebrow">NJU XSBI LIMS</Typography.Text>
+            <Typography.Title level={4}>检验检测报告</Typography.Title>
+            <Typography.Text>{report.bizNo}</Typography.Text>
+          </div>
+          <dl className="portalReportMetaGrid">
+            <div>
+              <dt>报告状态</dt>
+              <dd>
+                <Tag color={reportStatusColor(report.status)}>{report.status}</Tag>
+              </dd>
+            </div>
+            <div>
+              <dt>付款门禁</dt>
+              <dd>
+                <Tag color={paymentGateColor(report.paymentGateStatus)}>{report.paymentGateStatus}</Tag>
+              </dd>
+            </div>
+            <div>
+              <dt>模板</dt>
+              <dd>{report.templateCode}</dd>
+            </div>
+            <div>
+              <dt>模板版本</dt>
+              <dd>{report.templateVersion ?? "-"}</dd>
+            </div>
+            <div>
+              <dt>项目 ID</dt>
+              <dd>{report.projectId}</dd>
+            </div>
+            <div>
+              <dt>水印</dt>
+              <dd>{report.watermarkType ?? "NONE"}</dd>
+            </div>
+          </dl>
+          <div className="portalReportBody">
+            <Typography.Paragraph>
+              委托单位、样品信息、检测项目、原始记录结论和授权签发信息以正式 PDF 为准。
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              {report.paymentGateStatus === "LOCKED"
+                ? "付款门禁未解锁，当前预览件保留水印，正式报告暂不可下载。"
+                : "报告已满足正式发放条件，正式 PDF 可下载并进入发放记录。"}
+            </Typography.Paragraph>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

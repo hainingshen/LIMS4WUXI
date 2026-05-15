@@ -69,7 +69,6 @@ for path in \
   /study-plans \
   /work-orders \
   /raw-records \
-  /reports \
   /payment-receipts \
   /green-channel-requests \
   /change-requests \
@@ -99,6 +98,10 @@ done
 request GET "/projects" 200 "$portal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/projects did not return a portal-scoped paged response"
+
+request GET "/reports" 200 "$portal_token"
+jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
+  || fail "/reports did not return a portal-scoped paged response"
 
 for path in /projects /quotations /contracts /archive-items /device-bookings /inventory-batches /inventory-transactions /customer-orgs /portal-users
 do

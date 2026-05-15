@@ -320,6 +320,11 @@ export async function issueReport(id: string) {
   return response.data;
 }
 
+export async function downloadOfficialReportPdf(id: string) {
+  const response = await http.get<Blob>(`/reports/${id}/official-pdf`, { responseType: "blob" });
+  return response.data;
+}
+
 export async function listPaymentReceipts(params: { page?: number; pageSize?: number; projectId?: string } = {}) {
   const response = await http.get<PaymentReceiptPage>("/payment-receipts", { params });
   return response.data;

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.njxs.lims.approval.domain.ApprovalOutcome;
 import com.njxs.lims.approval.service.ApprovalRecordService;
 import com.njxs.lims.auth.domain.AuthPrincipal;
+import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
 import com.njxs.lims.project.domain.Project;
@@ -74,8 +75,19 @@ public class ReportService {
   }
 
   public PageResponse<ReportResponse> list(int page, int pageSize) {
-    int normalizedPage = Math.max(page, 1);
-    int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
+    return listInternal(normalizedPage(page), normalizedPageSize(pageSize));
+  }
+
+  public PageResponse<ReportResponse> list(AuthPrincipal principal, int page, int pageSize) {
+    int normalizedPage = normalizedPage(page);
+    int normalizedPageSize = normalizedPageSize(pageSize);
+    if (principal.clientType() == ClientType.PORTAL) {
+      return listPortal(principal, normalizedPage, normalizedPageSize);
+    }
+    return listInternal(normalizedPage, normalizedPageSize);
+  }
+
+  private PageResponse<ReportResponse> listInternal(int normalizedPage, int normalizedPageSize) {
     int offset = (normalizedPage - 1) * normalizedPageSize;
     return new PageResponse<>(
         reportRepository.list(normalizedPageSize, offset).stream()
@@ -85,6 +97,50 @@ public class ReportService {
         normalizedPageSize,
         reportRepository.count()
     );
+  }
+
+  private PageResponse<ReportResponse> listPortal(
+      AuthPrincipal principal,
+      int normalizedPage,
+      int normalizedPageSize
+  ) {
+    int offset = (normalizedPage - 1) * normalizedPageSize;
+    if (hasRole(principal, "CUSTOMER_APPLICANT")) {
+      return new PageResponse<>(
+          reportRepository.listForApplicant(principal.userId(), normalizedPageSize, offset)
+              .stream()
+              .map(ReportResponse::from)
+              .toList(),
+          normalizedPage,
+          normalizedPageSize,
+          reportRepository.countForApplicant(principal.userId())
+      );
+    }
+    if (principal.orgId() != null
+        && (hasRole(principal, "CUSTOMER_ORG_ADMIN") || hasRole(principal, "CUSTOMER_VIEWER"))) {
+      return new PageResponse<>(
+          reportRepository.listForCustomerOrg(principal.orgId(), normalizedPageSize, offset)
+              .stream()
+              .map(ReportResponse::from)
+              .toList(),
+          normalizedPage,
+          normalizedPageSize,
+          reportRepository.countForCustomerOrg(principal.orgId())
+      );
+    }
+    return new PageResponse<>(List.of(), normalizedPage, normalizedPageSize, 0);
+  }
+
+  private int normalizedPage(int page) {
+    return Math.max(page, 1);
+  }
+
+  private int normalizedPageSize(int pageSize) {
+    return Math.min(Math.max(pageSize, 1), 100);
+  }
+
+  private boolean hasRole(AuthPrincipal principal, String roleCode) {
+    return principal.roles().contains(roleCode);
   }
 
   @Transactional

@@ -106,6 +106,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | 工单结果录入完成 | `POST /work-orders/{id}/enter-result` | 检测员 |
 | 提交原始记录 | `POST /work-orders/{id}/submit-raw-record` | 检测员 |
 | 原始记录审核 | `POST /raw-records/{id}/review` | 审核人 |
+| 查询报告列表 | `GET /reports` | 客户、内部授权人员；门户仅返回授权范围内报告 |
 | 生成报告草稿 | `POST /reports/generate-draft` | 报告编制员 |
 | 报告提交 QC | `POST /reports/{id}/submit-qc` | 报告编制员 |
 | 报告审批 | `POST /reports/{reportId}/review` | QC、QA、SD |

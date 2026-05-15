@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Progress, Space, Spin, Tag, Typography } from "antd";
 import {
+  downloadOfficialReportPdf,
   listProjects,
+  listReports,
   listSubmissions,
   type Project,
+  type Report,
   type Submission,
 } from "@lims4wuxi/shared";
+
+import { isPaymentGateLocked, paymentGateColor, reportStatusColor, triggerPdfDownload } from "./reportPresentation";
 
 type PortalProjectOverviewPageProps = {
   mode: "dashboard" | "projects";
   selectedProjectId?: string;
   onNewSubmission?: () => void;
   onOpenProjects?: () => void;
+  onPreviewReport?: (reportId: string) => void;
 };
 
 const PROJECT_PHASES = ["受理", "样品", "试验", "报告", "发放"] as const;
@@ -21,26 +27,50 @@ export function PortalProjectOverviewPage({
   selectedProjectId,
   onNewSubmission,
   onOpenProjects,
+  onPreviewReport,
 }: PortalProjectOverviewPageProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [downloadFeedback, setDownloadFeedback] = useState<string>();
+  const [downloadingReportId, setDownloadingReportId] = useState<string>();
 
   async function load() {
     setLoading(true);
     setError(undefined);
     try {
-      const [submissionPage, projectPage] = await Promise.all([
+      const [submissionPage, projectPage, reportPage] = await Promise.all([
         listSubmissions({ page: 1, pageSize: 50 }),
         listProjects({ page: 1, pageSize: 50 }),
+        listReports({ page: 1, pageSize: 100 }),
       ]);
       setSubmissions(submissionPage.items ?? []);
       setProjects(projectPage.items ?? []);
+      setReports(reportPage.items ?? []);
     } catch {
       setError("客户进度加载失败");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function downloadReport(report: Report) {
+    setDownloadFeedback(undefined);
+    setDownloadingReportId(report.id);
+    try {
+      const pdf = await downloadOfficialReportPdf(report.id);
+      triggerPdfDownload(pdf, `${report.bizNo}.pdf`);
+      setDownloadFeedback("正式报告已开始下载，发放日志会记录本次下载。");
+    } catch (err) {
+      setDownloadFeedback(
+        isPaymentGateLocked(err)
+          ? "未付款或绿色通道未解锁，正式报告暂不可下载；当前仅支持在线预览。"
+          : "正式报告下载失败，请稍后重试。",
+      );
+    } finally {
+      setDownloadingReportId(undefined);
     }
   }
 
@@ -56,8 +86,16 @@ export function PortalProjectOverviewPage({
     () => new Map(submissions.map((submission) => [submission.id, submission])),
     [submissions],
   );
+  const reportByProjectId = useMemo(() => {
+    const byProject = new Map<string, Report>();
+    for (const report of reports) {
+      if (!byProject.has(report.projectId)) {
+        byProject.set(report.projectId, report);
+      }
+    }
+    return byProject;
+  }, [reports]);
   const recentProjects = mode === "dashboard" ? projects.slice(0, 5) : projects;
-  const draftCount = submissions.filter((submission) => submission.status === "DRAFT").length;
   const submittedCount = submissions.filter((submission) => submission.status !== "DRAFT").length;
   const releasedCount = projects.filter((project) => project.status === "RELEASED" || project.status === "ARCHIVED").length;
 
@@ -84,6 +122,7 @@ export function PortalProjectOverviewPage({
       </header>
 
       {error ? <Alert type="error" showIcon message={error} className="portalFeedback" /> : null}
+      {downloadFeedback ? <Alert type="info" showIcon message={downloadFeedback} className="portalFeedback" /> : null}
       {selectedProjectId && !selectedProject ? (
         <Alert type="warning" showIcon message="当前项目不在你的授权范围内" className="portalFeedback" />
       ) : null}
@@ -98,8 +137,8 @@ export function PortalProjectOverviewPage({
           <Typography.Text>已提交送检</Typography.Text>
         </div>
         <div className="portalStat">
-          <span>{draftCount}</span>
-          <Typography.Text>草稿</Typography.Text>
+          <span>{reports.length}</span>
+          <Typography.Text>报告</Typography.Text>
         </div>
         <div className="portalStat">
           <span>{releasedCount}</span>
@@ -109,43 +148,71 @@ export function PortalProjectOverviewPage({
 
       {recentProjects.length ? (
         <div className="portalProjectList">
-          {recentProjects.map((project) => (
-            <article
-              key={project.id}
-              className={project.id === selectedProjectId ? "portalProjectItem isSelected" : "portalProjectItem"}
-            >
-              <div className="portalProjectTopline">
-                <div>
-                  <Typography.Title level={5}>{project.bizNo}</Typography.Title>
-                  <Typography.Text type="secondary">
-                    {submissionById.get(project.submissionId)?.bizNo ?? project.submissionId}
-                  </Typography.Text>
+          {recentProjects.map((project) => {
+            const report = reportByProjectId.get(project.id);
+            return (
+              <article
+                key={project.id}
+                className={project.id === selectedProjectId ? "portalProjectItem isSelected" : "portalProjectItem"}
+              >
+                <div className="portalProjectTopline">
+                  <div>
+                    <Typography.Title level={5}>{project.bizNo}</Typography.Title>
+                    <Typography.Text type="secondary">
+                      {submissionById.get(project.submissionId)?.bizNo ?? project.submissionId}
+                    </Typography.Text>
+                  </div>
+                  <Space wrap>
+                    <Tag color={projectStatusColor(project.status)}>{project.status}</Tag>
+                    <Tag>{project.paymentStatus ?? "UNPAID"}</Tag>
+                  </Space>
                 </div>
-                <Space wrap>
-                  <Tag color={projectStatusColor(project.status)}>{project.status}</Tag>
-                  <Tag>{project.paymentStatus ?? "UNPAID"}</Tag>
-                </Space>
-              </div>
-              <div className="portalProjectMeta">
-                <span>{projectTypeLabel(project.projectType)}</span>
-                <span>{project.qualificationType ?? "NONE"}</span>
-                <span>{project.requiresGlp ? "GLP" : "Non-GLP"}</span>
-              </div>
-              <Progress
-                percent={phasePercent(project.status)}
-                showInfo={false}
-                strokeColor="var(--lims-primary)"
-                trailColor="var(--lims-line-soft)"
-              />
-              <div className="portalPhaseRow" aria-label="项目进度">
-                {PROJECT_PHASES.map((phase, index) => (
-                  <span key={phase} className={index <= phaseIndex(project.status) ? "isDone" : undefined}>
-                    {phase}
-                  </span>
-                ))}
-              </div>
-            </article>
-          ))}
+                <div className="portalProjectMeta">
+                  <span>{projectTypeLabel(project.projectType)}</span>
+                  <span>{project.qualificationType ?? "NONE"}</span>
+                  <span>{project.requiresGlp ? "GLP" : "Non-GLP"}</span>
+                </div>
+                <Progress
+                  percent={phasePercent(project.status)}
+                  showInfo={false}
+                  strokeColor="var(--lims-primary)"
+                  trailColor="var(--lims-line-soft)"
+                />
+                <div className="portalPhaseRow" aria-label="项目进度">
+                  {PROJECT_PHASES.map((phase, index) => (
+                    <span key={phase} className={index <= phaseIndex(project.status) ? "isDone" : undefined}>
+                      {phase}
+                    </span>
+                  ))}
+                </div>
+                {report ? (
+                  <div className="portalReportRow">
+                    <div>
+                      <Typography.Text strong>{report.bizNo}</Typography.Text>
+                      <Space wrap className="portalReportTags">
+                        <Tag color={reportStatusColor(report.status)}>{report.status}</Tag>
+                        <Tag color={paymentGateColor(report.paymentGateStatus)}>{report.paymentGateStatus}</Tag>
+                        <Tag>{report.watermarkType ?? "NONE"}</Tag>
+                      </Space>
+                    </div>
+                    <Space wrap>
+                      {onPreviewReport ? (
+                        <Button onClick={() => onPreviewReport(report.id)}>预览报告</Button>
+                      ) : null}
+                      <Button
+                        type="primary"
+                        ghost={report.paymentGateStatus === "LOCKED"}
+                        loading={downloadingReportId === report.id}
+                        onClick={() => void downloadReport(report)}
+                      >
+                        下载正式报告
+                      </Button>
+                    </Space>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
         </div>
       ) : (
         <div className="portalEmptyState">

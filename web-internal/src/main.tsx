@@ -30,6 +30,7 @@ import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { ArchiveItemPage } from "./ArchiveItemPage";
 import { ContractListPage } from "./ContractListPage";
+import { DeviceBookingPage } from "./DeviceBookingPage";
 import { DeviceFilePage } from "./DeviceFilePage";
 import { GreenChannelPage } from "./GreenChannelPage";
 import { ImportExportTaskPage } from "./ImportExportTaskPage";
@@ -105,6 +106,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "台账、证书和 SOP 有效性",
     roles: ["INSPECTOR", "EQUIPMENT_MANAGER", "QUALITY_MANAGER"],
     actionCode: "DEVICE_FILE_READ",
+  },
+  {
+    key: "device-bookings",
+    label: "设备预约",
+    detail: "日历、冲突和覆盖重约",
+    roles: ["EQUIPMENT_MANAGER", "QUALITY_MANAGER"],
+    actionCode: "DEVICE_BOOKING_READ_ALL",
   },
   {
     key: "import-export-tasks",
@@ -353,6 +361,13 @@ function renderRoute(
     return (
       <RequireAction action="DEVICE_FILE_READ">
         <DeviceFilePage />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "device-bookings") {
+    return (
+      <RequireAction action="DEVICE_BOOKING_READ_ALL">
+        <DeviceBookingPage />
       </RequireAction>
     );
   }

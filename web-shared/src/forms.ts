@@ -20,6 +20,7 @@ export type ReportRegistryVersion = components["schemas"]["ReportRegistryVersion
 export type ReportDeliveryLog = components["schemas"]["ReportDeliveryLog"];
 export type ImportExportTask = components["schemas"]["ImportExportTask"];
 export type Device = components["schemas"]["Device"];
+export type DeviceBooking = components["schemas"]["DeviceBooking"];
 export type DeviceFile = components["schemas"]["DeviceFile"];
 export type InventoryBatch = components["schemas"]["InventoryBatch"];
 export type InventoryTransaction = components["schemas"]["InventoryTransaction"];
@@ -66,6 +67,9 @@ export type ReportDeliveryLogPage = Omit<components["schemas"]["PageResponse"], 
 export type DevicePage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Device[];
 };
+export type DeviceBookingPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: DeviceBooking[];
+};
 export type InventoryBatchPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: InventoryBatch[];
 };
@@ -94,6 +98,8 @@ export type SampleRetentionExtendRequest = components["schemas"]["SampleRetentio
 export type SampleRetentionDisposeRequest = components["schemas"]["SampleRetentionDisposeRequest"];
 export type GreenChannelCreateRequest = components["schemas"]["GreenChannelCreateRequest"];
 export type ReportRegistryBatchDownloadRequest = components["schemas"]["ReportRegistryBatchDownloadRequest"];
+export type DeviceBookingCreateRequest = components["schemas"]["DeviceBookingCreateRequest"];
+export type DeviceBookingOverrideRequest = components["schemas"]["DeviceBookingOverrideRequest"];
 export type DeviceFileUploadRequest = components["schemas"]["DeviceFileUploadRequest"];
 export type InventoryBatchUpsertRequest = components["schemas"]["InventoryBatchUpsertRequest"];
 export type InventoryTransactionCreateRequest = components["schemas"]["InventoryTransactionCreateRequest"];
@@ -382,6 +388,21 @@ export async function listReportDeliveryLogs(params: { page?: number; pageSize?:
 
 export async function listDevices(params: { page?: number; pageSize?: number; keyword?: string } = {}) {
   const response = await http.get<DevicePage>("/devices", { params });
+  return response.data;
+}
+
+export async function listDeviceBookings(params: { page?: number; pageSize?: number; deviceId?: string } = {}) {
+  const response = await http.get<DeviceBookingPage>("/device-bookings", { params });
+  return response.data;
+}
+
+export async function createDeviceBooking(request: DeviceBookingCreateRequest) {
+  const response = await http.post<DeviceBooking>("/device-bookings", request);
+  return response.data;
+}
+
+export async function overrideDeviceBooking(id: string, request: DeviceBookingOverrideRequest) {
+  const response = await http.post<DeviceBooking>(`/device-bookings/${id}/override`, request);
   return response.data;
 }
 

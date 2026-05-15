@@ -327,6 +327,10 @@ request GET "/projects?page=1&pageSize=20" 200 "$internal_token"
 jq -e --arg id "$project_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
   || fail "internal project list does not contain $project_id"
 
+request GET "/projects?page=1&pageSize=20" 200 "$portal_token"
+jq -e --arg id "$project_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
+  || fail "portal project list does not contain own project $project_id"
+
 nonstandard_split_payload="$(jq -nc '{
   splitStrategy: "MANUAL",
   projectDrafts: [

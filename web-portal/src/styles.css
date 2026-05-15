@@ -264,6 +264,125 @@ body {
   border-top: 1px solid var(--lims-line-soft);
 }
 
+.portalProjectPage {
+  max-width: 1180px;
+}
+
+.portalFeedback {
+  margin-bottom: 14px;
+}
+
+.portalStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.portalStat {
+  min-height: 88px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 16px;
+  border: 1px solid var(--lims-line);
+  border-radius: var(--lims-radius);
+  background: var(--lims-card-bg);
+  box-shadow: var(--lims-card-shadow);
+}
+
+.portalStat span {
+  color: var(--lims-primary);
+  font-family: Inter, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.portalProjectList {
+  display: grid;
+  gap: 12px;
+}
+
+.portalProjectItem,
+.portalEmptyState,
+.portalSubmissionItem {
+  border: 1px solid var(--lims-line);
+  border-radius: var(--lims-radius);
+  background: var(--lims-card-bg);
+  box-shadow: var(--lims-card-shadow);
+}
+
+.portalProjectItem {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.portalProjectItem.isSelected {
+  border-color: var(--lims-primary);
+  box-shadow: var(--lims-card-shadow-hi);
+}
+
+.portalProjectTopline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portalProjectTopline h5 {
+  margin: 0 0 2px;
+}
+
+.portalProjectMeta,
+.portalPhaseRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portalProjectMeta span {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--lims-line-soft);
+  border-radius: 4px;
+  color: var(--lims-ink-600);
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+.portalPhaseRow {
+  justify-content: space-between;
+  color: var(--lims-ink-500);
+  font-size: 12px;
+}
+
+.portalPhaseRow span.isDone {
+  color: var(--lims-primary);
+  font-weight: 600;
+}
+
+.portalEmptyState {
+  padding: 24px;
+}
+
+.portalSubmissionList {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.portalSubmissionItem {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) auto minmax(80px, auto);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
 .pageState {
   min-height: 260px;
   display: grid;
@@ -296,6 +415,18 @@ body {
   .formActions {
     margin: 16px -16px -16px;
     padding: 12px 16px;
+  }
+
+  .portalStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .portalProjectTopline {
+    display: grid;
+  }
+
+  .portalSubmissionItem {
+    grid-template-columns: 1fr;
   }
 
   .loginSurface {

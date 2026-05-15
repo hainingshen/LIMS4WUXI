@@ -27,6 +27,8 @@ public class JdbcProjectRepository implements ProjectRepository {
       payment_status, created_at, created_by, updated_at, updated_by, deleted_at, version,
       tenant_org_id, legacy_id, source_type, migration_batch, data_quality_score
       """;
+  private static final String SELECT_PROJECT_COLUMNS = "p."
+      + SELECT_COLUMNS.strip().replaceAll("\\s+", " ").replace(", ", ", p.");
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -132,6 +134,74 @@ public class JdbcProjectRepository implements ProjectRepository {
         where deleted_at is null
         """,
         Integer.class
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
+  public List<Project> listForCustomerOrg(UUID customerOrgId, int limit, int offset) {
+    return jdbcTemplate.query(
+        "select " + SELECT_COLUMNS + """
+        from project
+        where customer_org_id = ?
+          and deleted_at is null
+        order by updated_at desc, created_at desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> project(rs),
+        customerOrgId,
+        limit,
+        offset
+    );
+  }
+
+  @Override
+  public int countForCustomerOrg(UUID customerOrgId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from project
+        where customer_org_id = ?
+          and deleted_at is null
+        """,
+        Integer.class,
+        customerOrgId
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
+  public List<Project> listForApplicant(UUID applicantUserId, int limit, int offset) {
+    return jdbcTemplate.query(
+        "select " + SELECT_PROJECT_COLUMNS + " " + """
+        from project p
+        join submission s on s.id = p.submission_id
+        where s.applicant_user_id = ?
+          and p.deleted_at is null
+          and s.deleted_at is null
+        order by p.updated_at desc, p.created_at desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> project(rs),
+        applicantUserId,
+        limit,
+        offset
+    );
+  }
+
+  @Override
+  public int countForApplicant(UUID applicantUserId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from project p
+        join submission s on s.id = p.submission_id
+        where s.applicant_user_id = ?
+          and p.deleted_at is null
+          and s.deleted_at is null
+        """,
+        Integer.class,
+        applicantUserId
     );
     return count == null ? 0 : count;
   }

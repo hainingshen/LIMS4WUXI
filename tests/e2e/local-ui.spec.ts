@@ -40,6 +40,29 @@ test("portal submission form exposes separate draft and submit actions", async (
   await expect(page.getByRole("button", { name: "提交送检单" })).toBeVisible();
 });
 
+test("portal deeplink opens submission form after login", async ({ page }) => {
+  await page.goto("/portal/submissions/new");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await expect(page.getByText("SUBMISSION VER.15")).toBeVisible();
+  await expect(page).toHaveURL(/\/portal\/submissions\/new$/);
+});
+
+test("portal projects page shows customer progress", async ({ page }) => {
+  await page.goto("/portal/projects");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await expect(page.getByText("CUSTOMER PROJECTS")).toBeVisible();
+  await expect(page.getByText(/P-\d{4}-/).first()).toBeVisible();
+});
+
+test("internal deeplink opens master data page after login", async ({ page }) => {
+  await page.goto("/internal/master-data");
+  await page.locator("#username").fill("internal.admin");
+  await page.locator("#password").fill("Internal123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await expect(page.getByText("MASTER DATA", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/internal\/master-data$/);
+});
+
 test("internal sales can open submission acceptance desk", async ({ page }) => {
   await page.goto("/internal/");
   await page.getByRole("button", { name: /登\s*录/ }).click();

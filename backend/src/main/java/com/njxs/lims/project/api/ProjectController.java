@@ -1,17 +1,18 @@
 package com.njxs.lims.project.api;
 
 import com.njxs.lims.audit.Audited;
+import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.permission.RequiresAction;
-import com.njxs.lims.permission.RequiresClient;
 import com.njxs.lims.project.persistence.ProjectRepository;
 import com.njxs.lims.project.service.NonstandardReviewService;
 import com.njxs.lims.quotation.api.QuotationCreateRequest;
 import com.njxs.lims.quotation.api.QuotationResponse;
 import com.njxs.lims.quotation.service.QuotationService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -44,7 +45,6 @@ public class ProjectController {
   }
 
   @GetMapping
-  @RequiresClient(ClientType.INTERNAL)
   public PageResponse<ProjectResponse> list(
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int pageSize
@@ -52,12 +52,52 @@ public class ProjectController {
     int normalizedPage = Math.max(page, 1);
     int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
     int offset = (normalizedPage - 1) * normalizedPageSize;
+    AuthPrincipal principal = AuthContext.require();
+    if (principal.clientType() == ClientType.PORTAL) {
+      return listPortalProjects(principal, normalizedPage, normalizedPageSize, offset);
+    }
     return new PageResponse<>(
         projectRepository.list(normalizedPageSize, offset).stream().map(ProjectResponse::from).toList(),
         normalizedPage,
         normalizedPageSize,
         projectRepository.count()
     );
+  }
+
+  private PageResponse<ProjectResponse> listPortalProjects(
+      AuthPrincipal principal,
+      int normalizedPage,
+      int normalizedPageSize,
+      int offset
+  ) {
+    if (hasRole(principal, "CUSTOMER_APPLICANT")) {
+      return new PageResponse<>(
+          projectRepository.listForApplicant(principal.userId(), normalizedPageSize, offset)
+              .stream()
+              .map(ProjectResponse::from)
+              .toList(),
+          normalizedPage,
+          normalizedPageSize,
+          projectRepository.countForApplicant(principal.userId())
+      );
+    }
+    if (principal.orgId() != null
+        && (hasRole(principal, "CUSTOMER_ORG_ADMIN") || hasRole(principal, "CUSTOMER_VIEWER"))) {
+      return new PageResponse<>(
+          projectRepository.listForCustomerOrg(principal.orgId(), normalizedPageSize, offset)
+              .stream()
+              .map(ProjectResponse::from)
+              .toList(),
+          normalizedPage,
+          normalizedPageSize,
+          projectRepository.countForCustomerOrg(principal.orgId())
+      );
+    }
+    return new PageResponse<>(List.of(), normalizedPage, normalizedPageSize, 0);
+  }
+
+  private boolean hasRole(AuthPrincipal principal, String roleCode) {
+    return principal.roles().contains(roleCode);
   }
 
   @PostMapping("/{id}/nonstandard-review/start")

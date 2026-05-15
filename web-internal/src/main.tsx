@@ -55,6 +55,7 @@ type InternalRoute = {
   detail: string;
   roles: readonly string[];
   actionCode?: string;
+  path: string;
 };
 
 const INTERNAL_ROUTES: readonly InternalRoute[] = [
@@ -64,6 +65,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "待办、风险和负荷",
     roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "QUALITY_MANAGER", "DEPT_MANAGER", "GENERAL_MANAGER"],
     actionCode: "WORK_CENTER_READ",
+    path: "/internal/work-center",
   },
   {
     key: "customer-management",
@@ -71,6 +73,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "委托单位、发票信息和门户账号",
     roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER"],
     actionCode: "MASTER_DATA_READ",
+    path: "/internal/customer-management",
   },
   {
     key: "system-governance",
@@ -78,6 +81,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "系统配置、规则和审计日志",
     roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER"],
     actionCode: "MASTER_DATA_READ",
+    path: "/internal/system",
   },
   {
     key: "master-data-admin",
@@ -85,6 +89,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "组织、用户、节假日和旧状态",
     roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER"],
     actionCode: "MASTER_DATA_READ",
+    path: "/internal/master-data",
   },
   {
     key: "submissions",
@@ -92,30 +97,35 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "提交审核、受理和拆分",
     roles: ["SALES_REP", "SAMPLE_MANAGER", "TECHNICAL_LEADER"],
     actionCode: "SUBMISSION_ACCEPT",
+    path: "/internal/submissions",
   },
   {
     key: "projects",
     label: "项目详情",
     detail: "评审、方案和报告进度",
     roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "SAMPLE_MANAGER", "REPORT_PREPARER"],
+    path: "/internal/projects",
   },
   {
     key: "study-plans",
     label: "方案编制",
     detail: "审批、下发和工单",
     roles: ["TECHNICAL_LEADER", "SD"],
+    path: "/internal/study-plans",
   },
   {
     key: "work-orders",
     label: "试验执行",
     detail: "领样、结果和原始记录",
     roles: ["INSPECTOR", "QC"],
+    path: "/internal/work-orders",
   },
   {
     key: "reports",
     label: "报告管理",
     detail: "草稿、审核、签发和收款",
     roles: ["REPORT_PREPARER", "QC", "QA", "SD", "AUTHORIZED_SIGNATORY", "FINANCE_CASHIER"],
+    path: "/internal/reports",
   },
   {
     key: "report-registry",
@@ -123,6 +133,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "版本、发放和批量下载",
     roles: ["REPORT_PREPARER", "QC", "QA", "SD", "AUTHORIZED_SIGNATORY", "ARCHIVE_MANAGER", "QUALITY_MANAGER"],
     actionCode: "REPORT_REGISTRY_READ",
+    path: "/internal/report-registry",
   },
   {
     key: "device-files",
@@ -130,6 +141,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "台账、证书和 SOP 有效性",
     roles: ["INSPECTOR", "EQUIPMENT_MANAGER", "QUALITY_MANAGER"],
     actionCode: "DEVICE_FILE_READ",
+    path: "/internal/devices/files",
   },
   {
     key: "device-bookings",
@@ -137,6 +149,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "日历、冲突和覆盖重约",
     roles: ["EQUIPMENT_MANAGER", "QUALITY_MANAGER"],
     actionCode: "DEVICE_BOOKING_READ_ALL",
+    path: "/internal/devices/calendar",
   },
   {
     key: "import-export-tasks",
@@ -144,6 +157,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "预校验、执行和结果文件",
     roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER", "ARCHIVE_MANAGER"],
     actionCode: "IMPORT_EXPORT_TASK_CREATE",
+    path: "/internal/import-export-tasks",
   },
   {
     key: "archive-items",
@@ -151,6 +165,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "项目归档件和长期保存",
     roles: ["ARCHIVE_MANAGER", "QUALITY_MANAGER"],
     actionCode: "ARCHIVE_READ",
+    path: "/internal/archive",
   },
   {
     key: "inventory",
@@ -158,24 +173,28 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "标准品、耗材和流水",
     roles: ["INVENTORY_MANAGER", "INSPECTOR", "QUALITY_MANAGER"],
     actionCode: "INVENTORY_READ",
+    path: "/internal/inventory",
   },
   {
     key: "green-channels",
     label: "绿色通道",
     detail: "申请、部门审批和管理审批",
     roles: ["SALES_REP", "DEPT_MANAGER", "GENERAL_MANAGER", "FINANCE_MANAGER"],
+    path: "/internal/green-channel-requests",
   },
   {
     key: "sample-retentions",
     label: "留样管理",
     detail: "登记、延期和处置",
     roles: ["SAMPLE_MANAGER", "QUALITY_MANAGER", "ARCHIVE_MANAGER"],
+    path: "/internal/sample-retentions",
   },
   {
     key: "contracts",
     label: "合同协议",
     detail: "签署确认和字段锁定",
     roles: ["SALES_REP", "BUSINESS_OWNER"],
+    path: "/internal/contracts",
   },
   {
     key: "samples-receiving",
@@ -183,6 +202,7 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "到达核验、拍照和入库",
     roles: ["SAMPLE_MANAGER"],
     actionCode: "SAMPLE_RECEIVE",
+    path: "/internal/samples/receiving",
   },
 ];
 
@@ -283,13 +303,30 @@ function InternalShell() {
   const roles = useAuthStore((state) => state.roles);
   const clearSession = useAuthStore((state) => state.clearSession);
   const entries = useMemo(() => INTERNAL_ROUTES.filter((item) => hasAnyRole(roles, item.roles)), [roles]);
-  const [activeKey, setActiveKey] = useState(entries[0]?.key);
+  const [activeKey, setActiveKey] = useState(() => internalKeyFromPath(window.location.pathname));
 
   useEffect(() => {
     if (!entries.some((item) => item.key === activeKey)) {
       setActiveKey(entries[0]?.key);
     }
   }, [activeKey, entries]);
+
+  useEffect(() => {
+    const onPopState = () => setActiveKey(internalKeyFromPath(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  function navigate(key: string | undefined) {
+    if (!key) {
+      return;
+    }
+    setActiveKey(key);
+    const nextPath = internalPathForKey(key);
+    if (nextPath && nextPath !== window.location.pathname) {
+      window.history.pushState({}, "", nextPath);
+    }
+  }
 
   const activeRoute = entries.find((item) => item.key === activeKey) ?? entries[0];
 
@@ -301,14 +338,14 @@ function InternalShell() {
         </NavBar>
         <List header="入口">
           {entries.map((item) => (
-            <List.Item key={item.key} description={item.detail} onClick={() => setActiveKey(item.key)}>
+            <List.Item key={item.key} description={item.detail} onClick={() => navigate(item.key)}>
               {item.actionCode ? (
                 <RequireAction action={item.actionCode}>{item.label}</RequireAction>
               ) : item.label}
             </List.Item>
           ))}
         </List>
-        <div className="mobileContent">{renderRoute(activeRoute, entries, setActiveKey)}</div>
+        <div className="mobileContent">{renderRoute(activeRoute, entries, navigate)}</div>
       </main>
     );
   }
@@ -326,7 +363,7 @@ function InternalShell() {
         <Menu
           mode="inline"
           selectedKeys={activeRoute ? [activeRoute.key] : []}
-          onClick={({ key }) => setActiveKey(String(key))}
+          onClick={({ key }) => navigate(String(key))}
           items={entries.map((item) => ({ key: item.key, label: item.label }))}
         />
       </Layout.Sider>
@@ -337,7 +374,7 @@ function InternalShell() {
           </Space>
           <Button onClick={clearSession}>退出</Button>
         </header>
-        {renderRoute(activeRoute, entries, setActiveKey)}
+        {renderRoute(activeRoute, entries, navigate)}
       </Layout.Content>
     </Layout>
   );
@@ -469,6 +506,83 @@ function renderRoute(
       ))}
     </section>
   );
+}
+
+function internalKeyFromPath(pathname: string) {
+  if (pathname === "/internal/" || pathname === "/internal") {
+    return "work-center";
+  }
+  if (pathname === "/internal/work-center") {
+    return "work-center";
+  }
+  if (pathname === "/internal/submissions") {
+    return "submissions";
+  }
+  if (pathname === "/internal/samples/receiving") {
+    return "samples-receiving";
+  }
+  if (pathname === "/internal/master-data") {
+    return "master-data-admin";
+  }
+  if (pathname === "/internal/system") {
+    return "system-governance";
+  }
+  if (pathname === "/internal/customer-management") {
+    return "customer-management";
+  }
+  if (pathname === "/internal/import-export-tasks") {
+    return "import-export-tasks";
+  }
+  if (pathname === "/internal/inventory") {
+    return "inventory";
+  }
+  if (pathname === "/internal/archive") {
+    return "archive-items";
+  }
+  if (pathname === "/internal/report-registry") {
+    return "report-registry";
+  }
+  if (pathname === "/internal/contracts") {
+    return "contracts";
+  }
+  if (pathname === "/internal/sample-retentions") {
+    return "sample-retentions";
+  }
+  if (pathname === "/internal/green-channel-requests") {
+    return "green-channels";
+  }
+  if (pathname === "/internal/payments") {
+    return "reports";
+  }
+  if (pathname.startsWith("/internal/projects")) {
+    return "projects";
+  }
+  if (pathname.startsWith("/internal/study-plans")) {
+    return "study-plans";
+  }
+  if (pathname.startsWith("/internal/work-orders")) {
+    return "work-orders";
+  }
+  if (pathname.startsWith("/internal/reports")) {
+    return "reports";
+  }
+  if (pathname.startsWith("/internal/devices") && pathname.endsWith("/files")) {
+    return "device-files";
+  }
+  if (pathname.startsWith("/internal/devices") && pathname.endsWith("/calendar")) {
+    return "device-bookings";
+  }
+  if (pathname === "/internal/devices/files") {
+    return "device-files";
+  }
+  if (pathname === "/internal/devices/calendar") {
+    return "device-bookings";
+  }
+  return "work-center";
+}
+
+function internalPathForKey(key: string) {
+  return INTERNAL_ROUTES.find((route) => route.key === key)?.path;
 }
 
 function RequireAction({ action, children }: React.PropsWithChildren<{ action: string }>) {

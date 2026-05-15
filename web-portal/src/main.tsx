@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Alert,
@@ -27,31 +27,55 @@ import {
 } from "@lims4wuxi/shared";
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
+import { PortalProjectOverviewPage } from "./PortalProjectOverviewPage";
 import { SubmissionFormPage } from "./SubmissionFormPage";
 import "./styles.css";
 
-const PORTAL_ROUTES = [
+type PortalRouteKey = "dashboard" | "new-submission" | "projects" | "report-preview";
+
+type PortalRoute = {
+  key: PortalRouteKey;
+  label: string;
+  detail: string;
+  roles: readonly string[];
+  path: string;
+  menu: boolean;
+};
+
+const PORTAL_ROUTES: readonly PortalRoute[] = [
   {
     key: "dashboard",
     label: "客户首页",
     detail: "送检进度和报告动态",
     roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
+    path: "/portal/",
+    menu: true,
   },
   {
     key: "new-submission",
     label: "新建送检单",
     detail: "填写并提交委托信息",
     roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT"],
+    path: "/portal/submissions/new",
+    menu: true,
   },
   {
     key: "projects",
     label: "我的项目",
     detail: "查看项目、样品和报告",
     roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
+    path: "/portal/projects",
+    menu: true,
+  },
+  {
+    key: "report-preview",
+    label: "报告预览",
+    detail: "查看草稿和发放状态",
+    roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
+    path: "/portal/reports/:id/preview",
+    menu: false,
   },
 ] as const;
-
-type PortalRouteKey = (typeof PORTAL_ROUTES)[number]["key"];
 
 function PortalApp() {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -149,18 +173,34 @@ function PortalShell() {
   const screens = Grid.useBreakpoint();
   const roles = useAuthStore((state) => state.roles);
   const clearSession = useAuthStore((state) => state.clearSession);
-  const entries = useMemo(() => PORTAL_ROUTES.filter((item) => hasAnyRole(roles, item.roles)), [roles]);
-  const [selectedKey, setSelectedKey] = useState<PortalRouteKey>("dashboard");
-  const selectedEntry = entries.find((item) => item.key === selectedKey) ?? entries[0];
+  const allowedRoutes = useMemo(() => PORTAL_ROUTES.filter((item) => hasAnyRole(roles, item.roles)), [roles]);
+  const entries = useMemo(() => allowedRoutes.filter((item) => item.menu), [allowedRoutes]);
+  const [selectedKey, setSelectedKey] = useState<PortalRouteKey>(() => portalKeyFromPath(window.location.pathname));
+  const routeState = portalRouteState(selectedKey, window.location.pathname);
+  const selectedEntry = allowedRoutes.find((item) => item.key === selectedKey) ?? entries[0];
   const activeKey = selectedEntry?.key;
-  const content = activeKey ? portalContent(activeKey, entries, setSelectedKey) : null;
+  const content = activeKey ? portalContent(activeKey, entries, navigate, routeState) : null;
+
+  useEffect(() => {
+    const onPopState = () => setSelectedKey(portalKeyFromPath(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  function navigate(key: PortalRouteKey) {
+    setSelectedKey(key);
+    const nextPath = portalPathForKey(key);
+    if (nextPath !== window.location.pathname) {
+      window.history.pushState({}, "", nextPath);
+    }
+  }
 
   if (screens.xs) {
     return (
       <main className="mobileSurface">
         <NavBar
           backArrow={activeKey !== "dashboard"}
-          onBack={() => setSelectedKey("dashboard")}
+          onBack={() => navigate("dashboard")}
           right={<MobileButton size="mini" onClick={clearSession}>退出</MobileButton>}
         >
           {selectedEntry?.label ?? "客户门户"}
@@ -168,7 +208,7 @@ function PortalShell() {
         {activeKey === "dashboard" ? (
           <List header="入口">
             {entries.map((item) => (
-              <List.Item key={item.key} description={item.detail} onClick={() => setSelectedKey(item.key)}>
+              <List.Item key={item.key} description={item.detail} onClick={() => navigate(item.key)}>
                 {item.label}
               </List.Item>
             ))}
@@ -194,7 +234,7 @@ function PortalShell() {
           mode="inline"
           selectedKeys={activeKey ? [activeKey] : []}
           items={entries.map((item) => ({ key: item.key, label: item.label }))}
-          onClick={({ key }) => setSelectedKey(key as PortalRouteKey)}
+          onClick={({ key }) => navigate(key as PortalRouteKey)}
         />
       </Layout.Sider>
       <Layout.Content className="content">
@@ -212,8 +252,9 @@ function PortalShell() {
 
 function portalContent(
   activeKey: PortalRouteKey,
-  entries: readonly (typeof PORTAL_ROUTES)[number][],
+  entries: readonly PortalRoute[],
   selectRoute: (key: PortalRouteKey) => void,
+  routeState: PortalRouteState,
 ) {
   if (activeKey === "new-submission") {
     return <SubmissionFormPage />;
@@ -221,14 +262,26 @@ function portalContent(
 
   if (activeKey === "dashboard") {
     return (
-      <section className="entryGrid">
-        {entries.map((item) => (
-          <Card key={item.key} title={item.label} className="entryCard" onClick={() => selectRoute(item.key)}>
-            <Typography.Text>{item.detail}</Typography.Text>
-          </Card>
-        ))}
-      </section>
+      <PortalProjectOverviewPage
+        mode="dashboard"
+        onNewSubmission={() => selectRoute("new-submission")}
+        onOpenProjects={() => selectRoute("projects")}
+      />
     );
+  }
+
+  if (activeKey === "projects") {
+    return (
+      <PortalProjectOverviewPage
+        mode="projects"
+        selectedProjectId={routeState.projectId}
+        onNewSubmission={() => selectRoute("new-submission")}
+      />
+    );
+  }
+
+  if (activeKey === "report-preview") {
+    return <PortalReportPreview reportId={routeState.reportId} />;
   }
 
   const entry = entries.find((item) => item.key === activeKey);
@@ -236,6 +289,50 @@ function portalContent(
     <section className="routePanel">
       <Typography.Title level={3}>{entry?.label}</Typography.Title>
       <Typography.Text>{entry?.detail}</Typography.Text>
+    </section>
+  );
+}
+
+type PortalRouteState = {
+  projectId?: string;
+  reportId?: string;
+};
+
+function portalRouteState(key: PortalRouteKey, pathname: string): PortalRouteState {
+  if (key === "projects") {
+    const match = pathname.match(/^\/portal\/projects\/([^/]+)$/);
+    return { projectId: match?.[1] };
+  }
+  if (key === "report-preview") {
+    const match = pathname.match(/^\/portal\/reports\/([^/]+)\/preview$/);
+    return { reportId: match?.[1] };
+  }
+  return {};
+}
+
+function portalKeyFromPath(pathname: string): PortalRouteKey {
+  if (pathname === "/portal/submissions/new") {
+    return "new-submission";
+  }
+  if (pathname === "/portal/projects" || pathname.startsWith("/portal/projects/")) {
+    return "projects";
+  }
+  if (/^\/portal\/reports\/[^/]+\/preview$/.test(pathname)) {
+    return "report-preview";
+  }
+  return "dashboard";
+}
+
+function portalPathForKey(key: PortalRouteKey) {
+  return PORTAL_ROUTES.find((route) => route.key === key)?.path.replace("/:id", "") ?? "/portal/";
+}
+
+function PortalReportPreview({ reportId }: { reportId?: string }) {
+  return (
+    <section className="routePanel">
+      <Typography.Text className="pageEyebrow">REPORT PREVIEW</Typography.Text>
+      <Typography.Title level={3}>报告预览</Typography.Title>
+      <Typography.Text>{reportId ?? "未选择报告"}</Typography.Text>
     </section>
   );
 }

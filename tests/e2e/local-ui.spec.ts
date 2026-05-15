@@ -116,6 +116,16 @@ test("quality manager can open report registry page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "发放日志" })).toBeVisible();
 });
 
+test("equipment manager can open device file page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.equipment_manager");
+  await page.locator("#password").fill("Sales123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("设备文件").first().click();
+  await expect(page.getByText("DEVICE FILES")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "文件登记" })).toBeVisible();
+});
+
 test("sample manager can open sample retention page", async ({ page }) => {
   await page.goto("/internal/");
   await page.locator("#username").fill("internal.sample");

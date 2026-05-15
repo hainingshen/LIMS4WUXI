@@ -29,6 +29,7 @@ import {
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { ContractListPage } from "./ContractListPage";
+import { DeviceFilePage } from "./DeviceFilePage";
 import { GreenChannelPage } from "./GreenChannelPage";
 import { ProjectListPage } from "./ProjectListPage";
 import { ReportRegistryPage } from "./ReportRegistryPage";
@@ -94,6 +95,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "版本、发放和批量下载",
     roles: ["REPORT_PREPARER", "QC", "QA", "SD", "AUTHORIZED_SIGNATORY", "ARCHIVE_MANAGER", "QUALITY_MANAGER"],
     actionCode: "REPORT_REGISTRY_READ",
+  },
+  {
+    key: "device-files",
+    label: "设备文件",
+    detail: "台账、证书和 SOP 有效性",
+    roles: ["INSPECTOR", "EQUIPMENT_MANAGER", "QUALITY_MANAGER"],
+    actionCode: "DEVICE_FILE_READ",
   },
   {
     key: "green-channels",
@@ -314,6 +322,13 @@ function renderRoute(
     return (
       <RequireAction action="REPORT_REGISTRY_READ">
         <ReportRegistryPage />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "device-files") {
+    return (
+      <RequireAction action="DEVICE_FILE_READ">
+        <DeviceFilePage />
       </RequireAction>
     );
   }

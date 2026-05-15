@@ -6,16 +6,22 @@ export type FormSchema = components["schemas"]["FormSchema"];
 export type Submission = components["schemas"]["Submission"];
 export type Project = components["schemas"]["Project"];
 export type Quotation = components["schemas"]["Quotation"];
+export type Contract = components["schemas"]["Contract"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
 export type ProjectPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Project[];
 };
+export type ContractPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: Contract[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
 export type QuotationCreateRequest = components["schemas"]["QuotationCreateRequest"];
+export type ContractCreateRequest = components["schemas"]["ContractCreateRequest"];
+export type ContractMarkSignedRequest = components["schemas"]["ContractMarkSignedRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -105,6 +111,21 @@ export async function approveNonstandardReview(id: string, request: ApprovalRequ
 
 export async function createProjectQuotation(id: string, request: QuotationCreateRequest) {
   const response = await http.post<Quotation>(`/projects/${id}/quotations`, request);
+  return response.data;
+}
+
+export async function listContracts(params: { page?: number; pageSize?: number; projectId?: string } = {}) {
+  const response = await http.get<ContractPage>("/contracts", { params });
+  return response.data;
+}
+
+export async function createContract(request: ContractCreateRequest) {
+  const response = await http.post<Contract>("/contracts", request);
+  return response.data;
+}
+
+export async function markContractSigned(id: string, request: ContractMarkSignedRequest = {}) {
+  const response = await http.post<Contract>(`/contracts/${id}/mark-signed`, request);
   return response.data;
 }
 

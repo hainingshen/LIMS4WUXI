@@ -15,6 +15,7 @@ import {
 } from "antd";
 import {
   approveNonstandardReview,
+  createContract,
   createProjectQuotation,
   listProjects,
   startNonstandardReview,
@@ -25,7 +26,7 @@ import {
 
 type ProjectAction = {
   projectId: string;
-  action: "start-review" | "tech-approve" | "business-approve" | "quote";
+  action: "start-review" | "tech-approve" | "business-approve" | "quote" | "contract";
 };
 
 type QuotationFormValues = {
@@ -116,6 +117,25 @@ export function ProjectListPage() {
       await load();
     } catch {
       setError("报价创建失败，请确认项目已通过评审并达到可报价状态");
+    } finally {
+      setAction(undefined);
+    }
+  }
+
+  async function createContractForProject(project: Project) {
+    setAction({ projectId: project.id, action: "contract" });
+    setError(undefined);
+    setFeedback(undefined);
+    try {
+      const contract = await createContract({
+        projectId: project.id,
+        contractType: "TEST_AGREEMENT",
+        templateCode: "TEST_AGREEMENT_VER1",
+      });
+      setFeedback(`合同 ${contract.bizNo} 已创建，等待签署确认`);
+      await load();
+    } catch {
+      setError("合同创建失败，请确认项目已完成报价并达到可签约状态");
     } finally {
       setAction(undefined);
     }
@@ -221,6 +241,16 @@ export function ProjectListPage() {
               创建报价
             </Button>
           ) : null}
+          {canCreateContract(project, roles) ? (
+            <Button
+              type="primary"
+              size="small"
+              loading={isLoading(action, project.id, "contract")}
+              onClick={() => createContractForProject(project)}
+            >
+              创建合同
+            </Button>
+          ) : null}
         </Space>
       ),
     },
@@ -312,6 +342,10 @@ function canApproveBusiness(project: Project, roles: readonly string[]) {
 
 function canQuote(project: Project, roles: readonly string[]) {
   return roles.includes("SALES_REP") && project.status === "QUOTABLE";
+}
+
+function canCreateContract(project: Project, roles: readonly string[]) {
+  return roles.includes("SALES_REP") && project.status === "QUOTED";
 }
 
 async function executeProjectAction(projectId: string, action: ProjectAction["action"]) {

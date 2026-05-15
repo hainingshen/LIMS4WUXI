@@ -248,8 +248,38 @@ jq -e --arg project_id "$nonstandard_project_id" \
   '.projectId == $project_id and .totalAmount == 190' "$LAST_BODY" >/dev/null \
   || fail "quotation creation did not return expected project and amount"
 
+contract_payload="$(jq -nc --arg project_id "$nonstandard_project_id" '{
+  projectId: $project_id,
+  contractType: "TEST_AGREEMENT",
+  templateCode: "TEST_AGREEMENT_VER1"
+}')"
+request POST "/contracts" 201 "$internal_token" "$contract_payload"
+contract_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg project_id "$nonstandard_project_id" \
+  '.projectId == $project_id and .status == "PENDING_SIGN"' "$LAST_BODY" >/dev/null \
+  || fail "contract creation did not return pending sign contract"
+
+request GET "/contracts?page=1&pageSize=20" 200 "$internal_token"
+jq -e --arg id "$contract_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
+  || fail "internal contract list does not contain $contract_id"
+
+signed_payload="$(jq -nc '{signedAt:"2026-05-15T00:00:00Z"}')"
+request POST "/contracts/$contract_id/mark-signed" 200 "$internal_token" "$signed_payload"
+jq -e '.status == "SIGNED" and .signedAt == "2026-05-15T00:00:00Z"' "$LAST_BODY" >/dev/null \
+  || fail "contract signing did not return signed contract"
+
+request GET "/projects?page=1&pageSize=20" 200 "$internal_token"
+jq -e --arg id "$nonstandard_project_id" \
+  '.items[] | select(.id == $id and .status == "CONTRACTED")' "$LAST_BODY" >/dev/null \
+  || fail "signed contract did not move project to CONTRACTED"
+
+locked_payload="$(submission_payload "$suffix-locked")"
+request PATCH "/submissions/$nonstandard_submission_id" 409 "$portal_token" "$locked_payload"
+jq -e '.code == "FIELD_CHANGE_REQUIRES_CHANGE_REQUEST"' "$LAST_BODY" >/dev/null \
+  || fail "signed contract did not lock submission change fields"
+
 audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$submission_id' and action_code = 'SUBMISSION_CREATE' and result = 'SUCCESS';")"
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s\n' "$submission_id" "$project_id" "$quotation_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s\n' "$submission_id" "$project_id" "$quotation_id" "$contract_id"

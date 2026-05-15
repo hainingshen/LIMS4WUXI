@@ -28,6 +28,7 @@ import {
 } from "@lims4wuxi/shared";
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
+import { ContractListPage } from "./ContractListPage";
 import { ProjectListPage } from "./ProjectListPage";
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
 import { SubmissionAcceptanceDesk } from "./SubmissionAcceptanceDesk";
@@ -62,6 +63,12 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     label: "项目详情",
     detail: "评审、方案和报告进度",
     roles: ["SALES_REP", "BUSINESS_OWNER", "TECHNICAL_LEADER", "SD", "QA", "QC", "SAMPLE_MANAGER", "REPORT_PREPARER"],
+  },
+  {
+    key: "contracts",
+    label: "合同协议",
+    detail: "签署确认和字段锁定",
+    roles: ["SALES_REP", "BUSINESS_OWNER"],
   },
   {
     key: "samples-receiving",
@@ -250,6 +257,9 @@ function renderRoute(
   }
   if (activeRoute?.key === "projects") {
     return <ProjectListPage />;
+  }
+  if (activeRoute?.key === "contracts") {
+    return <ContractListPage />;
   }
   if (activeRoute?.key === "work-center") {
     return (

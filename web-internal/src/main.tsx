@@ -36,6 +36,7 @@ import { DeviceFilePage } from "./DeviceFilePage";
 import { GreenChannelPage } from "./GreenChannelPage";
 import { ImportExportTaskPage } from "./ImportExportTaskPage";
 import { InventoryPage } from "./InventoryPage";
+import { MasterDataAdminPage } from "./MasterDataAdminPage";
 import { ProjectListPage } from "./ProjectListPage";
 import { ReportRegistryPage } from "./ReportRegistryPage";
 import { ReportWorkbenchPage } from "./ReportWorkbenchPage";
@@ -75,6 +76,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     key: "system-governance",
     label: "系统治理",
     detail: "系统配置、规则和审计日志",
+    roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER"],
+    actionCode: "MASTER_DATA_READ",
+  },
+  {
+    key: "master-data-admin",
+    label: "主数据维护",
+    detail: "组织、用户、节假日和旧状态",
     roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER"],
     actionCode: "MASTER_DATA_READ",
   },
@@ -358,6 +366,13 @@ function renderRoute(
     return (
       <RequireAction action="MASTER_DATA_READ">
         <SystemGovernancePage />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "master-data-admin") {
+    return (
+      <RequireAction action="MASTER_DATA_READ">
+        <MasterDataAdminPage />
       </RequireAction>
     );
   }

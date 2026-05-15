@@ -181,6 +181,11 @@ body {
   gap: 16px;
 }
 
+.projectListPage {
+  display: grid;
+  gap: 16px;
+}
+
 .pageHeader {
   display: flex;
   align-items: end;

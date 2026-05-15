@@ -28,6 +28,7 @@ import {
 } from "@lims4wuxi/shared";
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
+import { ProjectListPage } from "./ProjectListPage";
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
 import { SubmissionAcceptanceDesk } from "./SubmissionAcceptanceDesk";
 import { WorkCenterPage } from "./WorkCenterPage";
@@ -246,6 +247,9 @@ function renderRoute(
         <SubmissionAcceptanceDesk />
       </RequireAction>
     );
+  }
+  if (activeRoute?.key === "projects") {
+    return <ProjectListPage />;
   }
   if (activeRoute?.key === "work-center") {
     return (

@@ -22,13 +22,25 @@ public class PermissionService {
 
   public void assertAllowed(AuthPrincipal principal, String actionCode, Object[] args) {
     List<PermissionRule> rules = permissionRepository.findRules(actionCode, principal.roles());
-    if (rules.stream().anyMatch(PermissionRule::isDeny)) {
-      throw new PermissionDeniedException(actionCode);
-    }
+    assertGrantExists(actionCode, rules);
     boolean allowed = rules.stream()
         .filter(PermissionRule::grantsAccess)
         .anyMatch(rule -> isInScope(principal, rule, args));
     if (!allowed) {
+      throw new PermissionDeniedException(actionCode);
+    }
+  }
+
+  public void assertGranted(AuthPrincipal principal, String actionCode) {
+    List<PermissionRule> rules = permissionRepository.findRules(actionCode, principal.roles());
+    assertGrantExists(actionCode, rules);
+  }
+
+  private void assertGrantExists(String actionCode, List<PermissionRule> rules) {
+    if (rules.stream().anyMatch(PermissionRule::isDeny)) {
+      throw new PermissionDeniedException(actionCode);
+    }
+    if (rules.stream().noneMatch(PermissionRule::grantsAccess)) {
       throw new PermissionDeniedException(actionCode);
     }
   }

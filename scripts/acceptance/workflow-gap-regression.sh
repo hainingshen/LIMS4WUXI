@@ -63,8 +63,13 @@ login() {
 }
 
 internal_token="$(login internal internal.admin Internal123!)"
+finance_token="$(login internal internal.finance Sales123!)"
+sample_token="$(login internal internal.sample Sales123!)"
 portal_token="$(login portal portal.applicant Applicant123!)"
 portal_viewer_token="$(login portal portal.viewer Viewer123!)"
+
+request GET "/projects" 401
+jq -e '.code == "UNAUTHORIZED"' "$LAST_BODY" >/dev/null || fail "missing token did not return UNAUTHORIZED"
 
 request GET "/auth/me" 200 "$portal_token"
 portal_org_id="$(jq -er '.customerOrgId' "$LAST_BODY")"
@@ -103,6 +108,35 @@ for path in \
 do
   request GET "$path" 403 "$portal_token"
   jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "$path did not return FORBIDDEN"
+done
+
+request POST "/payment-receipts" 403 "$portal_token" '{}'
+jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null \
+  || fail "unauthorized payment create should be blocked before body validation"
+
+request POST "/payment-receipts" 400 "$finance_token" '{}'
+jq -e '.code == "VALIDATION_FAILED"' "$LAST_BODY" >/dev/null \
+  || fail "authorized payment create with invalid body should return validation error"
+
+fake_id="00000000-0000-0000-0000-00000000ffff"
+request POST "/samples/$fake_id/receive" 403 "$portal_token" '{}'
+jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null \
+  || fail "unauthorized sample receive should be blocked before body validation"
+
+sample_receive_payload="$(jq -nc '{
+  receivedAt: "2026-05-15T00:10:00Z",
+  receivedBy: "00000000-0000-0000-0000-000000000105",
+  checkPassed: true
+}')"
+request POST "/samples/$fake_id/receive" 404 "$sample_token" "$sample_receive_payload"
+jq -e '.code == "NOT_FOUND"' "$LAST_BODY" >/dev/null \
+  || fail "authorized sample receive with missing id should return NOT_FOUND"
+
+for path in /dictionaries /users /roles
+do
+  request POST "$path" 405 "$internal_token" '{}'
+  jq -e '.code == "METHOD_NOT_ALLOWED"' "$LAST_BODY" >/dev/null \
+    || fail "$path POST did not return METHOD_NOT_ALLOWED"
 done
 
 request GET "/projects?page=1&pageSize=100" 200 "$portal_token"

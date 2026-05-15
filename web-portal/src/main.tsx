@@ -255,11 +255,13 @@ function PortalShell() {
   const clearSession = useAuthStore((state) => state.clearSession);
   const allowedRoutes = useMemo(() => PORTAL_ROUTES.filter((item) => hasAnyRole(roles, item.roles)), [roles]);
   const entries = useMemo(() => allowedRoutes.filter((item) => item.menu), [allowedRoutes]);
-  const [selectedKey, setSelectedKey] = useState<PortalRouteKey>(() => portalKeyFromPath(window.location.pathname));
+  const [selectedKey, setSelectedKey] = useState<PortalRouteKey | undefined>(() => portalKeyFromPath(window.location.pathname));
   const routeState = portalRouteState(selectedKey, window.location.pathname);
-  const selectedEntry = allowedRoutes.find((item) => item.key === selectedKey) ?? entries[0];
+  const matchedRoute = selectedKey ? PORTAL_ROUTES.find((item) => item.key === selectedKey) : undefined;
+  const selectedEntry = allowedRoutes.find((item) => item.key === selectedKey);
   const activeKey = selectedEntry?.key;
-  const content = activeKey ? portalContent(activeKey, entries, navigate, routeState) : null;
+  const routeBoundary = portalRouteBoundary(matchedRoute, selectedEntry, window.location.pathname);
+  const content = routeBoundary ?? (activeKey ? portalContent(activeKey, entries, navigate, routeState) : null);
 
   useEffect(() => {
     const onPopState = () => setSelectedKey(portalKeyFromPath(window.location.pathname));
@@ -283,9 +285,9 @@ function PortalShell() {
           onBack={() => navigate("dashboard")}
           right={<MobileButton size="mini" onClick={clearSession}>退出</MobileButton>}
         >
-          {selectedEntry?.label ?? "客户门户"}
+          {selectedEntry?.label ?? matchedRoute?.label ?? "客户门户"}
         </NavBar>
-        {activeKey === "dashboard" ? (
+        {activeKey === "dashboard" && !routeBoundary ? (
           <List header="入口">
             {entries.map((item) => (
               <List.Item key={item.key} description={item.detail} onClick={() => navigate(item.key)}>
@@ -415,6 +417,20 @@ function portalContent(
   );
 }
 
+function portalRouteBoundary(
+  matchedRoute: PortalRoute | undefined,
+  selectedEntry: PortalRoute | undefined,
+  pathname: string,
+) {
+  if (!matchedRoute) {
+    return <RouteState status="404" title="页面不存在" detail={`未找到路径 ${pathname}`} />;
+  }
+  if (!selectedEntry) {
+    return <RouteState status="403" title="无权访问" detail={`当前账号无权访问 ${matchedRoute.label}`} />;
+  }
+  return null;
+}
+
 type PortalRouteState = {
   contractId?: string;
   projectId?: string;
@@ -422,7 +438,7 @@ type PortalRouteState = {
   submissionId?: string;
 };
 
-function portalRouteState(key: PortalRouteKey, pathname: string): PortalRouteState {
+function portalRouteState(key: PortalRouteKey | undefined, pathname: string): PortalRouteState {
   if (key === "submission-detail") {
     const match = pathname.match(/^\/portal\/submissions\/([^/]+)$/);
     return { submissionId: match?.[1] };
@@ -442,7 +458,7 @@ function portalRouteState(key: PortalRouteKey, pathname: string): PortalRouteSta
   return {};
 }
 
-function portalKeyFromPath(pathname: string): PortalRouteKey {
+function portalKeyFromPath(pathname: string): PortalRouteKey | undefined {
   if (pathname === "/portal/submissions/new") {
     return "new-submission";
   }
@@ -470,7 +486,10 @@ function portalKeyFromPath(pathname: string): PortalRouteKey {
   if (pathname === "/portal/account") {
     return "account";
   }
-  return "dashboard";
+  if (pathname === "/portal/" || pathname === "/portal") {
+    return "dashboard";
+  }
+  return undefined;
 }
 
 function portalPathForKey(key: PortalRouteKey) {
@@ -757,6 +776,16 @@ function PortalReportPreview({ reportId, onBack }: { reportId?: string; onBack?:
 
 function toSession(token: AuthSession): AuthSession {
   return token;
+}
+
+function RouteState({ status, title, detail }: { status: "403" | "404"; title: string; detail: string }) {
+  return (
+    <section className="routeStatePanel">
+      <Typography.Text className="pageEyebrow">{status}</Typography.Text>
+      <Typography.Title level={3}>{title}</Typography.Title>
+      <Typography.Text>{detail}</Typography.Text>
+    </section>
+  );
 }
 
 createRoot(document.getElementById("root")!).render(

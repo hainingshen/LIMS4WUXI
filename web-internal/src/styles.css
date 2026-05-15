@@ -162,6 +162,19 @@ body {
   margin-top: 18px;
 }
 
+.routeStatePanel {
+  max-width: 760px;
+  padding: 28px;
+  border: 1px solid var(--lims-line);
+  border-radius: 8px;
+  background: var(--lims-card-bg);
+  box-shadow: var(--lims-card-shadow);
+}
+
+.routeStatePanel h3 {
+  margin: 0 0 8px;
+}
+
 .mobileSurface {
   min-height: 100vh;
   background: var(--lims-bg);

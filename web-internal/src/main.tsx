@@ -323,13 +323,7 @@ function InternalShell() {
   const roles = useAuthStore((state) => state.roles);
   const clearSession = useAuthStore((state) => state.clearSession);
   const entries = useMemo(() => INTERNAL_ROUTES.filter((item) => hasAnyRole(roles, item.roles)), [roles]);
-  const [activeKey, setActiveKey] = useState(() => internalKeyFromPath(window.location.pathname));
-
-  useEffect(() => {
-    if (!entries.some((item) => item.key === activeKey)) {
-      setActiveKey(entries[0]?.key);
-    }
-  }, [activeKey, entries]);
+  const [activeKey, setActiveKey] = useState<string | undefined>(() => internalKeyFromPath(window.location.pathname));
 
   useEffect(() => {
     const onPopState = () => setActiveKey(internalKeyFromPath(window.location.pathname));
@@ -348,7 +342,9 @@ function InternalShell() {
     }
   }
 
-  const activeRoute = entries.find((item) => item.key === activeKey) ?? entries[0];
+  const matchedRoute = activeKey ? INTERNAL_ROUTES.find((item) => item.key === activeKey) : undefined;
+  const activeRoute = entries.find((item) => item.key === activeKey);
+  const routeState = internalRouteState(matchedRoute, activeRoute, window.location.pathname);
 
   if (screens.xs) {
     return (
@@ -365,7 +361,7 @@ function InternalShell() {
             </List.Item>
           ))}
         </List>
-        <div className="mobileContent">{renderRoute(activeRoute, entries, navigate)}</div>
+        <div className="mobileContent">{routeState ?? renderRoute(activeRoute, entries, navigate)}</div>
       </main>
     );
   }
@@ -394,10 +390,24 @@ function InternalShell() {
           </Space>
           <Button onClick={clearSession}>退出</Button>
         </header>
-        {renderRoute(activeRoute, entries, navigate)}
+        {routeState ?? renderRoute(activeRoute, entries, navigate)}
       </Layout.Content>
     </Layout>
   );
+}
+
+function internalRouteState(
+  matchedRoute: InternalRoute | undefined,
+  activeRoute: InternalRoute | undefined,
+  pathname: string,
+) {
+  if (!matchedRoute) {
+    return <RouteState status="404" title="页面不存在" detail={`未找到路径 ${pathname}`} />;
+  }
+  if (!activeRoute) {
+    return <RouteState status="403" title="无权访问" detail={`当前账号无权访问 ${matchedRoute.label}`} />;
+  }
+  return null;
 }
 
 function renderRoute(
@@ -598,7 +608,7 @@ function internalKeyFromPath(pathname: string) {
   if (pathname === "/internal/devices/calendar") {
     return "device-bookings";
   }
-  return "work-center";
+  return undefined;
 }
 
 function internalPathForKey(key: string) {
@@ -608,6 +618,16 @@ function internalPathForKey(key: string) {
 function RequireAction({ action, children }: React.PropsWithChildren<{ action: string }>) {
   const allowed = usePermission(action);
   return allowed ? <>{children}</> : null;
+}
+
+function RouteState({ status, title, detail }: { status: "403" | "404"; title: string; detail: string }) {
+  return (
+    <section className="routeStatePanel">
+      <Typography.Text className="pageEyebrow">{status}</Typography.Text>
+      <Typography.Title level={3}>{title}</Typography.Title>
+      <Typography.Text>{detail}</Typography.Text>
+    </section>
+  );
 }
 
 function toSession(token: AuthSession): AuthSession {

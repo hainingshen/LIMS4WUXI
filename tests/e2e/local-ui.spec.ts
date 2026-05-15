@@ -14,6 +14,12 @@ async function loginPortalDemo(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: /登\s*录/ }).click();
 }
 
+async function loginPortalViewer(page: import("@playwright/test").Page) {
+  await page.locator("#username").fill("portal.viewer");
+  await page.locator("#password").fill("Viewer123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+}
+
 test("internal desktop aligns to LIMS workbench shell", async ({ page }) => {
   await page.goto("/internal/");
   await expect(page.getByText("无锡锡山 LIMS 内部工作台")).toBeVisible();
@@ -108,6 +114,19 @@ test("portal contract confirmation deeplink shows scoped agreement", async ({ pa
   await page.screenshot({ path: `${screenshotDir}/portal-contract-confirm-desktop.png`, fullPage: true });
 });
 
+test("portal routes show explicit 403 and 404 states", async ({ page }) => {
+  await page.goto("/portal/unknown-route");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await expect(page.getByText("404")).toBeVisible();
+  await expect(page.getByText("页面不存在")).toBeVisible();
+
+  await page.evaluate(() => window.localStorage.clear());
+  await page.goto("/portal/submissions/new");
+  await loginPortalViewer(page);
+  await expect(page.getByText("403")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "无权访问" })).toBeVisible();
+});
+
 test("internal deeplink opens master data page after login", async ({ page }) => {
   await page.goto("/internal/master-data");
   await page.locator("#username").fill("internal.admin");
@@ -115,6 +134,23 @@ test("internal deeplink opens master data page after login", async ({ page }) =>
   await page.getByRole("button", { name: /登\s*录/ }).click();
   await expect(page.getByText("MASTER DATA", { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/internal\/master-data$/);
+});
+
+test("internal routes show explicit 403 and 404 states", async ({ page }) => {
+  await page.goto("/internal/unknown-route");
+  await page.locator("#username").fill("internal.admin");
+  await page.locator("#password").fill("Internal123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await expect(page.getByText("404")).toBeVisible();
+  await expect(page.getByText("页面不存在")).toBeVisible();
+
+  await page.evaluate(() => window.localStorage.clear());
+  await page.goto("/internal/system");
+  await page.locator("#username").fill("internal.sample");
+  await page.locator("#password").fill("Sales123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await expect(page.getByText("403")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "无权访问" })).toBeVisible();
 });
 
 test("internal sales can open submission acceptance desk", async ({ page }) => {

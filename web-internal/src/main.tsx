@@ -33,6 +33,7 @@ import { ProjectListPage } from "./ProjectListPage";
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
 import { StudyPlanPage } from "./StudyPlanPage";
 import { SubmissionAcceptanceDesk } from "./SubmissionAcceptanceDesk";
+import { WorkOrderExecutionPage } from "./WorkOrderExecutionPage";
 import { WorkCenterPage } from "./WorkCenterPage";
 import "./styles.css";
 
@@ -70,6 +71,12 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     label: "方案编制",
     detail: "审批、下发和工单",
     roles: ["TECHNICAL_LEADER", "SD"],
+  },
+  {
+    key: "work-orders",
+    label: "试验执行",
+    detail: "领样、结果和原始记录",
+    roles: ["INSPECTOR", "QC"],
   },
   {
     key: "contracts",
@@ -267,6 +274,9 @@ function renderRoute(
   }
   if (activeRoute?.key === "study-plans") {
     return <StudyPlanPage />;
+  }
+  if (activeRoute?.key === "work-orders") {
+    return <WorkOrderExecutionPage />;
   }
   if (activeRoute?.key === "contracts") {
     return <ContractListPage />;

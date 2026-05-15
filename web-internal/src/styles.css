@@ -196,6 +196,11 @@ body {
   gap: 16px;
 }
 
+.workOrderPage {
+  display: grid;
+  gap: 16px;
+}
+
 .pageHeader {
   display: flex;
   align-items: end;
@@ -284,6 +289,10 @@ body {
 .deskFeedback,
 .formFeedback {
   width: 100%;
+}
+
+.compactFormItem {
+  width: 50%;
 }
 
 .selectedRow > td {

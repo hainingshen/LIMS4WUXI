@@ -485,6 +485,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/work-orders/{id}/pick-sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register sample pickup for work order */
+        post: operations["pickWorkOrderSample"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/work-orders/{id}/enter-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark work order result entered */
+        post: operations["enterWorkOrderResult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/work-orders/{id}/submit-raw-record": {
         parameters: {
             query?: never;
@@ -2049,6 +2083,22 @@ export interface components {
             /** @enum {string} */
             paymentGateStatus: "LOCKED" | "UNLOCKED" | "GREEN_UNLOCKED";
             deliveryCount?: number;
+            versions?: components["schemas"]["ReportRegistryVersion"][];
+        };
+        ReportRegistryVersion: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            reportId: string;
+            versionNo: number;
+            /** @enum {string} */
+            status: "DRAFT" | "ISSUED" | "VOIDED" | "SUPERSEDED";
+            /** Format: uuid */
+            docxFileId?: string | null;
+            /** Format: uuid */
+            pdfFileId?: string | null;
+            /** Format: date-time */
+            issuedAt?: string | null;
         };
         ReportRegistryBatchDownloadRequest: {
             reportIds: string[];
@@ -3434,6 +3484,50 @@ export interface operations {
             };
         };
     };
+    pickWorkOrderSample: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated work order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrder"];
+                };
+            };
+        };
+    };
+    enterWorkOrderResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated work order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrder"];
+                };
+            };
+        };
+    };
     submitWorkOrderRawRecord: {
         parameters: {
             query?: never;
@@ -4120,7 +4214,12 @@ export interface operations {
                 pageSize?: components["parameters"]["PageSize"];
                 keyword?: string;
                 customerOrgId?: string;
+                projectId?: string;
+                reportBizNo?: string;
                 templateType?: string;
+                status?: "PENDING_GENERATE" | "DRAFT" | "QC_REVIEWING" | "QA_REVIEWING" | "SD_REVIEWING" | "PENDING_ISSUE" | "ISSUED_PAYMENT_LOCKED" | "GREEN_RELEASED" | "RELEASED" | "REVISION_DRAFT" | "ARCHIVED" | "VOIDED";
+                issuedFrom?: string;
+                issuedTo?: string;
             };
             header?: never;
             path?: never;

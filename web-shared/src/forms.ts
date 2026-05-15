@@ -9,6 +9,7 @@ export type Quotation = components["schemas"]["Quotation"];
 export type Contract = components["schemas"]["Contract"];
 export type StudyPlan = components["schemas"]["StudyPlan"];
 export type WorkOrder = components["schemas"]["WorkOrder"];
+export type RawRecord = components["schemas"]["RawRecord"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
@@ -24,6 +25,9 @@ export type StudyPlanPage = Omit<components["schemas"]["PageResponse"], "items">
 export type WorkOrderPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: WorkOrder[];
 };
+export type RawRecordPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: RawRecord[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
@@ -31,6 +35,7 @@ export type QuotationCreateRequest = components["schemas"]["QuotationCreateReque
 export type ContractCreateRequest = components["schemas"]["ContractCreateRequest"];
 export type ContractMarkSignedRequest = components["schemas"]["ContractMarkSignedRequest"];
 export type StudyPlanCreateRequest = components["schemas"]["StudyPlanCreateRequest"];
+export type RawRecordSubmitRequest = components["schemas"]["RawRecordSubmitRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -160,6 +165,36 @@ export async function dispatchStudyPlan(id: string) {
 
 export async function listWorkOrders(params: { page?: number; pageSize?: number } = {}) {
   const response = await http.get<WorkOrderPage>("/work-orders", { params });
+  return response.data;
+}
+
+export async function pickWorkOrderSample(id: string) {
+  const response = await http.post<WorkOrder>(`/work-orders/${id}/pick-sample`);
+  return response.data;
+}
+
+export async function startWorkOrder(id: string) {
+  const response = await http.post<WorkOrder>(`/work-orders/${id}/start`);
+  return response.data;
+}
+
+export async function enterWorkOrderResult(id: string) {
+  const response = await http.post<WorkOrder>(`/work-orders/${id}/enter-result`);
+  return response.data;
+}
+
+export async function submitWorkOrderRawRecord(id: string, request: RawRecordSubmitRequest) {
+  const response = await http.post<RawRecord>(`/work-orders/${id}/submit-raw-record`, request);
+  return response.data;
+}
+
+export async function listRawRecords(params: { page?: number; pageSize?: number; workOrderId?: string } = {}) {
+  const response = await http.get<RawRecordPage>("/raw-records", { params });
+  return response.data;
+}
+
+export async function reviewRawRecord(id: string, request: ApprovalRequest) {
+  const response = await http.post<RawRecord>(`/raw-records/${id}/review`, request);
   return response.data;
 }
 

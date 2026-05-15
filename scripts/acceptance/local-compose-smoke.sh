@@ -141,6 +141,8 @@ tech_token="$(login internal internal.tech Sales123!)"
 business_token="$(login internal internal.business Sales123!)"
 sample_token="$(login internal internal.sample Sales123!)"
 sd_token="$(login internal internal.sd Sales123!)"
+inspector_token="$(login internal internal.inspector Sales123!)"
+qc_token="$(login internal internal.qc Sales123!)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
@@ -327,6 +329,50 @@ jq -e --arg id "$nonstandard_project_id" \
   '.items[] | select(.id == $id and .status == "IN_TESTING")' "$LAST_BODY" >/dev/null \
   || fail "study plan dispatch did not move project to IN_TESTING"
 
+request POST "/work-orders/$work_order_id/pick-sample" 200 "$inspector_token"
+jq -e '.status == "SAMPLE_PICKED" and .progressPercent == 5' "$LAST_BODY" >/dev/null \
+  || fail "work order sample pickup did not return SAMPLE_PICKED"
+
+request POST "/work-orders/$work_order_id/start" 200 "$inspector_token"
+jq -e '.status == "IN_PROGRESS" and .progressPercent == 10' "$LAST_BODY" >/dev/null \
+  || fail "work order start did not return IN_PROGRESS"
+
+request POST "/work-orders/$work_order_id/enter-result" 200 "$inspector_token"
+jq -e '.status == "RESULT_ENTERED" and .progressPercent == 80' "$LAST_BODY" >/dev/null \
+  || fail "work order result entry did not return RESULT_ENTERED"
+
+raw_record_payload="$(jq -nc '{
+  templateCode: "RAW_RECORD_STERILITY",
+  recordData: {
+    testItem: "STERILITY",
+    testBasis: "ISO 11737",
+    testTime: "2026-05-20",
+    testLocation: "Lab A",
+    temperatureCelsius: "22",
+    humidityPercent: "45",
+    method: "DIRECT_INOCULATION"
+  },
+  attachmentFileIds: []
+}')"
+request POST "/work-orders/$work_order_id/submit-raw-record" 200 "$inspector_token" "$raw_record_payload"
+raw_record_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e '.status == "REVIEWING" and .templateCode == "RAW_RECORD_STERILITY"' "$LAST_BODY" >/dev/null \
+  || fail "raw record submit did not return REVIEWING"
+
+raw_record_review_payload="$(jq -nc '{stage:"QC",outcome:"APPROVED",comment:"Local smoke raw record approved"}')"
+request POST "/raw-records/$raw_record_id/review" 200 "$qc_token" "$raw_record_review_payload"
+jq -e '.status == "APPROVED"' "$LAST_BODY" >/dev/null || fail "raw record review did not return APPROVED"
+
+request GET "/work-orders?page=1&pageSize=100" 200 "$sd_token"
+jq -e --arg id "$work_order_id" \
+  '.items[] | select(.id == $id and .status == "COMPLETED" and .progressPercent == 100)' "$LAST_BODY" >/dev/null \
+  || fail "raw record approval did not complete work order"
+
+request GET "/projects?page=1&pageSize=100" 200 "$internal_token"
+jq -e --arg id "$nonstandard_project_id" \
+  '.items[] | select(.id == $id and .status == "REPORTING")' "$LAST_BODY" >/dev/null \
+  || fail "completed work order did not move project to REPORTING"
+
 locked_payload="$(submission_payload "$suffix-locked")"
 request PATCH "/submissions/$nonstandard_submission_id" 409 "$portal_token" "$locked_payload"
 jq -e '.code == "FIELD_CHANGE_REQUIRES_CHANGE_REQUEST"' "$LAST_BODY" >/dev/null \
@@ -336,5 +382,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id"

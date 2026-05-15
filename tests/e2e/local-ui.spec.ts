@@ -66,6 +66,16 @@ test("internal sales can open contract list after signing flow", async ({ page }
   await expect(page.getByText(/CON-\d{4}-/).first()).toBeVisible();
 });
 
+test("sample manager can open sample receiving desk", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.sample");
+  await page.locator("#password").fill("Sales123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("样品收样台").first().click();
+  await expect(page.getByText("SAMPLE RECEIVING DESK")).toBeVisible();
+  await expect(page.getByPlaceholder("送检单 / 项目 / 样品 / 批号")).toBeVisible();
+});
+
 test("mobile portal keeps 390px workflow usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

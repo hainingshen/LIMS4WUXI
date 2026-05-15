@@ -139,6 +139,7 @@ portal_token="$(login portal portal.applicant Applicant123!)"
 internal_token="$(login internal internal.sales Sales123!)"
 tech_token="$(login internal internal.tech Sales123!)"
 business_token="$(login internal internal.business Sales123!)"
+sample_token="$(login internal internal.sample Sales123!)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
@@ -272,6 +273,29 @@ request GET "/projects?page=1&pageSize=20" 200 "$internal_token"
 jq -e --arg id "$nonstandard_project_id" \
   '.items[] | select(.id == $id and .status == "CONTRACTED")' "$LAST_BODY" >/dev/null \
   || fail "signed contract did not move project to CONTRACTED"
+
+request GET "/samples?keyword=LOT-$suffix&page=1&pageSize=50" 200 "$sample_token"
+sample_id="$(jq -er --arg project_id "$nonstandard_project_id" \
+  '.items[] | select(.projectId == $project_id) | .id' "$LAST_BODY" | head -n 1)"
+[[ -n "$sample_id" ]] || fail "sample list does not contain project sample for $nonstandard_project_id"
+
+receive_payload="$(jq -nc '{
+  receivedAt: "2026-05-15T00:10:00Z",
+  receivedBy: "00000000-0000-0000-0000-000000000105",
+  checkPassed: true
+}')"
+request POST "/samples/$sample_id/receive" 200 "$sample_token" "$receive_payload"
+jq -e '.status == "PRE_IN_STOCK"' "$LAST_BODY" >/dev/null || fail "sample receive did not move to PRE_IN_STOCK"
+
+stock_payload="$(jq -nc '{inventoryLocation:"ROOM-A-01",stockedAt:"2026-05-15T00:20:00Z"}')"
+request POST "/samples/$sample_id/stock-in" 200 "$sample_token" "$stock_payload"
+jq -e '.status == "IN_STOCK" and .inventoryLocation == "ROOM-A-01"' "$LAST_BODY" >/dev/null \
+  || fail "sample stock-in did not return IN_STOCK"
+
+request GET "/projects?page=1&pageSize=20" 200 "$internal_token"
+jq -e --arg id "$nonstandard_project_id" \
+  '.items[] | select(.id == $id and .status == "SAMPLE_RECEIVED")' "$LAST_BODY" >/dev/null \
+  || fail "sample stock-in did not move project to SAMPLE_RECEIVED"
 
 locked_payload="$(submission_payload "$suffix-locked")"
 request PATCH "/submissions/$nonstandard_submission_id" 409 "$portal_token" "$locked_payload"

@@ -101,6 +101,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | 停用或启用角色 | `POST /roles/{roleCode}/status` | 系统管理员 |
 | 审批统一变更 | `POST /change-requests/{id}/approve` | 目标对象对应审批人 |
 | 变更生效 | `POST /change-requests/{id}/effect` | 系统或授权管理员 |
+| 上传通用文件 | `POST /files` | 客户、样品、报告、财务、设备、档案和系统授权人员；校验 MIME 与文件魔数 |
 | 查询送检单详情 | `GET /submissions/{id}` | 客户、内部授权人员；门户未授权返回 403，不存在返回 404 |
 | 查询项目详情 | `GET /projects/{id}` | 客户、内部授权人员；门户未授权返回 403，不存在返回 404 |
 | 查询合同协议 | `GET /contracts` | 客户、内部授权人员；门户仅返回授权范围内协议 |

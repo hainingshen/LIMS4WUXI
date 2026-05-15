@@ -178,6 +178,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PortalUser'
+  /files:
+    post:
+      summary: Upload a validated file object
+      operationId: uploadFile
+      tags: [Files]
+      parameters:
+        - name: purpose
+          in: query
+          schema:
+            type: string
+            default: GENERAL
+            enum: [GENERAL, SAMPLE, DEVICE, REPORT, CONTRACT, PAYMENT, ARCHIVE, RAW_RECORD, IMPORT_EXPORT]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Uploaded file metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUpload'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /submissions:
     get:
       summary: List submissions
@@ -2885,6 +2919,24 @@ components:
         stockedAt:
           type: string
           format: date-time
+    FileUpload:
+      type: object
+      required: [fileId, fileName, objectKey, contentType, sizeBytes, sha256]
+      properties:
+        fileId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        objectKey:
+          type: string
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        sha256:
+          type: string
     SamplePhoto:
       type: object
       required: [id, sampleId, fileId, fileName, objectKey, sha256, sizeBytes]

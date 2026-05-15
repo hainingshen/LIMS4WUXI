@@ -211,6 +211,36 @@ inspector_user_id="$(jq -er '.id' "$LAST_BODY")"
 request GET "/auth/me" 200 "$finance_token"
 finance_user_id="$(jq -er '.id' "$LAST_BODY")"
 
+bad_image_path="$TMP_DIR/local-smoke-bad-image.jpg"
+printf 'not a real jpeg %s\n' "$suffix" >"$bad_image_path"
+request_multipart POST "/files?purpose=DEVICE" 400 "$equipment_token" \
+  -F "file=@$bad_image_path;type=image/jpeg;filename=local-smoke-bad-image.jpg"
+jq -e '.code == "FILE_CONTENT_MISMATCH"' "$LAST_BODY" >/dev/null \
+  || fail "fake JPEG upload should be rejected by file magic validation"
+
+generic_pdf_path="$TMP_DIR/local-smoke-device-certificate.pdf"
+printf '%%PDF-1.4\n%% Local smoke device certificate %s\n' "$suffix" >"$generic_pdf_path"
+generic_pdf_sha256="$(sha256sum "$generic_pdf_path" | awk '{print $1}')"
+generic_pdf_size="$(wc -c <"$generic_pdf_path" | tr -d ' ')"
+request_multipart POST "/files?purpose=DEVICE" 201 "$equipment_token" \
+  -F "file=@$generic_pdf_path;type=application/pdf;filename=local-smoke-device-certificate.pdf"
+generic_pdf_file_id="$(jq -er '.fileId' "$LAST_BODY")"
+generic_pdf_object_key="$(jq -er '.objectKey' "$LAST_BODY")"
+jq -e \
+  --arg file_sha "$generic_pdf_sha256" \
+  --argjson file_size "$generic_pdf_size" \
+  '.fileName == "local-smoke-device-certificate.pdf"
+    and .contentType == "application/pdf"
+    and .sha256 == $file_sha
+    and .sizeBytes == $file_size
+    and (.objectKey | startswith("uploads/device/"))' "$LAST_BODY" >/dev/null \
+  || fail "generic file upload did not return expected metadata"
+generic_metadata_count="$(db_scalar "select count(*) from file_metadata where id = '$generic_pdf_file_id' and object_key = '$generic_pdf_object_key' and sha256 = '$generic_pdf_sha256' and size_bytes = $generic_pdf_size;")"
+[[ "$generic_metadata_count" == "1" ]] || fail "generic file_metadata row was not persisted"
+generic_minio_path="$TMP_DIR/minio-device-certificate.pdf"
+minio_fetch_object "$generic_pdf_object_key" "$generic_minio_path"
+cmp -s "$generic_pdf_path" "$generic_minio_path" || fail "MinIO generic PDF bytes do not match uploaded file"
+
 request GET "/dictionaries?dictCode=YES_NO" 200 "$portal_token"
 jq -e 'length > 0' "$LAST_BODY" >/dev/null || fail "YES_NO dictionary is empty"
 
@@ -626,7 +656,7 @@ request POST "/samples/$sample_id/receive" 200 "$sample_token" "$receive_payload
 jq -e '.status == "PRE_IN_STOCK"' "$LAST_BODY" >/dev/null || fail "sample receive did not move to PRE_IN_STOCK"
 
 sample_photo_path="$TMP_DIR/local-smoke-sample-photo.jpg"
-printf 'local smoke sample photo %s\n' "$suffix" >"$sample_photo_path"
+printf '\377\330\377\340\000\020JFIF\000\001\001\000\000\001\000\001\000\000local-smoke-%s\377\331' "$suffix" >"$sample_photo_path"
 sample_photo_sha256="$(sha256sum "$sample_photo_path" | awk '{print $1}')"
 sample_photo_size="$(wc -c <"$sample_photo_path" | tr -d ' ')"
 request_multipart POST "/samples/$sample_id/photos?note=Local%20smoke%20receiving%20photo" 201 "$sample_token" \
@@ -1056,7 +1086,6 @@ jq -e --arg id "$inventory_batch_id" \
   || fail "inventory batch quantity did not decrease after USE transaction"
 
 device_id="$(cat /proc/sys/kernel/random/uuid)"
-device_file_source_id="$(cat /proc/sys/kernel/random/uuid)"
 db_scalar "
 insert into device (
   id, device_no, name, model, manufacturer, location, owner_user_id,
@@ -1076,28 +1105,6 @@ insert into device (
   '00000000-0000-0000-0000-000000000101',
   now(),
   '00000000-0000-0000-0000-000000000101',
-  0,
-  'NEW',
-  100
-)
-returning id;
-" >/dev/null
-db_scalar "
-insert into file_metadata (
-  id, file_name, object_key, content_type, size_bytes, sha256, uploaded_by,
-  created_at, created_by, updated_at, updated_by, version, source_type, data_quality_score
-) values (
-  '$device_file_source_id',
-  'local-smoke-device-calibration.pdf',
-  'devices/$device_id/$device_file_source_id.pdf',
-  'application/pdf',
-  2048,
-  'sha256-$device_file_source_id',
-  '00000000-0000-0000-0000-000000000116',
-  now(),
-  '00000000-0000-0000-0000-000000000116',
-  now(),
-  '00000000-0000-0000-0000-000000000116',
   0,
   'NEW',
   100
@@ -1161,7 +1168,7 @@ request POST "/device-bookings/$external_booking_id/override" 200 "$equipment_to
 jq -e '.status == "NEEDS_RESCHEDULE" and .overrideReason == "Local smoke internal priority"' "$LAST_BODY" >/dev/null \
   || fail "device booking override did not mark external reservation as needs reschedule"
 
-device_file_payload="$(jq -nc --arg file_id "$device_file_source_id" '{
+device_file_payload="$(jq -nc --arg file_id "$generic_pdf_file_id" '{
   fileType: "CALIBRATION_CERT",
   fileId: $file_id,
   versionNo: "SMOKE-V1",
@@ -1171,7 +1178,7 @@ device_file_payload="$(jq -nc --arg file_id "$device_file_source_id" '{
 }')"
 request POST "/devices/$device_id/files" 201 "$equipment_token" "$device_file_payload"
 device_file_id="$(jq -er '.id' "$LAST_BODY")"
-jq -e --arg device_id "$device_id" --arg file_id "$device_file_source_id" \
+jq -e --arg device_id "$device_id" --arg file_id "$generic_pdf_file_id" \
   '.deviceId == $device_id and .fileId == $file_id and .fileType == "CALIBRATION_CERT" and .isCurrent == true and .status == "ACTIVE"' "$LAST_BODY" >/dev/null \
   || fail "device file upload did not return active current file"
 

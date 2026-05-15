@@ -116,6 +116,16 @@ test("sample manager can open sample retention page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "留样记录" })).toBeVisible();
 });
 
+test("department manager can open green channel page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.dept_manager");
+  await page.locator("#password").fill("Sales123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("绿色通道").first().click();
+  await expect(page.getByText("GREEN CHANNEL")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "绿色通道申请" })).toBeVisible();
+});
+
 test("mobile portal keeps 390px workflow usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

@@ -147,6 +147,8 @@ qc_token="$(login internal internal.qc Sales123!)"
 qa_token="$(login internal internal.qa Sales123!)"
 report_token="$(login internal internal.report_preparer Sales123!)"
 signatory_token="$(login internal internal.authorized_signatory Sales123!)"
+dept_token="$(login internal internal.dept_manager Sales123!)"
+general_token="$(login internal internal.general_manager Sales123!)"
 finance_token="$(login internal internal.finance Sales123!)"
 
 request GET "/auth/me" 200 "$portal_token"
@@ -472,6 +474,48 @@ request GET "/reports/$report_id/official-pdf" 423 "$portal_token"
 jq -e '.code == "PAYMENT_GATE_LOCKED"' "$LAST_BODY" >/dev/null \
   || fail "locked official PDF did not return PAYMENT_GATE_LOCKED"
 
+green_payload="$(jq -nc --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" '{
+  projectId: $project_id,
+  reportId: $report_id,
+  reason: "Local smoke customer needs the electronic report before payment settlement."
+}')"
+request POST "/green-channel-requests" 201 "$internal_token" "$green_payload"
+green_request_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e '.status == "DEPT_REVIEWING" and .unlockScope == "ELECTRONIC_REPORT_ONLY"' "$LAST_BODY" >/dev/null \
+  || fail "green channel creation did not return DEPT_REVIEWING"
+
+green_dept_payload="$(jq -nc '{stage:"DEPT",outcome:"APPROVED",comment:"Local smoke department approved"}')"
+request POST "/green-channel-requests/$green_request_id/approve" 204 "$dept_token" "$green_dept_payload"
+request GET "/green-channel-requests?projectId=$nonstandard_project_id&page=1&pageSize=20" 200 "$internal_token"
+jq -e --arg id "$green_request_id" \
+  '.items[] | select(.id == $id and .status == "MANAGEMENT_REVIEWING")' "$LAST_BODY" >/dev/null \
+  || fail "green channel department approval did not move to MANAGEMENT_REVIEWING"
+
+green_management_payload="$(jq -nc '{stage:"MANAGEMENT",outcome:"APPROVED",comment:"Local smoke management approved"}')"
+request POST "/green-channel-requests/$green_request_id/approve" 204 "$general_token" "$green_management_payload"
+request GET "/green-channel-requests?projectId=$nonstandard_project_id&page=1&pageSize=20" 200 "$internal_token"
+jq -e --arg id "$green_request_id" \
+  '.items[] | select(.id == $id and .status == "APPROVED")' "$LAST_BODY" >/dev/null \
+  || fail "green channel final approval did not return APPROVED request"
+
+request GET "/reports?page=1&pageSize=100" 200 "$report_token"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.id == $id and .status == "GREEN_RELEASED" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
+  || fail "green channel did not unlock report"
+
+request GET "/projects?page=1&pageSize=100" 200 "$internal_token"
+jq -e --arg id "$nonstandard_project_id" \
+  '.items[] | select(.id == $id and .paymentStatus != "PAID")' "$LAST_BODY" >/dev/null \
+  || fail "green channel should not mark project paid"
+
+request GET "/report-delivery-logs?reportId=$report_id&page=1&pageSize=20" 200 "$admin_token"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.reportId == $id and .deliveryType == "GREEN_CHANNEL" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
+  || fail "green channel approval did not write delivery log"
+
+request GET "/reports/$report_id/official-pdf" 200 "$portal_token"
+grep -q "%PDF-1.4" "$LAST_BODY" || fail "green channel official PDF did not return PDF bytes"
+
 payment_payload="$(jq -nc --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" '{
   projectId: $project_id,
   reportId: $report_id,
@@ -547,5 +591,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s payment %s retention %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$payment_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s retention %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$retention_id"

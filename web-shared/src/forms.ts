@@ -14,6 +14,7 @@ export type Report = components["schemas"]["Report"];
 export type PaymentReceipt = components["schemas"]["PaymentReceipt"];
 export type ReportTemplate = components["schemas"]["ReportTemplate"];
 export type SampleRetention = components["schemas"]["SampleRetention"];
+export type GreenChannelRequest = components["schemas"]["GreenChannelRequest"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
@@ -44,6 +45,9 @@ export type ReportTemplatePage = Omit<components["schemas"]["PageResponse"], "it
 export type SampleRetentionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: SampleRetention[];
 };
+export type GreenChannelRequestPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: GreenChannelRequest[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
@@ -58,6 +62,7 @@ export type ReportTemplateCreateRequest = components["schemas"]["ReportTemplateC
 export type SampleRetentionCreateRequest = components["schemas"]["SampleRetentionCreateRequest"];
 export type SampleRetentionExtendRequest = components["schemas"]["SampleRetentionExtendRequest"];
 export type SampleRetentionDisposeRequest = components["schemas"]["SampleRetentionDisposeRequest"];
+export type GreenChannelCreateRequest = components["schemas"]["GreenChannelCreateRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -293,6 +298,22 @@ export async function extendSampleRetention(id: string, request: SampleRetention
 export async function disposeSampleRetention(id: string, request: SampleRetentionDisposeRequest) {
   const response = await http.post<SampleRetention>(`/sample-retentions/${id}/dispose`, request);
   return response.data;
+}
+
+export async function listGreenChannelRequests(
+  params: { page?: number; pageSize?: number; projectId?: string } = {},
+) {
+  const response = await http.get<GreenChannelRequestPage>("/green-channel-requests", { params });
+  return response.data;
+}
+
+export async function createGreenChannelRequest(request: GreenChannelCreateRequest) {
+  const response = await http.post<GreenChannelRequest>("/green-channel-requests", request);
+  return response.data;
+}
+
+export async function approveGreenChannelRequest(id: string, request: ApprovalRequest) {
+  await http.post<void>(`/green-channel-requests/${id}/approve`, request);
 }
 
 export async function listDictionaryItems(dictCode?: string) {

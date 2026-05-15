@@ -15,6 +15,10 @@ export type PaymentReceipt = components["schemas"]["PaymentReceipt"];
 export type ReportTemplate = components["schemas"]["ReportTemplate"];
 export type SampleRetention = components["schemas"]["SampleRetention"];
 export type GreenChannelRequest = components["schemas"]["GreenChannelRequest"];
+export type ReportRegistryItem = components["schemas"]["ReportRegistryItem"];
+export type ReportRegistryVersion = components["schemas"]["ReportRegistryVersion"];
+export type ReportDeliveryLog = components["schemas"]["ReportDeliveryLog"];
+export type ImportExportTask = components["schemas"]["ImportExportTask"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
@@ -48,6 +52,12 @@ export type SampleRetentionPage = Omit<components["schemas"]["PageResponse"], "i
 export type GreenChannelRequestPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: GreenChannelRequest[];
 };
+export type ReportRegistryPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: ReportRegistryItem[];
+};
+export type ReportDeliveryLogPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: ReportDeliveryLog[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
@@ -63,6 +73,7 @@ export type SampleRetentionCreateRequest = components["schemas"]["SampleRetentio
 export type SampleRetentionExtendRequest = components["schemas"]["SampleRetentionExtendRequest"];
 export type SampleRetentionDisposeRequest = components["schemas"]["SampleRetentionDisposeRequest"];
 export type GreenChannelCreateRequest = components["schemas"]["GreenChannelCreateRequest"];
+export type ReportRegistryBatchDownloadRequest = components["schemas"]["ReportRegistryBatchDownloadRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -314,6 +325,34 @@ export async function createGreenChannelRequest(request: GreenChannelCreateReque
 
 export async function approveGreenChannelRequest(id: string, request: ApprovalRequest) {
   await http.post<void>(`/green-channel-requests/${id}/approve`, request);
+}
+
+export async function searchReportRegistry(
+  params: {
+    page?: number;
+    pageSize?: number;
+    keyword?: string;
+    customerOrgId?: string;
+    projectId?: string;
+    reportBizNo?: string;
+    templateType?: string;
+    status?: ReportRegistryItem["status"];
+    issuedFrom?: string;
+    issuedTo?: string;
+  } = {},
+) {
+  const response = await http.get<ReportRegistryPage>("/report-registry/search", { params });
+  return response.data;
+}
+
+export async function createReportRegistryBatchDownload(request: ReportRegistryBatchDownloadRequest) {
+  const response = await http.post<ImportExportTask>("/report-registry/batch-download", request);
+  return response.data;
+}
+
+export async function listReportDeliveryLogs(params: { page?: number; pageSize?: number; reportId?: string } = {}) {
+  const response = await http.get<ReportDeliveryLogPage>("/report-delivery-logs", { params });
+  return response.data;
 }
 
 export async function listDictionaryItems(dictCode?: string) {

@@ -547,6 +547,17 @@ jq -e --arg id "$report_id" \
   '.items[] | select(.reportId == $id and .deliveryType == "DOWNLOAD" and .paymentGateStatus == "UNLOCKED")' "$LAST_BODY" >/dev/null \
   || fail "official PDF download did not write delivery log"
 
+request GET "/report-registry/search?projectId=$nonstandard_project_id&status=RELEASED&page=1&pageSize=20" 200 "$admin_token"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.reportId == $id and .status == "RELEASED" and .paymentGateStatus == "UNLOCKED" and (.deliveryCount >= 2) and ((.versions | length) >= 1))' "$LAST_BODY" >/dev/null \
+  || fail "report registry did not contain released report with versions and delivery logs"
+
+registry_batch_payload="$(jq -nc --arg report_id "$report_id" '{reportIds:[$report_id],includeDeliveryLog:true}')"
+request POST "/report-registry/batch-download" 202 "$admin_token" "$registry_batch_payload"
+registry_task_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e '.taskType == "REPORT_BATCH_DOWNLOAD" and .entityType == "REPORT" and .status == "PENDING"' "$LAST_BODY" >/dev/null \
+  || fail "report registry batch download did not create pending report export task"
+
 retention_payload="$(jq -nc --arg sample_id "$sample_id" --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" '{
   sampleId: $sample_id,
   projectId: $project_id,
@@ -591,5 +602,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s retention %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s retention %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$retention_id"

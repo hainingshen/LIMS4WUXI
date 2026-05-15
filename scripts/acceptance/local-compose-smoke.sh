@@ -32,6 +32,8 @@ need() {
 
 need curl
 need jq
+need cmp
+need sha256sum
 select_docker_cmd || fail "docker daemon is not reachable"
 
 request() {
@@ -53,6 +55,34 @@ request() {
   status="$(curl "${args[@]}" || true)"
   printf '%s %s -> %s\n' "$method" "$path" "$status" >&2
   [[ "$status" == "$expected" ]] || fail "expected $expected for $method $path, got $status"
+}
+
+request_multipart() {
+  local method="$1"
+  local path="$2"
+  local expected="$3"
+  local token="${4:-}"
+  shift 4
+  local status
+  local args=(-sS -o "$LAST_BODY" -w "%{http_code}" -X "$method" "$API_BASE$path")
+
+  if [[ -n "$token" ]]; then
+    args+=(-H "Authorization: Bearer $token")
+  fi
+
+  status="$(curl "${args[@]}" "$@" || true)"
+  printf '%s %s -> %s\n' "$method" "$path" "$status" >&2
+  [[ "$status" == "$expected" ]] || fail "expected $expected for $method $path, got $status"
+}
+
+minio_fetch_object() {
+  local object_key="$1"
+  local output_path="$2"
+
+  "${DOCKER_CMD[@]}" compose exec -T minio sh -lc \
+    "mc alias set local http://127.0.0.1:9000 \"\$MINIO_ROOT_USER\" \"\$MINIO_ROOT_PASSWORD\" >/dev/null && mc cat \"local/lims-files/$object_key\"" \
+    >"$output_path" \
+    || fail "MinIO object $object_key was not readable"
 }
 
 login() {
@@ -480,6 +510,34 @@ receive_payload="$(jq -nc '{
 }')"
 request POST "/samples/$sample_id/receive" 200 "$sample_token" "$receive_payload"
 jq -e '.status == "PRE_IN_STOCK"' "$LAST_BODY" >/dev/null || fail "sample receive did not move to PRE_IN_STOCK"
+
+sample_photo_path="$TMP_DIR/local-smoke-sample-photo.jpg"
+printf 'local smoke sample photo %s\n' "$suffix" >"$sample_photo_path"
+sample_photo_sha256="$(sha256sum "$sample_photo_path" | awk '{print $1}')"
+sample_photo_size="$(wc -c <"$sample_photo_path" | tr -d ' ')"
+request_multipart POST "/samples/$sample_id/photos?note=Local%20smoke%20receiving%20photo" 201 "$sample_token" \
+  -F "file=@$sample_photo_path;type=image/jpeg;filename=local-smoke-sample-photo.jpg"
+sample_photo_id="$(jq -er '.id' "$LAST_BODY")"
+sample_photo_file_id="$(jq -er '.fileId' "$LAST_BODY")"
+sample_photo_object_key="$(jq -er '.objectKey' "$LAST_BODY")"
+jq -e \
+  --arg sample_id "$sample_id" \
+  --arg file_sha "$sample_photo_sha256" \
+  --argjson file_size "$sample_photo_size" \
+  '.sampleId == $sample_id
+    and .fileName == "local-smoke-sample-photo.jpg"
+    and .sha256 == $file_sha
+    and .sizeBytes == $file_size
+    and (.objectKey | startswith("samples/" + $sample_id + "/photos/"))' "$LAST_BODY" >/dev/null \
+  || fail "sample photo upload did not return expected metadata"
+
+metadata_count="$(db_scalar "select count(*) from file_metadata where id = '$sample_photo_file_id' and object_key = '$sample_photo_object_key' and sha256 = '$sample_photo_sha256' and size_bytes = $sample_photo_size;")"
+[[ "$metadata_count" == "1" ]] || fail "sample photo file_metadata row was not persisted"
+photo_count="$(db_scalar "select count(*) from sample_photo where id = '$sample_photo_id' and sample_id = '$sample_id' and file_id = '$sample_photo_file_id' and note = 'Local smoke receiving photo';")"
+[[ "$photo_count" == "1" ]] || fail "sample photo business association was not persisted"
+minio_photo_path="$TMP_DIR/minio-sample-photo.jpg"
+minio_fetch_object "$sample_photo_object_key" "$minio_photo_path"
+cmp -s "$sample_photo_path" "$minio_photo_path" || fail "MinIO sample photo bytes do not match uploaded file"
 
 stock_payload="$(jq -nc '{inventoryLocation:"ROOM-A-01",stockedAt:"2026-05-15T00:20:00Z"}')"
 request POST "/samples/$sample_id/stock-in" 200 "$sample_token" "$stock_payload"
@@ -1003,5 +1061,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: customer_org %s portal_user %s system_config %s business_rule %s holiday %s legacy_status %s submission %s project %s blocker %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
-  "$customer_org_id" "$portal_user_id" "$system_config_key" "$business_rule_code" "$holiday_id" "$legacy_status_text" "$submission_id" "$project_id" "$blocker_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: customer_org %s portal_user %s system_config %s business_rule %s holiday %s legacy_status %s submission %s project %s blocker %s quotation %s contract %s sample_photo %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
+  "$customer_org_id" "$portal_user_id" "$system_config_key" "$business_rule_code" "$holiday_id" "$legacy_status_text" "$submission_id" "$project_id" "$blocker_id" "$quotation_id" "$contract_id" "$sample_photo_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"

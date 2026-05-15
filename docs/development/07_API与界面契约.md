@@ -101,7 +101,10 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | 停用或启用角色 | `POST /roles/{roleCode}/status` | 系统管理员 |
 | 审批统一变更 | `POST /change-requests/{id}/approve` | 目标对象对应审批人 |
 | 变更生效 | `POST /change-requests/{id}/effect` | 系统或授权管理员 |
+| 查询送检单详情 | `GET /submissions/{id}` | 客户、内部授权人员；门户未授权返回 403，不存在返回 404 |
+| 查询项目详情 | `GET /projects/{id}` | 客户、内部授权人员；门户未授权返回 403，不存在返回 404 |
 | 查询合同协议 | `GET /contracts` | 客户、内部授权人员；门户仅返回授权范围内协议 |
+| 查询合同协议详情 | `GET /contracts/{id}` | 客户、内部授权人员；门户未授权返回 403，不存在返回 404 |
 | 样品到达登记 | `POST /samples/{id}/receive` | 样品管理员 |
 | 样品入库 | `POST /samples/{id}/stock-in` | 样品管理员 |
 | 登记留样 | `POST /sample-retentions/{id}/register` | 样品管理员 |
@@ -114,6 +117,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | 提交原始记录 | `POST /work-orders/{id}/submit-raw-record` | 检测员 |
 | 原始记录审核 | `POST /raw-records/{id}/review` | 审核人 |
 | 查询报告列表 | `GET /reports` | 客户、内部授权人员；门户仅返回授权范围内报告 |
+| 查询报告详情 | `GET /reports/{id}` | 客户、内部授权人员；门户未授权返回 403，不存在返回 404 |
 | 生成报告草稿 | `POST /reports/generate-draft` | 报告编制员 |
 | 报告提交 QC | `POST /reports/{id}/submit-qc` | 报告编制员 |
 | 报告审批 | `POST /reports/{reportId}/review` | QC、QA、SD |
@@ -393,10 +397,15 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 | --- | --- | --- | --- |
 | `PortalLogin` | `/portal/login` | `BlankLayout` | none |
 | `PortalDashboard` | `/portal` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
+| `PortalSubmissionList` | `/portal/submissions` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
 | `PortalSubmissionNew` | `/portal/submissions/new` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT` |
 | `PortalSubmissionDetail` | `/portal/submissions/:id` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
 | `PortalProjectDetail` | `/portal/projects/:id` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
+| `PortalContractList` | `/portal/contracts` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
+| `PortalContractConfirm` | `/portal/contracts/:id/confirm` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
+| `PortalReportCenter` | `/portal/reports` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
 | `PortalReportPreview` | `/portal/reports/:id/preview` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
+| `PortalAccount` | `/portal/account` | `PortalLayout` | `CUSTOMER_ORG_ADMIN,CUSTOMER_APPLICANT,CUSTOMER_VIEWER` |
 | `InternalLogin` | `/internal/login` | `BlankLayout` | none |
 | `InternalWorkCenter` | `/internal/work-center` | `InternalLayout` | `SALES_REP,BUSINESS_OWNER,TECHNICAL_LEADER,SD,QA,QC,SAMPLE_MANAGER,INSPECTOR,REPORT_PREPARER,AUTHORIZED_SIGNATORY,FINANCE_CASHIER,FINANCE_MANAGER,EQUIPMENT_MANAGER,INVENTORY_MANAGER,ARCHIVE_MANAGER,SYSTEM_ADMIN,QUALITY_MANAGER,DEPT_MANAGER,GENERAL_MANAGER` |
 | `InternalSubmissionList` | `/internal/submissions` | `InternalLayout` | `SALES_REP,SAMPLE_MANAGER,TECHNICAL_LEADER` |

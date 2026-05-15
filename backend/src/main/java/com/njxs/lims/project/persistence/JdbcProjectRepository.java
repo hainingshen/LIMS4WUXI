@@ -255,6 +255,47 @@ public class JdbcProjectRepository implements ProjectRepository {
   }
 
   @Override
+  public boolean existsByApplicant(UUID id, UUID applicantUserId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from project p
+        join submission s on s.id = p.submission_id
+        join app_user u on u.id = s.applicant_user_id
+        where p.id = ?
+          and s.applicant_user_id = ?
+          and p.customer_org_id = u.customer_org_id
+          and s.customer_org_id = u.customer_org_id
+          and u.client_type = 'PORTAL'
+          and u.customer_org_id is not null
+          and p.deleted_at is null
+          and s.deleted_at is null
+        """,
+        Integer.class,
+        id,
+        applicantUserId
+    );
+    return count != null && count > 0;
+  }
+
+  @Override
+  public boolean existsByCustomerOrg(UUID id, UUID customerOrgId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from project
+        where id = ?
+          and customer_org_id = ?
+          and deleted_at is null
+        """,
+        Integer.class,
+        id,
+        customerOrgId
+    );
+    return count != null && count > 0;
+  }
+
+  @Override
   public void updateStatus(Project project, UUID actorUserId) {
     jdbcTemplate.update(
         """

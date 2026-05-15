@@ -8,6 +8,12 @@ test.beforeAll(() => {
   mkdirSync(screenshotDir, { recursive: true });
 });
 
+async function loginPortalDemo(page: import("@playwright/test").Page) {
+  await page.locator("#username").fill("portal.demo.seed");
+  await page.locator("#password").fill("Applicant123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+}
+
 test("internal desktop aligns to LIMS workbench shell", async ({ page }) => {
   await page.goto("/internal/");
   await expect(page.getByText("无锡锡山 LIMS 内部工作台")).toBeVisible();
@@ -56,30 +62,49 @@ test("portal deeplink opens submission form after login", async ({ page }) => {
 
 test("portal projects page shows customer progress", async ({ page }) => {
   await page.goto("/portal/projects");
-  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await loginPortalDemo(page);
   await expect(page.getByText("CUSTOMER PROJECTS")).toBeVisible();
-  await expect(page.getByText(/P-\d{4}-/).first()).toBeVisible();
+  await expect(page.getByText(/DEMO-SEED-P-|P-\d{4}-/).first()).toBeVisible();
+});
+
+test("portal business pages expose submissions contracts reports and account", async ({ page }) => {
+  await page.goto("/portal/");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+
+  await page.getByRole("menuitem", { name: "我的送检单" }).click();
+  await expect(page.getByText("SUBMISSIONS")).toBeVisible();
+  await expect(page.getByRole("button", { name: "查看详情" }).first()).toBeVisible();
+
+  await page.getByRole("menuitem", { name: "合同协议" }).click();
+  await expect(page.getByText("CONTRACTS")).toBeVisible();
+
+  await page.getByRole("menuitem", { name: "报告中心" }).click();
+  await expect(page.getByText("REPORT CENTER")).toBeVisible();
+
+  await page.getByRole("menuitem", { name: "账户信息" }).click();
+  await expect(page.getByText("ACCOUNT")).toBeVisible();
+  await expect(page.getByText("portal.applicant")).toBeVisible();
 });
 
 test("portal report preview deeplink shows watermarked report state", async ({ page }) => {
   await page.goto("/portal/projects");
-  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await loginPortalDemo(page);
   await page.getByRole("button", { name: "预览报告" }).first().click();
   await expect(page.getByText("REPORT PREVIEW")).toBeVisible();
   await expect(page).toHaveURL(/\/portal\/reports\/[^/]+\/preview$/);
   await expect(page.getByText("报告状态")).toBeVisible();
-  await expect(page.getByText(/RPT-\d{4}-/).first()).toBeVisible();
+  await expect(page.getByText(/DEMO-SEED-TR-|RPT-\d{4}-/).first()).toBeVisible();
   await page.screenshot({ path: `${screenshotDir}/portal-report-preview-desktop.png`, fullPage: true });
 });
 
 test("portal contract confirmation deeplink shows scoped agreement", async ({ page }) => {
   await page.goto("/portal/projects");
-  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await loginPortalDemo(page);
   await page.getByRole("button", { name: /确认协议|查看协议/ }).first().click();
   await expect(page.getByText("CONTRACT CONFIRM")).toBeVisible();
   await expect(page).toHaveURL(/\/portal\/contracts\/[^/]+\/confirm$/);
   await expect(page.getByText("协议状态")).toBeVisible();
-  await expect(page.getByText(/CON-\d{4}-/).first()).toBeVisible();
+  await expect(page.getByText(/DEMO-SEED-C-|CON-\d{4}-/).first()).toBeVisible();
   await page.screenshot({ path: `${screenshotDir}/portal-contract-confirm-desktop.png`, fullPage: true });
 });
 

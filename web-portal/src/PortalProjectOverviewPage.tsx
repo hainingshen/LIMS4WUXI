@@ -19,7 +19,9 @@ type PortalProjectOverviewPageProps = {
   mode: "dashboard" | "projects";
   selectedProjectId?: string;
   onNewSubmission?: () => void;
+  onOpenSubmission?: (submissionId: string) => void;
   onOpenProjects?: () => void;
+  onOpenProject?: (projectId: string) => void;
   onOpenContract?: (contractId: string) => void;
   onPreviewReport?: (reportId: string) => void;
 };
@@ -30,7 +32,9 @@ export function PortalProjectOverviewPage({
   mode,
   selectedProjectId,
   onNewSubmission,
+  onOpenSubmission,
   onOpenProjects,
+  onOpenProject,
   onOpenContract,
   onPreviewReport,
 }: PortalProjectOverviewPageProps) {
@@ -115,6 +119,29 @@ export function PortalProjectOverviewPage({
   const recentProjects = mode === "dashboard" ? projects.slice(0, 5) : projects;
   const submittedCount = submissions.filter((submission) => submission.status !== "DRAFT").length;
   const releasedCount = projects.filter((project) => project.status === "RELEASED" || project.status === "ARCHIVED").length;
+  const pendingContracts = contracts.filter((contract) => contract.status === "PENDING_SIGN");
+  const lockedReports = reports.filter((report) => report.paymentGateStatus === "LOCKED");
+  const pendingSubmissions = submissions.filter((submission) => submission.status === "SUBMITTED");
+  const messages = [
+    ...pendingContracts.slice(0, 2).map((contract) => ({
+      key: `contract:${contract.id}`,
+      title: "协议待确认",
+      detail: contract.bizNo,
+      action: () => onOpenContract?.(contract.id),
+    })),
+    ...lockedReports.slice(0, 2).map((report) => ({
+      key: `report:${report.id}`,
+      title: "报告付款门禁未解锁",
+      detail: report.bizNo,
+      action: () => onPreviewReport?.(report.id),
+    })),
+    ...pendingSubmissions.slice(0, 2).map((submission) => ({
+      key: `submission:${submission.id}`,
+      title: "送检单已提交待受理",
+      detail: submission.bizNo,
+      action: () => onOpenSubmission?.(submission.id),
+    })),
+  ];
 
   if (loading) {
     return (
@@ -163,6 +190,17 @@ export function PortalProjectOverviewPage({
         </div>
       </div>
 
+      {messages.length ? (
+        <div className="portalMessageList" aria-label="客户待处理消息">
+          {messages.map((message) => (
+            <button key={message.key} type="button" onClick={message.action}>
+              <span>{message.title}</span>
+              <strong>{message.detail}</strong>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {recentProjects.length ? (
         <div className="portalProjectList">
           {recentProjects.map((project) => {
@@ -203,6 +241,11 @@ export function PortalProjectOverviewPage({
                     </span>
                   ))}
                 </div>
+                {onOpenProject ? (
+                  <div className="portalProjectActions">
+                    <Button onClick={() => onOpenProject(project.id)}>查看项目</Button>
+                  </div>
+                ) : null}
                 {contract ? (
                   <div className="portalContractRow">
                     <div>
@@ -264,7 +307,11 @@ export function PortalProjectOverviewPage({
             <article key={submission.id} className="portalSubmissionItem">
               <Typography.Text strong>{submission.bizNo}</Typography.Text>
               <Tag color={submission.status === "DRAFT" ? "default" : "blue"}>{submission.status}</Tag>
-              <Typography.Text type="secondary">{submission.submittedQuantityText ?? "-"}</Typography.Text>
+              {onOpenSubmission ? (
+                <Button onClick={() => onOpenSubmission(submission.id)}>查看详情</Button>
+              ) : (
+                <Typography.Text type="secondary">{submission.submittedQuantityText ?? "-"}</Typography.Text>
+              )}
             </article>
           ))}
         </div>

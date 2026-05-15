@@ -30,6 +30,10 @@ public interface ProjectRepository {
 
   int countForApplicant(UUID applicantUserId);
 
+  boolean existsByApplicant(UUID id, UUID applicantUserId);
+
+  boolean existsByCustomerOrg(UUID id, UUID customerOrgId);
+
   void updateStatus(Project project, UUID actorUserId);
 
   boolean existsByAssignedSales(UUID projectId, UUID userId);

@@ -154,6 +154,30 @@ public class ReportService {
     return new PageResponse<>(List.of(), normalizedPage, normalizedPageSize, 0);
   }
 
+  public ReportResponse detail(UUID id, AuthPrincipal principal) {
+    ReportRecord report = report(id);
+    if (principal.clientType() == ClientType.PORTAL && !canReadPortalReport(principal, id)) {
+      throw new BusinessException(
+          "FORBIDDEN",
+          "无权访问该资源",
+          HttpStatus.FORBIDDEN,
+          Map.of("entityType", "report", "entityId", id)
+      );
+    }
+    return ReportResponse.from(report);
+  }
+
+  private boolean canReadPortalReport(AuthPrincipal principal, UUID reportId) {
+    PortalListScope scope = portalAccessPolicy.resolveListScope(principal);
+    if (scope == PortalListScope.ORG) {
+      return reportRepository.reportCustomerOrgMatches(reportId, principal.orgId());
+    }
+    if (scope == PortalListScope.OWN) {
+      return reportRepository.reportApplicantMatches(reportId, principal.userId());
+    }
+    return false;
+  }
+
   private int normalizedPage(int page) {
     return Math.max(page, 1);
   }

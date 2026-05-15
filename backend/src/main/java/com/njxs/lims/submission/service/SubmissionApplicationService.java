@@ -136,14 +136,23 @@ public class SubmissionApplicationService {
     );
   }
 
+  public SubmissionResponse detail(UUID id, AuthPrincipal principal) {
+    SubmissionRecord current = submissionRepository.findById(id)
+        .orElseThrow(() -> notFound("submission", id));
+    if (principal.clientType() == ClientType.PORTAL
+        && !portalAccessPolicy.canReadSubmission(
+            principal,
+            current.customerOrgId(),
+            current.applicantUserId()
+        )) {
+      throw forbidden("submission", id);
+    }
+    return SubmissionResponse.from(current);
+  }
+
   public SubmissionResponse submit(UUID id, AuthPrincipal principal) {
     SubmissionRecord current = submissionRepository.findById(id)
-        .orElseThrow(() -> new BusinessException(
-            "NOT_FOUND",
-            "资源不存在",
-            HttpStatus.NOT_FOUND,
-            Map.of("entityType", "submission", "entityId", id)
-        ));
+        .orElseThrow(() -> notFound("submission", id));
     if (!"DRAFT".equals(current.status())) {
       throw new BusinessException(
           "SUBMISSION_STATUS_CONFLICT",
@@ -160,12 +169,7 @@ public class SubmissionApplicationService {
   @Transactional
   public SubmissionResponse update(UUID id, SubmissionDraftRequest request, AuthPrincipal principal) {
     SubmissionRecord current = submissionRepository.findById(id)
-        .orElseThrow(() -> new BusinessException(
-            "NOT_FOUND",
-            "资源不存在",
-            HttpStatus.NOT_FOUND,
-            Map.of("entityType", "submission", "entityId", id)
-        ));
+        .orElseThrow(() -> notFound("submission", id));
     FormSchemaRecord schema = formSchemaService.current(request.formCode(), request.schemaVersion());
     JsonNode data = request.data();
 
@@ -202,12 +206,7 @@ public class SubmissionApplicationService {
 
   public SubmissionResponse accept(UUID id, AuthPrincipal principal) {
     SubmissionRecord current = submissionRepository.findById(id)
-        .orElseThrow(() -> new BusinessException(
-            "NOT_FOUND",
-            "资源不存在",
-            HttpStatus.NOT_FOUND,
-            Map.of("entityType", "submission", "entityId", id)
-        ));
+        .orElseThrow(() -> notFound("submission", id));
     if (!"SUBMITTED".equals(current.status())) {
       throw new BusinessException(
           "SUBMISSION_STATUS_CONFLICT",
@@ -217,6 +216,24 @@ public class SubmissionApplicationService {
       );
     }
     return SubmissionResponse.from(submissionRepository.markAccepted(id, principal.userId()));
+  }
+
+  private BusinessException notFound(String entityType, UUID entityId) {
+    return new BusinessException(
+        "NOT_FOUND",
+        "资源不存在",
+        HttpStatus.NOT_FOUND,
+        Map.of("entityType", entityType, "entityId", entityId)
+    );
+  }
+
+  private BusinessException forbidden(String entityType, UUID entityId) {
+    return new BusinessException(
+        "FORBIDDEN",
+        "无权访问该资源",
+        HttpStatus.FORBIDDEN,
+        Map.of("entityType", entityType, "entityId", entityId)
+    );
   }
 
   private CustomerOrg customerOrg(UUID id, JsonNode data, UUID actorUserId, Instant now) {

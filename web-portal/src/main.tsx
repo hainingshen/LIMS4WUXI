@@ -21,8 +21,8 @@ import "antd-mobile/es/global";
 import {
   hasAnyRole,
   downloadOfficialReportPdf,
-  listContracts,
-  listReports,
+  getContract,
+  getReport,
   loginForClient,
   limsAntdTheme,
   markContractSigned,
@@ -35,6 +35,13 @@ import {
 import "@lims4wuxi/shared/theme/limsTheme.css";
 
 import { PortalProjectOverviewPage } from "./PortalProjectOverviewPage";
+import {
+  PortalAccountPage,
+  PortalContractListPage,
+  PortalReportCenterPage,
+  PortalSubmissionDetailPage,
+  PortalSubmissionListPage,
+} from "./PortalBusinessPages";
 import { SubmissionFormPage } from "./SubmissionFormPage";
 import { contractStatusColor, contractTypeLabel } from "./contractPresentation";
 import {
@@ -46,7 +53,17 @@ import {
 } from "./reportPresentation";
 import "./styles.css";
 
-type PortalRouteKey = "dashboard" | "new-submission" | "projects" | "contract-confirm" | "report-preview";
+type PortalRouteKey =
+  | "dashboard"
+  | "submissions"
+  | "new-submission"
+  | "submission-detail"
+  | "projects"
+  | "contracts"
+  | "contract-confirm"
+  | "reports"
+  | "report-preview"
+  | "account";
 
 type PortalRoute = {
   key: PortalRouteKey;
@@ -75,12 +92,52 @@ const PORTAL_ROUTES: readonly PortalRoute[] = [
     menu: true,
   },
   {
+    key: "submissions",
+    label: "我的送检单",
+    detail: "草稿、提交和受理状态",
+    roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
+    path: "/portal/submissions",
+    menu: true,
+  },
+  {
     key: "projects",
     label: "我的项目",
     detail: "查看项目、样品和报告",
     roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
     path: "/portal/projects",
     menu: true,
+  },
+  {
+    key: "contracts",
+    label: "合同协议",
+    detail: "待确认协议和已签约记录",
+    roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
+    path: "/portal/contracts",
+    menu: true,
+  },
+  {
+    key: "reports",
+    label: "报告中心",
+    detail: "预览、付款门禁和正式下载",
+    roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
+    path: "/portal/reports",
+    menu: true,
+  },
+  {
+    key: "account",
+    label: "账户信息",
+    detail: "账号、角色和客户单位",
+    roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
+    path: "/portal/account",
+    menu: true,
+  },
+  {
+    key: "submission-detail",
+    label: "送检单详情",
+    detail: "查看送检单详情",
+    roles: ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT", "CUSTOMER_VIEWER"],
+    path: "/portal/submissions/:id",
+    menu: false,
   },
   {
     key: "report-preview",
@@ -283,13 +340,34 @@ function portalContent(
     return <SubmissionFormPage />;
   }
 
+  if (activeKey === "submissions") {
+    return (
+      <PortalSubmissionListPage
+        onNewSubmission={() => selectRoute("new-submission")}
+        onOpenSubmission={(submissionId) => selectRoute("submission-detail", `/portal/submissions/${submissionId}`)}
+      />
+    );
+  }
+
+  if (activeKey === "submission-detail") {
+    return (
+      <PortalSubmissionDetailPage
+        submissionId={routeState.submissionId}
+        onBack={() => selectRoute("submissions")}
+      />
+    );
+  }
+
   if (activeKey === "dashboard") {
     return (
       <PortalProjectOverviewPage
         mode="dashboard"
         onNewSubmission={() => selectRoute("new-submission")}
+        onOpenSubmission={(submissionId) => selectRoute("submission-detail", `/portal/submissions/${submissionId}`)}
         onOpenProjects={() => selectRoute("projects")}
+        onOpenProject={(projectId) => selectRoute("projects", `/portal/projects/${projectId}`)}
         onOpenContract={(contractId) => selectRoute("contract-confirm", `/portal/contracts/${contractId}/confirm`)}
+        onPreviewReport={(reportId) => selectRoute("report-preview", `/portal/reports/${reportId}/preview`)}
       />
     );
   }
@@ -300,18 +378,32 @@ function portalContent(
         mode="projects"
         selectedProjectId={routeState.projectId}
         onNewSubmission={() => selectRoute("new-submission")}
+        onOpenSubmission={(submissionId) => selectRoute("submission-detail", `/portal/submissions/${submissionId}`)}
+        onOpenProject={(projectId) => selectRoute("projects", `/portal/projects/${projectId}`)}
         onOpenContract={(contractId) => selectRoute("contract-confirm", `/portal/contracts/${contractId}/confirm`)}
         onPreviewReport={(reportId) => selectRoute("report-preview", `/portal/reports/${reportId}/preview`)}
       />
     );
   }
 
+  if (activeKey === "contracts") {
+    return <PortalContractListPage onOpenContract={(contractId) => selectRoute("contract-confirm", `/portal/contracts/${contractId}/confirm`)} />;
+  }
+
   if (activeKey === "contract-confirm") {
-    return <PortalContractConfirm contractId={routeState.contractId} onBack={() => selectRoute("projects")} />;
+    return <PortalContractConfirm contractId={routeState.contractId} onBack={() => selectRoute("contracts")} />;
+  }
+
+  if (activeKey === "reports") {
+    return <PortalReportCenterPage onPreviewReport={(reportId) => selectRoute("report-preview", `/portal/reports/${reportId}/preview`)} />;
   }
 
   if (activeKey === "report-preview") {
-    return <PortalReportPreview reportId={routeState.reportId} onBack={() => selectRoute("projects")} />;
+    return <PortalReportPreview reportId={routeState.reportId} onBack={() => selectRoute("reports")} />;
+  }
+
+  if (activeKey === "account") {
+    return <PortalAccountPage />;
   }
 
   const entry = entries.find((item) => item.key === activeKey);
@@ -327,9 +419,14 @@ type PortalRouteState = {
   contractId?: string;
   projectId?: string;
   reportId?: string;
+  submissionId?: string;
 };
 
 function portalRouteState(key: PortalRouteKey, pathname: string): PortalRouteState {
+  if (key === "submission-detail") {
+    const match = pathname.match(/^\/portal\/submissions\/([^/]+)$/);
+    return { submissionId: match?.[1] };
+  }
   if (key === "projects") {
     const match = pathname.match(/^\/portal\/projects\/([^/]+)$/);
     return { projectId: match?.[1] };
@@ -349,14 +446,29 @@ function portalKeyFromPath(pathname: string): PortalRouteKey {
   if (pathname === "/portal/submissions/new") {
     return "new-submission";
   }
+  if (pathname === "/portal/submissions") {
+    return "submissions";
+  }
+  if (/^\/portal\/submissions\/[^/]+$/.test(pathname)) {
+    return "submission-detail";
+  }
   if (pathname === "/portal/projects" || pathname.startsWith("/portal/projects/")) {
     return "projects";
+  }
+  if (pathname === "/portal/contracts") {
+    return "contracts";
   }
   if (/^\/portal\/reports\/[^/]+\/preview$/.test(pathname)) {
     return "report-preview";
   }
+  if (pathname === "/portal/reports") {
+    return "reports";
+  }
   if (/^\/portal\/contracts\/[^/]+\/confirm$/.test(pathname)) {
     return "contract-confirm";
+  }
+  if (pathname === "/portal/account") {
+    return "account";
   }
   return "dashboard";
 }
@@ -367,31 +479,32 @@ function portalPathForKey(key: PortalRouteKey) {
 
 function PortalContractConfirm({ contractId, onBack }: { contractId?: string; onBack?: () => void }) {
   const roles = useAuthStore((state) => state.roles);
-  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [contract, setContract] = useState<Contract>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
   const [confirming, setConfirming] = useState(false);
-  const contract = useMemo(
-    () => contracts.find((item) => item.id === contractId),
-    [contracts, contractId],
-  );
   const canConfirm = contract?.status === "PENDING_SIGN"
     && hasAnyRole(roles, ["CUSTOMER_ORG_ADMIN", "CUSTOMER_APPLICANT"]);
 
   useEffect(() => {
     let active = true;
     async function load() {
+      if (!contractId) {
+        setError("未选择协议");
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(undefined);
       try {
-        const page = await listContracts({ page: 1, pageSize: 100 });
+        const detail = await getContract(contractId);
         if (active) {
-          setContracts(page.items ?? []);
+          setContract(detail);
         }
       } catch {
         if (active) {
-          setError("协议加载失败");
+          setError("协议不存在或不在你的授权范围内");
         }
       } finally {
         if (active) {
@@ -403,7 +516,7 @@ function PortalContractConfirm({ contractId, onBack }: { contractId?: string; on
     return () => {
       active = false;
     };
-  }, []);
+  }, [contractId]);
 
   async function confirmContract() {
     if (!contract || !canConfirm) {
@@ -413,7 +526,7 @@ function PortalContractConfirm({ contractId, onBack }: { contractId?: string; on
     setConfirming(true);
     try {
       const signed = await markContractSigned(contract.id, { signedAt: new Date().toISOString() });
-      setContracts((items) => items.map((item) => (item.id === signed.id ? signed : item)));
+      setContract(signed);
       setFeedback("协议已确认签署，项目进入已签约状态。");
     } catch {
       setFeedback("协议确认失败，请稍后重试。");
@@ -502,29 +615,30 @@ function PortalContractConfirm({ contractId, onBack }: { contractId?: string; on
 }
 
 function PortalReportPreview({ reportId, onBack }: { reportId?: string; onBack?: () => void }) {
-  const [reports, setReports] = useState<Report[]>([]);
+  const [report, setReport] = useState<Report>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [downloadFeedback, setDownloadFeedback] = useState<string>();
   const [downloading, setDownloading] = useState(false);
-  const report = useMemo(
-    () => reports.find((item) => item.id === reportId),
-    [reports, reportId],
-  );
 
   useEffect(() => {
     let active = true;
     async function load() {
+      if (!reportId) {
+        setError("未选择报告");
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(undefined);
       try {
-        const page = await listReports({ page: 1, pageSize: 100 });
+        const detail = await getReport(reportId);
         if (active) {
-          setReports(page.items ?? []);
+          setReport(detail);
         }
       } catch {
         if (active) {
-          setError("报告预览加载失败");
+          setError("报告不存在或不在你的授权范围内");
         }
       } finally {
         if (active) {
@@ -536,7 +650,7 @@ function PortalReportPreview({ reportId, onBack }: { reportId?: string; onBack?:
     return () => {
       active = false;
     };
-  }, []);
+  }, [reportId]);
 
   async function downloadReport() {
     if (!report) {

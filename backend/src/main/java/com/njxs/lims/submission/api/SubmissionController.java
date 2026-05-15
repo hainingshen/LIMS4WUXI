@@ -46,6 +46,11 @@ public class SubmissionController {
     return submissionApplicationService.list(AuthContext.require(), page, pageSize);
   }
 
+  @GetMapping("/{id}")
+  public SubmissionResponse detail(@PathVariable UUID id) {
+    return submissionApplicationService.detail(id, AuthContext.require());
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @Audited(actionCode = "SUBMISSION_CREATE", entityType = "submission")

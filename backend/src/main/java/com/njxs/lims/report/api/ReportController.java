@@ -45,6 +45,11 @@ public class ReportController {
     return reportService.list(AuthContext.require(), page, pageSize);
   }
 
+  @GetMapping("/{id}")
+  public ReportResponse detail(@PathVariable UUID id) {
+    return reportService.detail(id, AuthContext.require());
+  }
+
   @PostMapping("/generate-draft")
   @ResponseStatus(HttpStatus.CREATED)
   @Audited(actionCode = "REPORT_DRAFT_CREATE", entityType = "report")

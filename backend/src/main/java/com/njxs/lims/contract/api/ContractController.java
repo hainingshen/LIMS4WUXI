@@ -5,6 +5,8 @@ import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
+import com.njxs.lims.common.exception.BusinessException;
+import com.njxs.lims.contract.domain.Contract;
 import com.njxs.lims.contract.persistence.ContractRepository;
 import com.njxs.lims.contract.service.ContractService;
 import com.njxs.lims.portal.PortalAccessPolicy;
@@ -12,6 +14,7 @@ import com.njxs.lims.portal.PortalListScope;
 import com.njxs.lims.permission.RequiresAction;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -95,6 +98,17 @@ public class ContractController {
     return new PageResponse<>(List.of(), normalizedPage, normalizedPageSize, 0);
   }
 
+  @GetMapping("/{id}")
+  public ContractResponse detail(@PathVariable UUID id) {
+    AuthPrincipal principal = AuthContext.require();
+    Contract contract = contractRepository.findById(id)
+        .orElseThrow(() -> notFound("contract", id));
+    if (principal.clientType() == ClientType.PORTAL && !canReadPortalContract(principal, contract)) {
+      throw forbidden("contract", id);
+    }
+    return ContractResponse.from(contract);
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @Audited(actionCode = "CONTRACT_CREATE", entityType = "contract")
@@ -111,5 +125,34 @@ public class ContractController {
       @RequestBody(required = false) ContractMarkSignedRequest request
   ) {
     return contractService.markSigned(id, request, AuthContext.require());
+  }
+
+  private boolean canReadPortalContract(AuthPrincipal principal, Contract contract) {
+    PortalListScope scope = portalAccessPolicy.resolveListScope(principal);
+    if (scope == PortalListScope.ORG) {
+      return contractRepository.existsByCustomerOrg(contract.getId(), principal.orgId());
+    }
+    if (scope == PortalListScope.OWN) {
+      return contractRepository.existsByApplicant(contract.getId(), principal.userId());
+    }
+    return false;
+  }
+
+  private BusinessException notFound(String entityType, UUID entityId) {
+    return new BusinessException(
+        "NOT_FOUND",
+        "资源不存在",
+        HttpStatus.NOT_FOUND,
+        Map.of("entityType", entityType, "entityId", entityId)
+    );
+  }
+
+  private BusinessException forbidden(String entityType, UUID entityId) {
+    return new BusinessException(
+        "FORBIDDEN",
+        "无权访问该资源",
+        HttpStatus.FORBIDDEN,
+        Map.of("entityType", entityType, "entityId", entityId)
+    );
   }
 }

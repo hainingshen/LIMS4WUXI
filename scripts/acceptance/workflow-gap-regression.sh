@@ -127,6 +127,13 @@ jq -e '.code == "VALIDATION_FAILED"' "$LAST_BODY" >/dev/null \
   || fail "authorized internal user create with invalid body should return validation error"
 
 fake_id="00000000-0000-0000-0000-00000000ffff"
+for path in /submissions /projects /contracts /reports
+do
+  request GET "$path/$fake_id" 404 "$portal_token"
+  jq -e '.code == "NOT_FOUND"' "$LAST_BODY" >/dev/null \
+    || fail "$path missing detail should return NOT_FOUND"
+done
+
 request POST "/samples/$fake_id/receive" 403 "$portal_token" '{}'
 jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null \
   || fail "unauthorized sample receive should be blocked before body validation"
@@ -153,12 +160,26 @@ jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BO
 jq -e --arg org_id "$portal_org_id" 'all(.items[]?; .customerOrgId == $org_id)' "$LAST_BODY" >/dev/null \
   || fail "/projects returned data outside portal customer org $portal_org_id"
 cp "$LAST_BODY" "$TMP_DIR/portal-projects.json"
+portal_project_id="$(jq -r '.items[0].id // empty' "$LAST_BODY")"
+if [[ -n "$portal_project_id" ]]; then
+  request GET "/projects/$portal_project_id" 200 "$portal_token"
+  jq -e --arg id "$portal_project_id" --arg org_id "$portal_org_id" \
+    '.id == $id and .customerOrgId == $org_id' "$LAST_BODY" >/dev/null \
+    || fail "/projects/{id} did not return the authorized portal project"
+fi
 
 request GET "/submissions?page=1&pageSize=100" 200 "$portal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/submissions did not return a portal-scoped paged response"
 jq -e --arg org_id "$portal_org_id" 'all(.items[]?; .customerOrgId == $org_id)' "$LAST_BODY" >/dev/null \
   || fail "/submissions returned data outside portal customer org $portal_org_id"
+portal_submission_id="$(jq -r '.items[0].id // empty' "$LAST_BODY")"
+if [[ -n "$portal_submission_id" ]]; then
+  request GET "/submissions/$portal_submission_id" 200 "$portal_token"
+  jq -e --arg id "$portal_submission_id" --arg org_id "$portal_org_id" \
+    '.id == $id and .customerOrgId == $org_id' "$LAST_BODY" >/dev/null \
+    || fail "/submissions/{id} did not return the authorized portal submission"
+fi
 
 request GET "/reports?page=1&pageSize=100" 200 "$portal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
@@ -166,6 +187,12 @@ jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BO
 jq -e --slurpfile projects "$TMP_DIR/portal-projects.json" \
   '($projects[0].items | map(.id)) as $ids | all(.items[]?; .projectId as $project_id | ($ids | index($project_id) != null))' \
   "$LAST_BODY" >/dev/null || fail "/reports returned data outside visible portal projects"
+portal_report_id="$(jq -r '.items[0].id // empty' "$LAST_BODY")"
+if [[ -n "$portal_report_id" ]]; then
+  request GET "/reports/$portal_report_id" 200 "$portal_token"
+  jq -e --arg id "$portal_report_id" '.id == $id' "$LAST_BODY" >/dev/null \
+    || fail "/reports/{id} did not return the authorized portal report"
+fi
 
 request GET "/reports?page=1&pageSize=100" 200 "$internal_token"
 cross_report_id="$(jq -r --slurpfile projects "$TMP_DIR/portal-projects.json" '
@@ -173,6 +200,9 @@ cross_report_id="$(jq -r --slurpfile projects "$TMP_DIR/portal-projects.json" '
   | [.items[]? | .projectId as $project_id | select(($ids | index($project_id)) == null) | .id][0] // empty
 ' "$LAST_BODY")"
 if [[ -n "$cross_report_id" ]]; then
+  request GET "/reports/$cross_report_id" 403 "$portal_token"
+  jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null \
+    || fail "cross-customer report detail did not return FORBIDDEN"
   request GET "/reports/$cross_report_id/official-pdf" 403 "$portal_token"
   jq -e '.code == "FORBIDDEN" and .details.actionCode == "REPORT_OFFICIAL_DOWNLOAD"' "$LAST_BODY" >/dev/null \
     || fail "cross-customer official PDF did not return REPORT_OFFICIAL_DOWNLOAD forbidden"
@@ -183,6 +213,13 @@ jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BO
   || fail "/contracts did not return a portal-scoped paged response"
 jq -e --arg org_id "$portal_org_id" 'all(.items[]?; .customerOrgId == $org_id)' "$LAST_BODY" >/dev/null \
   || fail "/contracts returned data outside portal customer org $portal_org_id"
+portal_contract_id="$(jq -r '.items[0].id // empty' "$LAST_BODY")"
+if [[ -n "$portal_contract_id" ]]; then
+  request GET "/contracts/$portal_contract_id" 200 "$portal_token"
+  jq -e --arg id "$portal_contract_id" --arg org_id "$portal_org_id" \
+    '.id == $id and .customerOrgId == $org_id' "$LAST_BODY" >/dev/null \
+    || fail "/contracts/{id} did not return the authorized portal contract"
+fi
 
 for path in /projects /quotations /contracts /archive-items /device-bookings /inventory-batches /inventory-transactions /customer-orgs /portal-users
 do

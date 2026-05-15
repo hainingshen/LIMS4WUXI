@@ -5,10 +5,12 @@ import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
+import com.njxs.lims.common.exception.BusinessException;
 import com.njxs.lims.permission.InternalDataScope;
 import com.njxs.lims.permission.RequiresAction;
 import com.njxs.lims.portal.PortalAccessPolicy;
 import com.njxs.lims.portal.PortalListScope;
+import com.njxs.lims.project.domain.Project;
 import com.njxs.lims.project.persistence.ProjectRepository;
 import com.njxs.lims.project.service.NonstandardReviewService;
 import com.njxs.lims.quotation.api.QuotationCreateRequest;
@@ -16,6 +18,7 @@ import com.njxs.lims.quotation.api.QuotationResponse;
 import com.njxs.lims.quotation.service.QuotationService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -105,6 +108,17 @@ public class ProjectController {
     return new PageResponse<>(List.of(), normalizedPage, normalizedPageSize, 0);
   }
 
+  @GetMapping("/{id}")
+  public ProjectResponse detail(@PathVariable UUID id) {
+    AuthPrincipal principal = AuthContext.require();
+    Project project = projectRepository.findById(id)
+        .orElseThrow(() -> notFound("project", id));
+    if (principal.clientType() == ClientType.PORTAL && !canReadPortalProject(principal, project)) {
+      throw forbidden("project", id);
+    }
+    return ProjectResponse.from(project);
+  }
+
   @PostMapping("/{id}/nonstandard-review/start")
   @Audited(actionCode = "NONSTANDARD_REVIEW_START", entityType = "project")
   @RequiresAction("NONSTANDARD_REVIEW_START")
@@ -136,5 +150,34 @@ public class ProjectController {
       @Valid @RequestBody QuotationCreateRequest request
   ) {
     return quotationService.create(id, request, AuthContext.require());
+  }
+
+  private boolean canReadPortalProject(AuthPrincipal principal, Project project) {
+    PortalListScope scope = portalAccessPolicy.resolveListScope(principal);
+    if (scope == PortalListScope.ORG) {
+      return projectRepository.existsByCustomerOrg(project.getId(), principal.orgId());
+    }
+    if (scope == PortalListScope.OWN) {
+      return projectRepository.existsByApplicant(project.getId(), principal.userId());
+    }
+    return false;
+  }
+
+  private BusinessException notFound(String entityType, UUID entityId) {
+    return new BusinessException(
+        "NOT_FOUND",
+        "资源不存在",
+        HttpStatus.NOT_FOUND,
+        Map.of("entityType", entityType, "entityId", entityId)
+    );
+  }
+
+  private BusinessException forbidden(String entityType, UUID entityId) {
+    return new BusinessException(
+        "FORBIDDEN",
+        "无权访问该资源",
+        HttpStatus.FORBIDDEN,
+        Map.of("entityType", entityType, "entityId", entityId)
+    );
   }
 }

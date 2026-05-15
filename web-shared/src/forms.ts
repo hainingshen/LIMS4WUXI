@@ -210,8 +210,18 @@ export async function listSubmissions(params: { page?: number; pageSize?: number
   return response.data;
 }
 
+export async function getSubmission(id: string) {
+  const response = await http.get<Submission>(`/submissions/${id}`);
+  return response.data;
+}
+
 export async function listProjects(params: { page?: number; pageSize?: number } = {}) {
   const response = await http.get<ProjectPage>("/projects", { params });
+  return response.data;
+}
+
+export async function getProject(id: string) {
+  const response = await http.get<Project>(`/projects/${id}`);
   return response.data;
 }
 
@@ -232,6 +242,11 @@ export async function createProjectQuotation(id: string, request: QuotationCreat
 
 export async function listContracts(params: { page?: number; pageSize?: number; projectId?: string } = {}) {
   const response = await http.get<ContractPage>("/contracts", { params });
+  return response.data;
+}
+
+export async function getContract(id: string) {
+  const response = await http.get<Contract>(`/contracts/${id}`);
   return response.data;
 }
 
@@ -302,6 +317,11 @@ export async function reviewRawRecord(id: string, request: ApprovalRequest) {
 
 export async function listReports(params: { page?: number; pageSize?: number } = {}) {
   const response = await http.get<ReportPage>("/reports", { params });
+  return response.data;
+}
+
+export async function getReport(id: string) {
+  const response = await http.get<Report>(`/reports/${id}`);
   return response.data;
 }
 

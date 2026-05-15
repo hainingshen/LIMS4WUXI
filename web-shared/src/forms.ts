@@ -10,6 +10,9 @@ export type Contract = components["schemas"]["Contract"];
 export type StudyPlan = components["schemas"]["StudyPlan"];
 export type WorkOrder = components["schemas"]["WorkOrder"];
 export type RawRecord = components["schemas"]["RawRecord"];
+export type Report = components["schemas"]["Report"];
+export type PaymentReceipt = components["schemas"]["PaymentReceipt"];
+export type ReportTemplate = components["schemas"]["ReportTemplate"];
 export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Submission[];
 };
@@ -28,6 +31,15 @@ export type WorkOrderPage = Omit<components["schemas"]["PageResponse"], "items">
 export type RawRecordPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: RawRecord[];
 };
+export type ReportPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: Report[];
+};
+export type PaymentReceiptPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: PaymentReceipt[];
+};
+export type ReportTemplatePage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: ReportTemplate[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
@@ -36,6 +48,9 @@ export type ContractCreateRequest = components["schemas"]["ContractCreateRequest
 export type ContractMarkSignedRequest = components["schemas"]["ContractMarkSignedRequest"];
 export type StudyPlanCreateRequest = components["schemas"]["StudyPlanCreateRequest"];
 export type RawRecordSubmitRequest = components["schemas"]["RawRecordSubmitRequest"];
+export type ReportGenerateDraftRequest = components["schemas"]["ReportGenerateDraftRequest"];
+export type PaymentReceiptCreateRequest = components["schemas"]["PaymentReceiptCreateRequest"];
+export type ReportTemplateCreateRequest = components["schemas"]["ReportTemplateCreateRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -195,6 +210,56 @@ export async function listRawRecords(params: { page?: number; pageSize?: number;
 
 export async function reviewRawRecord(id: string, request: ApprovalRequest) {
   const response = await http.post<RawRecord>(`/raw-records/${id}/review`, request);
+  return response.data;
+}
+
+export async function listReports(params: { page?: number; pageSize?: number } = {}) {
+  const response = await http.get<ReportPage>("/reports", { params });
+  return response.data;
+}
+
+export async function generateDraftReport(request: ReportGenerateDraftRequest) {
+  const response = await http.post<Report>("/reports/generate-draft", request);
+  return response.data;
+}
+
+export async function submitReportQc(id: string) {
+  const response = await http.post<Report>(`/reports/${id}/submit-qc`);
+  return response.data;
+}
+
+export async function reviewReport(id: string, request: ApprovalRequest) {
+  const response = await http.post<Report>(`/reports/${id}/review`, request);
+  return response.data;
+}
+
+export async function issueReport(id: string) {
+  const response = await http.post<Report>(`/reports/${id}/issue`);
+  return response.data;
+}
+
+export async function listPaymentReceipts(params: { page?: number; pageSize?: number; projectId?: string } = {}) {
+  const response = await http.get<PaymentReceiptPage>("/payment-receipts", { params });
+  return response.data;
+}
+
+export async function createPaymentReceipt(request: PaymentReceiptCreateRequest) {
+  const response = await http.post<PaymentReceipt>("/payment-receipts", request);
+  return response.data;
+}
+
+export async function listReportTemplates(params: { page?: number; pageSize?: number } = {}) {
+  const response = await http.get<ReportTemplatePage>("/report-templates", { params });
+  return response.data;
+}
+
+export async function createReportTemplate(request: ReportTemplateCreateRequest) {
+  const response = await http.post<ReportTemplate>("/report-templates", request);
+  return response.data;
+}
+
+export async function publishReportTemplate(id: string) {
+  const response = await http.post<ReportTemplate>(`/report-templates/${id}/publish`);
   return response.data;
 }
 

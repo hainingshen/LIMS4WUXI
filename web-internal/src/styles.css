@@ -201,6 +201,11 @@ body {
   gap: 16px;
 }
 
+.reportWorkbenchPage {
+  display: grid;
+  gap: 16px;
+}
+
 .pageHeader {
   display: flex;
   align-items: end;
@@ -293,6 +298,10 @@ body {
 
 .compactFormItem {
   width: 50%;
+}
+
+.fullWidthInput {
+  width: 100%;
 }
 
 .selectedRow > td {

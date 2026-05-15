@@ -136,6 +136,7 @@ db_scalar() {
 request GET "/auth/me" 401
 
 portal_token="$(login portal portal.applicant Applicant123!)"
+admin_token="$(login internal internal.admin Internal123!)"
 internal_token="$(login internal internal.sales Sales123!)"
 tech_token="$(login internal internal.tech Sales123!)"
 business_token="$(login internal internal.business Sales123!)"
@@ -143,6 +144,10 @@ sample_token="$(login internal internal.sample Sales123!)"
 sd_token="$(login internal internal.sd Sales123!)"
 inspector_token="$(login internal internal.inspector Sales123!)"
 qc_token="$(login internal internal.qc Sales123!)"
+qa_token="$(login internal internal.qa Sales123!)"
+report_token="$(login internal internal.report_preparer Sales123!)"
+signatory_token="$(login internal internal.authorized_signatory Sales123!)"
+finance_token="$(login internal internal.finance Sales123!)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
@@ -350,7 +355,20 @@ raw_record_payload="$(jq -nc '{
     testLocation: "Lab A",
     temperatureCelsius: "22",
     humidityPercent: "45",
-    method: "DIRECT_INOCULATION"
+    method: "DIRECT_INOCULATION",
+    conclusion: "No growth observed",
+    equipmentUsages: [
+      {
+        name: "Incubator",
+        no: "EQ-SMOKE"
+      }
+    ],
+    sterilityResults: [
+      {
+        sampleName: "Local Smoke Sample",
+        conclusion: "无菌"
+      }
+    ]
   },
   attachmentFileIds: []
 }')"
@@ -373,6 +391,118 @@ jq -e --arg id "$nonstandard_project_id" \
   '.items[] | select(.id == $id and .status == "REPORTING")' "$LAST_BODY" >/dev/null \
   || fail "completed work order did not move project to REPORTING"
 
+template_file_id="$(cat /proc/sys/kernel/random/uuid)"
+db_scalar "
+insert into file_metadata (
+  id, file_name, object_key, content_type, size_bytes, sha256, uploaded_by,
+  created_at, created_by, updated_at, updated_by, version, source_type, data_quality_score
+) values (
+  '$template_file_id',
+  'local-smoke-sterility-template.docx',
+  'reports/templates/$template_file_id.docx',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  1024,
+  'sha256-$template_file_id',
+  '00000000-0000-0000-0000-000000000101',
+  now(),
+  '00000000-0000-0000-0000-000000000101',
+  now(),
+  '00000000-0000-0000-0000-000000000101',
+  0,
+  'NEW',
+  100
+)
+returning id;
+" >/dev/null
+
+template_version="SMOKE-$suffix-${template_file_id:0:8}"
+template_payload="$(jq -nc --arg file_id "$template_file_id" --arg template_version "$template_version" '{
+  templateCode: "STERILITY_REPORT",
+  templateVersion: $template_version,
+  templateName: "Local Smoke Sterility Report",
+  templateType: "REPORT",
+  automationLevel: "A",
+  fileId: $file_id,
+  legacyTemplateName: "local-smoke-sterility"
+}')"
+request POST "/report-templates" 201 "$admin_token" "$template_payload"
+template_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e '.status == "DRAFT" and .templateCode == "STERILITY_REPORT"' "$LAST_BODY" >/dev/null \
+  || fail "report template creation did not return DRAFT template"
+
+request POST "/report-templates/$template_id/publish" 200 "$admin_token"
+jq -e '.status == "PUBLISHED"' "$LAST_BODY" >/dev/null || fail "report template publish did not return PUBLISHED"
+
+report_payload="$(jq -nc --arg project_id "$nonstandard_project_id" --arg work_order_id "$work_order_id" '{
+  projectId: $project_id,
+  templateCode: "STERILITY_REPORT",
+  workOrderIds: [$work_order_id]
+}')"
+request POST "/reports/generate-draft" 201 "$report_token" "$report_payload"
+report_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg project_id "$nonstandard_project_id" \
+  '.projectId == $project_id and .status == "DRAFT" and .paymentGateStatus == "LOCKED"' "$LAST_BODY" >/dev/null \
+  || fail "report draft generation did not return DRAFT locked report"
+
+request POST "/reports/$report_id/submit-qc" 200 "$report_token"
+jq -e '.status == "QC_REVIEWING"' "$LAST_BODY" >/dev/null || fail "report submit-qc did not return QC_REVIEWING"
+
+report_qc_payload="$(jq -nc '{stage:"QC",outcome:"APPROVED",comment:"Local smoke QC approved"}')"
+request POST "/reports/$report_id/review" 200 "$qc_token" "$report_qc_payload"
+jq -e '.status == "QA_REVIEWING"' "$LAST_BODY" >/dev/null || fail "report QC review did not return QA_REVIEWING"
+
+report_qa_payload="$(jq -nc '{stage:"QA",outcome:"APPROVED",comment:"Local smoke QA approved"}')"
+request POST "/reports/$report_id/review" 200 "$qa_token" "$report_qa_payload"
+jq -e '.status == "SD_REVIEWING"' "$LAST_BODY" >/dev/null || fail "report QA review did not return SD_REVIEWING"
+
+report_sd_payload="$(jq -nc '{stage:"SD",outcome:"APPROVED",comment:"Local smoke SD approved"}')"
+request POST "/reports/$report_id/review" 200 "$sd_token" "$report_sd_payload"
+jq -e '.status == "PENDING_ISSUE"' "$LAST_BODY" >/dev/null || fail "report SD review did not return PENDING_ISSUE"
+
+request POST "/reports/$report_id/issue" 200 "$signatory_token"
+jq -e '.status == "ISSUED_PAYMENT_LOCKED" and .paymentGateStatus == "LOCKED"' "$LAST_BODY" >/dev/null \
+  || fail "report issue did not return ISSUED_PAYMENT_LOCKED"
+
+request GET "/projects?page=1&pageSize=100" 200 "$internal_token"
+jq -e --arg id "$nonstandard_project_id" \
+  '.items[] | select(.id == $id and .status == "PAYMENT_HOLD")' "$LAST_BODY" >/dev/null \
+  || fail "issued report did not move project to PAYMENT_HOLD"
+
+request GET "/reports/$report_id/official-pdf" 423 "$portal_token"
+jq -e '.code == "PAYMENT_GATE_LOCKED"' "$LAST_BODY" >/dev/null \
+  || fail "locked official PDF did not return PAYMENT_GATE_LOCKED"
+
+payment_payload="$(jq -nc --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" '{
+  projectId: $project_id,
+  reportId: $report_id,
+  amount: 1200,
+  receivedAt: "2026-05-15T02:00:00Z",
+  method: "BANK_TRANSFER",
+  note: "Local smoke payment"
+}')"
+request POST "/payment-receipts" 201 "$finance_token" "$payment_payload"
+payment_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e '.status == "RECORDED" and .amount == 1200' "$LAST_BODY" >/dev/null \
+  || fail "payment receipt did not return RECORDED"
+
+request GET "/reports/$report_id/official-pdf" 200 "$portal_token"
+grep -q "%PDF-1.4" "$LAST_BODY" || fail "official PDF download did not return PDF bytes"
+
+request GET "/reports?page=1&pageSize=100" 200 "$report_token"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.id == $id and .status == "RELEASED" and .paymentGateStatus == "UNLOCKED")' "$LAST_BODY" >/dev/null \
+  || fail "payment receipt did not release report"
+
+request GET "/projects?page=1&pageSize=100" 200 "$internal_token"
+jq -e --arg id "$nonstandard_project_id" \
+  '.items[] | select(.id == $id and .status == "RELEASED" and .paymentStatus == "PAID")' "$LAST_BODY" >/dev/null \
+  || fail "payment receipt did not release project"
+
+request GET "/report-delivery-logs?reportId=$report_id&page=1&pageSize=20" 200 "$admin_token"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.reportId == $id and .deliveryType == "DOWNLOAD" and .paymentGateStatus == "UNLOCKED")' "$LAST_BODY" >/dev/null \
+  || fail "official PDF download did not write delivery log"
+
 locked_payload="$(submission_payload "$suffix-locked")"
 request PATCH "/submissions/$nonstandard_submission_id" 409 "$portal_token" "$locked_payload"
 jq -e '.code == "FIELD_CHANGE_REQUIRES_CHANGE_REQUEST"' "$LAST_BODY" >/dev/null \
@@ -382,5 +512,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s\n' \
-  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s payment %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$payment_id"

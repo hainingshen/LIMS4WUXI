@@ -106,6 +106,16 @@ test("report preparer can open report workbench", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "报告列表" })).toBeVisible();
 });
 
+test("sample manager can open sample retention page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.sample");
+  await page.locator("#password").fill("Sales123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("留样管理").first().click();
+  await expect(page.getByText("SAMPLE RETENTION")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "留样记录" })).toBeVisible();
+});
+
 test("mobile portal keeps 390px workflow usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

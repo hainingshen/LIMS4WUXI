@@ -186,6 +186,11 @@ body {
   gap: 16px;
 }
 
+.contractListPage {
+  display: grid;
+  gap: 16px;
+}
+
 .pageHeader {
   display: flex;
   align-items: end;

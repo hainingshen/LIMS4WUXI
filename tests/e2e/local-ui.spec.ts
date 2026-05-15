@@ -57,6 +57,15 @@ test("internal sales can open project list after split flow", async ({ page }) =
   await expect(page.getByText(/P-\d{4}-/).first()).toBeVisible();
 });
 
+test("internal sales can open contract list after signing flow", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("合同协议").first().click();
+  await expect(page.getByText("CONTRACT LIST")).toBeVisible();
+  await expect(page.getByRole("button", { name: /刷\s*新/ })).toBeVisible();
+  await expect(page.getByText(/CON-\d{4}-/).first()).toBeVisible();
+});
+
 test("mobile portal keeps 390px workflow usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

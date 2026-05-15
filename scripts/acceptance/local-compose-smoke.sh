@@ -331,6 +331,56 @@ request GET "/projects?page=1&pageSize=20" 200 "$portal_token"
 jq -e --arg id "$project_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
   || fail "portal project list does not contain own project $project_id"
 
+blocker_expected_at="$(date -u -d '+1 day' '+%Y-%m-%dT%H:%M:%SZ')"
+blocker_payload="$(jq -nc --arg project_id "$project_id" --arg expected_at "$blocker_expected_at" '{
+  projectId: $project_id,
+  blockerType: "CUSTOMER_CONFIRMATION",
+  severity: "HIGH",
+  description: "Local smoke customer confirmation blocker",
+  impactScope: "Local smoke project progression",
+  expectedRecoveryAt: $expected_at,
+  ownerUserId: "00000000-0000-0000-0000-000000000101",
+  collaboratorIds: []
+}')"
+request POST "/work-center/blockers" 201 "$admin_token" "$blocker_payload"
+blocker_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg project_id "$project_id" \
+  '.projectId == $project_id and .status == "OPEN" and .severity == "HIGH"' "$LAST_BODY" >/dev/null \
+  || fail "work center blocker creation did not return open high blocker"
+
+request GET "/work-center/summary" 200 "$admin_token"
+jq -e '.riskProjects >= 1' "$LAST_BODY" >/dev/null || fail "work center summary did not count risk project"
+
+request GET "/work-center/projects?filter=risk&page=1&pageSize=100" 200 "$admin_token"
+jq -e --arg id "$project_id" \
+  '.items[] | select(.projectId == $id and .healthStatus == "RISK" and (.mainBlocker | contains("Local smoke customer confirmation blocker")))' "$LAST_BODY" >/dev/null \
+  || fail "work center risk project list did not show created blocker"
+
+request GET "/work-center/trends" 200 "$admin_token"
+jq -e '.[] | select(.metricCode == "openBlockers" and (.value | tonumber) >= 1)' "$LAST_BODY" >/dev/null \
+  || fail "work center trends did not count open blockers"
+
+request PATCH "/work-center/blockers/$blocker_id" 200 "$admin_token" '{"status":"IN_PROGRESS"}'
+jq -e '.status == "IN_PROGRESS"' "$LAST_BODY" >/dev/null || fail "work center blocker did not move to IN_PROGRESS"
+
+request POST "/work-center/blockers/$blocker_id/close" 400 "$admin_token" '{}'
+jq -e '.code == "BLOCKER_RESOLUTION_REQUIRED"' "$LAST_BODY" >/dev/null \
+  || fail "closing blocker without resolution did not require resolution"
+
+request POST "/work-center/blockers/$blocker_id/close" 200 "$admin_token" '{"resolution":"Local smoke blocker resolved"}'
+jq -e '.status == "CLOSED" and .resolution == "Local smoke blocker resolved"' "$LAST_BODY" >/dev/null \
+  || fail "work center blocker close did not return closed blocker"
+
+request GET "/work-center/blockers?page=1&pageSize=100" 200 "$admin_token"
+jq -e --arg id "$blocker_id" \
+  '.items[] | select(.id == $id and .status == "CLOSED")' "$LAST_BODY" >/dev/null \
+  || fail "work center blocker list did not show closed blocker"
+
+request GET "/work-center/projects?filter=normal&page=1&pageSize=100" 200 "$admin_token"
+jq -e --arg id "$project_id" \
+  '.items[] | select(.projectId == $id and .healthStatus == "NORMAL")' "$LAST_BODY" >/dev/null \
+  || fail "closing blocker did not restore project to normal health"
+
 nonstandard_split_payload="$(jq -nc '{
   splitStrategy: "MANUAL",
   projectDrafts: [
@@ -953,5 +1003,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: customer_org %s portal_user %s system_config %s business_rule %s holiday %s legacy_status %s submission %s project %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
-  "$customer_org_id" "$portal_user_id" "$system_config_key" "$business_rule_code" "$holiday_id" "$legacy_status_text" "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: customer_org %s portal_user %s system_config %s business_rule %s holiday %s legacy_status %s submission %s project %s blocker %s quotation %s contract %s plan %s work_order %s raw_record %s report %s green_channel %s payment %s registry_task %s archive_item %s inventory_batch %s device_booking %s device_file %s retention %s\n' \
+  "$customer_org_id" "$portal_user_id" "$system_config_key" "$business_rule_code" "$holiday_id" "$legacy_status_text" "$submission_id" "$project_id" "$blocker_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id" "$raw_record_id" "$report_id" "$green_request_id" "$payment_id" "$registry_task_id" "$archive_item_id" "$inventory_batch_id" "$device_booking_id" "$device_file_id" "$retention_id"

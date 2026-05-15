@@ -6,6 +6,9 @@ export type WorkCenterProject = components["schemas"]["WorkCenterProject"];
 export type WorkCenterBlocker = components["schemas"]["WorkCenterBlocker"];
 export type WorkCenterResourceLoad = components["schemas"]["WorkCenterResourceLoad"];
 export type WorkCenterTrend = components["schemas"]["WorkCenterTrend"];
+export type WorkCenterBlockerCreateRequest = components["schemas"]["WorkCenterBlockerCreateRequest"];
+export type WorkCenterBlockerUpdateRequest = components["schemas"]["WorkCenterBlockerUpdateRequest"];
+export type WorkCenterBlockerCloseRequest = components["schemas"]["WorkCenterBlockerCloseRequest"];
 
 export type WorkCenterProjectPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: WorkCenterProject[];
@@ -33,6 +36,21 @@ export async function listWorkCenterProjects(params: {
 
 export async function listWorkCenterBlockers(params: { page?: number; pageSize?: number }) {
   const response = await http.get<WorkCenterBlockerPage>("/work-center/blockers", { params });
+  return response.data;
+}
+
+export async function createWorkCenterBlocker(request: WorkCenterBlockerCreateRequest) {
+  const response = await http.post<WorkCenterBlocker>("/work-center/blockers", request);
+  return response.data;
+}
+
+export async function updateWorkCenterBlocker(id: string, request: WorkCenterBlockerUpdateRequest) {
+  const response = await http.patch<WorkCenterBlocker>(`/work-center/blockers/${id}`, request);
+  return response.data;
+}
+
+export async function closeWorkCenterBlocker(id: string, request: WorkCenterBlockerCloseRequest) {
+  const response = await http.post<WorkCenterBlocker>(`/work-center/blockers/${id}/close`, request);
   return response.data;
 }
 

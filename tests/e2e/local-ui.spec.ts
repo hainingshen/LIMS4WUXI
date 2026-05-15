@@ -18,6 +18,13 @@ test("internal desktop aligns to LIMS workbench shell", async ({ page }) => {
   await page.getByRole("button", { name: /登\s*录/ }).click();
   await expect(page.getByText("工作中心").first()).toBeVisible();
   await expect(page.getByText("PROJECT WORK CENTER")).toBeVisible();
+  await page.locator(".ant-segmented-item", { hasText: "正常" }).click();
+  const addBlocker = page.getByRole("button", { name: "新增阻塞" }).first();
+  await expect(addBlocker).toBeVisible();
+  await addBlocker.click();
+  await expect(page.getByText("阻塞类型", { exact: true })).toBeVisible();
+  await expect(page.getByText("预计恢复时间", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.screenshot({ path: `${screenshotDir}/internal-work-center-desktop.png`, fullPage: true });
 });
 

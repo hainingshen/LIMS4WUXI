@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Button,
   Card,
   Empty,
+  Form,
+  Input,
+  Modal,
   Progress,
   Segmented,
+  Select,
   Space,
   Table,
   Tag,
@@ -12,11 +17,16 @@ import {
   type TableProps,
 } from "antd";
 import {
+  closeWorkCenterBlocker,
+  createWorkCenterBlocker,
+  getCurrentUser,
   getWorkCenterResourceLoad,
   getWorkCenterSummary,
   getWorkCenterTrends,
   listWorkCenterBlockers,
   listWorkCenterProjects,
+  updateWorkCenterBlocker,
+  type CurrentUser,
   type WorkCenterBlocker,
   type WorkCenterProject,
   type WorkCenterProjectFilter,
@@ -30,6 +40,26 @@ const FILTER_OPTIONS: Array<{ label: string; value: WorkCenterProjectFilter }> =
   { label: "预警", value: "warning" },
   { label: "超期", value: "overdue" },
   { label: "正常", value: "normal" },
+];
+
+const BLOCKER_TYPE_OPTIONS = [
+  { label: "待审批", value: "PENDING_APPROVAL" },
+  { label: "缺样", value: "MISSING_SAMPLE" },
+  { label: "缺资料", value: "MISSING_MATERIAL" },
+  { label: "设备冲突", value: "DEVICE_CONFLICT" },
+  { label: "人员不可用", value: "STAFF_UNAVAILABLE" },
+  { label: "技术风险", value: "TECHNICAL_RISK" },
+  { label: "客户确认", value: "CUSTOMER_CONFIRMATION" },
+  { label: "分包延迟", value: "SUBCONTRACT_DELAY" },
+  { label: "付款阻塞", value: "PAYMENT_BLOCKED" },
+  { label: "报告返工", value: "REPORT_REWORK" },
+  { label: "其他", value: "OTHER" },
+];
+
+const SEVERITY_OPTIONS = [
+  { label: "高", value: "HIGH" },
+  { label: "中", value: "MEDIUM" },
+  { label: "低", value: "LOW" },
 ];
 
 const HEALTH_LABELS: Record<WorkCenterProject["healthStatus"], string> = {
@@ -56,6 +86,7 @@ const TREND_LABELS: Record<string, string> = {
 
 export function WorkCenterPage() {
   const [summary, setSummary] = useState<WorkCenterSummary>();
+  const [currentUser, setCurrentUser] = useState<CurrentUser>();
   const [projects, setProjects] = useState<WorkCenterProject[]>([]);
   const [blockers, setBlockers] = useState<WorkCenterBlocker[]>([]);
   const [resourceLoad, setResourceLoad] = useState<WorkCenterResourceLoad[]>([]);
@@ -63,18 +94,26 @@ export function WorkCenterPage() {
   const [filter, setFilter] = useState<WorkCenterProjectFilter>("risk");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createProject, setCreateProject] = useState<WorkCenterProject>();
+  const [mutating, setMutating] = useState(false);
+  const [closingBlocker, setClosingBlocker] = useState<WorkCenterBlocker>();
+  const [createForm] = Form.useForm<BlockerFormValues>();
+  const [closeForm] = Form.useForm<BlockerCloseValues>();
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(undefined);
     try {
-      const [nextSummary, nextProjects, nextBlockers, nextResourceLoad, nextTrends] = await Promise.all([
+      const [nextUser, nextSummary, nextProjects, nextBlockers, nextResourceLoad, nextTrends] = await Promise.all([
+        getCurrentUser(),
         getWorkCenterSummary(),
         listWorkCenterProjects({ filter, page: 1, pageSize: 20 }),
         listWorkCenterBlockers({ page: 1, pageSize: 20 }),
         getWorkCenterResourceLoad(),
         getWorkCenterTrends(),
       ]);
+      setCurrentUser(nextUser);
       setSummary(nextSummary);
       setProjects(nextProjects.items);
       setBlockers(nextBlockers.items);
@@ -90,6 +129,82 @@ export function WorkCenterPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  function openCreate(project: WorkCenterProject) {
+    setCreateProject(project);
+    createForm.setFieldsValue({
+      blockerType: "CUSTOMER_CONFIRMATION",
+      severity: "HIGH",
+      description: "",
+      impactScope: project.projectBizNo,
+      expectedRecoveryAt: defaultRecoveryAt(),
+      ownerUserId: currentUser?.id ?? "",
+    });
+    setCreateOpen(true);
+  }
+
+  async function submitCreate(values: BlockerFormValues) {
+    if (!createProject) {
+      return;
+    }
+    setMutating(true);
+    setError(undefined);
+    try {
+      await createWorkCenterBlocker({
+        projectId: createProject.projectId,
+        blockerType: values.blockerType,
+        severity: values.severity,
+        description: values.description,
+        impactScope: values.impactScope,
+        expectedRecoveryAt: new Date(values.expectedRecoveryAt).toISOString(),
+        ownerUserId: values.ownerUserId,
+        collaboratorIds: [],
+      });
+      setCreateOpen(false);
+      createForm.resetFields();
+      await load();
+    } catch {
+      setError("新增阻塞失败");
+    } finally {
+      setMutating(false);
+    }
+  }
+
+  async function changeBlockerStatus(blocker: WorkCenterBlocker, status: "IN_PROGRESS" | "RESOLVED") {
+    setMutating(true);
+    setError(undefined);
+    try {
+      await updateWorkCenterBlocker(blocker.id, { status });
+      await load();
+    } catch {
+      setError("更新阻塞状态失败");
+    } finally {
+      setMutating(false);
+    }
+  }
+
+  function openClose(blocker: WorkCenterBlocker) {
+    setClosingBlocker(blocker);
+    closeForm.setFieldsValue({ resolution: "" });
+  }
+
+  async function submitClose(values: BlockerCloseValues) {
+    if (!closingBlocker) {
+      return;
+    }
+    setMutating(true);
+    setError(undefined);
+    try {
+      await closeWorkCenterBlocker(closingBlocker.id, values);
+      setClosingBlocker(undefined);
+      closeForm.resetFields();
+      await load();
+    } catch {
+      setError("关闭阻塞失败");
+    } finally {
+      setMutating(false);
+    }
+  }
 
   const projectColumns: TableProps<WorkCenterProject>["columns"] = [
     {
@@ -124,6 +239,11 @@ export function WorkCenterPage() {
       ellipsis: true,
       render: (value) => value || "-",
     },
+    {
+      title: "操作",
+      width: 120,
+      render: (_, project) => <Button size="small" onClick={() => openCreate(project)}>新增阻塞</Button>,
+    },
   ];
 
   const blockerColumns: TableProps<WorkCenterBlocker>["columns"] = [
@@ -148,6 +268,35 @@ export function WorkCenterPage() {
       dataIndex: "status",
       width: 110,
       render: (status: WorkCenterBlocker["status"]) => <Tag>{BLOCKER_STATUS_LABELS[status]}</Tag>,
+    },
+    {
+      title: "操作",
+      width: 220,
+      render: (_, blocker) => (
+        <Space wrap>
+          <Button
+            size="small"
+            disabled={blocker.status !== "OPEN" || mutating}
+            onClick={() => void changeBlockerStatus(blocker, "IN_PROGRESS")}
+          >
+            处理中
+          </Button>
+          <Button
+            size="small"
+            disabled={blocker.status === "CLOSED" || blocker.status === "RESOLVED" || mutating}
+            onClick={() => void changeBlockerStatus(blocker, "RESOLVED")}
+          >
+            解决
+          </Button>
+          <Button
+            size="small"
+            disabled={blocker.status === "CLOSED" || mutating}
+            onClick={() => openClose(blocker)}
+          >
+            关闭
+          </Button>
+        </Space>
+      ),
     },
   ];
 
@@ -245,9 +394,67 @@ export function WorkCenterPage() {
           </div>
         </Card>
       </div>
+
+      <Modal
+        title={createProject ? `新增阻塞 · ${createProject.projectBizNo}` : "新增阻塞"}
+        open={createOpen}
+        onCancel={() => setCreateOpen(false)}
+        onOk={() => createForm.submit()}
+        confirmLoading={mutating}
+        destroyOnHidden
+      >
+        <Form form={createForm} layout="vertical" onFinish={(values) => void submitCreate(values)}>
+          <Form.Item name="blockerType" label="阻塞类型" rules={[{ required: true }]}>
+            <Select options={BLOCKER_TYPE_OPTIONS} />
+          </Form.Item>
+          <Form.Item name="severity" label="严重度" rules={[{ required: true }]}>
+            <Select options={SEVERITY_OPTIONS} />
+          </Form.Item>
+          <Form.Item name="description" label="说明" rules={[{ required: true }]}>
+            <Input.TextArea rows={3} />
+          </Form.Item>
+          <Form.Item name="impactScope" label="影响范围" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="expectedRecoveryAt" label="预计恢复时间" rules={[{ required: true }]}>
+            <Input type="datetime-local" />
+          </Form.Item>
+          <Form.Item name="ownerUserId" label="负责人用户 ID" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="关闭阻塞"
+        open={Boolean(closingBlocker)}
+        onCancel={() => setClosingBlocker(undefined)}
+        onOk={() => closeForm.submit()}
+        confirmLoading={mutating}
+        destroyOnHidden
+      >
+        <Form form={closeForm} layout="vertical" onFinish={(values) => void submitClose(values)}>
+          <Form.Item name="resolution" label="解决说明" rules={[{ required: true }]}>
+            <Input.TextArea rows={4} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </section>
   );
 }
+
+type BlockerFormValues = {
+  blockerType: WorkCenterBlocker["blockerType"];
+  severity: WorkCenterBlocker["severity"];
+  description: string;
+  impactScope: string;
+  expectedRecoveryAt: string;
+  ownerUserId: string;
+};
+
+type BlockerCloseValues = {
+  resolution: string;
+};
 
 function MetricCard({ label, helper, value, tone }: { label: string; helper: string; value: number; tone: string }) {
   return (
@@ -284,4 +491,14 @@ function formatTime(value: string) {
 function formatMetricValue(trend: WorkCenterTrend & { label: string }) {
   const value = Number(trend.value);
   return trend.metricCode === "resourceLoadRate" ? `${Math.round(value)}%` : Math.round(value).toString();
+}
+
+function defaultRecoveryAt() {
+  const value = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  const hour = String(value.getHours()).padStart(2, "0");
+  const minute = String(value.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hour}:${minute}`;
 }

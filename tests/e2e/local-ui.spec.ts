@@ -126,6 +126,16 @@ test("equipment manager can open device file page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "文件登记" })).toBeVisible();
 });
 
+test("system admin can open import export task page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.admin");
+  await page.locator("#password").fill("Internal123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("导入导出任务").first().click();
+  await expect(page.getByText("IMPORT / EXPORT")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "创建任务" })).toBeVisible();
+});
+
 test("sample manager can open sample retention page", async ({ page }) => {
   await page.goto("/internal/");
   await page.locator("#username").fill("internal.sample");

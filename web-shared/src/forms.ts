@@ -63,6 +63,9 @@ export type ReportDeliveryLogPage = Omit<components["schemas"]["PageResponse"], 
 export type DevicePage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Device[];
 };
+export type ImportExportTaskPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: ImportExportTask[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionSplitProjectsRequest = components["schemas"]["SubmissionSplitProjectsRequest"];
 export type ApprovalRequest = components["schemas"]["ApprovalRequest"];
@@ -80,6 +83,7 @@ export type SampleRetentionDisposeRequest = components["schemas"]["SampleRetenti
 export type GreenChannelCreateRequest = components["schemas"]["GreenChannelCreateRequest"];
 export type ReportRegistryBatchDownloadRequest = components["schemas"]["ReportRegistryBatchDownloadRequest"];
 export type DeviceFileUploadRequest = components["schemas"]["DeviceFileUploadRequest"];
+export type ImportExportTaskCreateRequest = components["schemas"]["ImportExportTaskCreateRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
 
@@ -378,6 +382,33 @@ export async function uploadDeviceFile(deviceId: string, request: DeviceFileUplo
 
 export async function disableDeviceFile(id: string) {
   const response = await http.post<DeviceFile>(`/device-files/${id}/disable`);
+  return response.data;
+}
+
+export async function listImportExportTasks(params: { page?: number; pageSize?: number } = {}) {
+  const response = await http.get<ImportExportTaskPage>("/import-export-tasks", { params });
+  return response.data;
+}
+
+export async function createImportExportTask(request: ImportExportTaskCreateRequest) {
+  const response = await http.post<ImportExportTask>("/import-export-tasks", request);
+  return response.data;
+}
+
+export async function validateImportExportTask(id: string) {
+  const response = await http.post<ImportExportTask>(`/import-export-tasks/${id}/validate`);
+  return response.data;
+}
+
+export async function runImportExportTask(id: string) {
+  const response = await http.post<ImportExportTask>(`/import-export-tasks/${id}/run`);
+  return response.data;
+}
+
+export async function downloadImportExportTaskResultFile(id: string) {
+  const response = await http.get<Blob>(`/import-export-tasks/${id}/result-file`, {
+    responseType: "blob",
+  });
   return response.data;
 }
 

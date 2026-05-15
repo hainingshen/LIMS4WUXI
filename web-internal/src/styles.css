@@ -216,6 +216,11 @@ body {
   gap: 16px;
 }
 
+.importExportPage {
+  display: grid;
+  gap: 16px;
+}
+
 .sampleRetentionPage {
   display: grid;
   gap: 16px;
@@ -303,6 +308,13 @@ body {
 
 .deviceCurrentItem {
   align-self: end;
+}
+
+.importExportGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  gap: 16px;
+  align-items: start;
 }
 
 .deskPanel {
@@ -466,6 +478,7 @@ body {
   .reportRegistryDetailGrid,
   .deviceFileGrid,
   .deviceFileFormGrid,
+  .importExportGrid,
   .workCenterHeader,
   .workCenterGrid,
   .workCenterSummary {

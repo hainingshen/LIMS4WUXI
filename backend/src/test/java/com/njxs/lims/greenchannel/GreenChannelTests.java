@@ -248,7 +248,7 @@ class GreenChannelTests {
         select count(*)
         from report_delivery_log
         where report_id = ?
-          and delivery_type = 'GREEN_CHANNEL'
+          and delivery_type = 'GREEN_CHANNEL_RELEASE'
           and payment_gate_status = 'GREEN_UNLOCKED'
         """,
         Integer.class,

@@ -486,10 +486,12 @@ export const DICTIONARY_ITEMS = {
   ],
   REPORT_DELIVERY_TYPE: [
     { itemCode: "PREVIEW", labelZh: "预览", labelEn: "Preview", sortOrder: 1 },
-    { itemCode: "DOWNLOAD", labelZh: "下载", labelEn: "Download", sortOrder: 2 },
-    { itemCode: "EMAIL", labelZh: "邮件发送", labelEn: "Email", sortOrder: 3 },
-    { itemCode: "BATCH_DOWNLOAD", labelZh: "批量下载", labelEn: "Batch download", sortOrder: 4 },
-    { itemCode: "GREEN_CHANNEL", labelZh: "绿色通道发放", labelEn: "Green channel", sortOrder: 5 },
+    { itemCode: "OFFICIAL_DOWNLOAD", labelZh: "正式报告下载", labelEn: "Official download", sortOrder: 2 },
+    { itemCode: "INTERNAL_DOWNLOAD", labelZh: "内部下载", labelEn: "Internal download", sortOrder: 3 },
+    { itemCode: "EMAIL", labelZh: "邮件发送", labelEn: "Email", sortOrder: 4 },
+    { itemCode: "BATCH_DOWNLOAD", labelZh: "批量下载", labelEn: "Batch download", sortOrder: 5 },
+    { itemCode: "GREEN_CHANNEL_RELEASE", labelZh: "绿色通道放行", labelEn: "Green channel release", sortOrder: 6 },
+    { itemCode: "PAYMENT_UNLOCK_RELEASE", labelZh: "付款解锁放行", labelEn: "Payment unlock release", sortOrder: 7 },
   ],
   WORK_CENTER_BLOCKER_SEVERITY: [
     { itemCode: "LOW", labelZh: "低", labelEn: "Low", sortOrder: 1 },
@@ -650,7 +652,7 @@ export type ImportExportTaskType = (typeof IMPORT_EXPORT_TASK_TYPE)[number];
 export const IMPORT_EXPORT_TASK_STATUS = ["PENDING", "VALIDATING", "RUNNING", "SUCCESS", "FAILED", "EXPIRED"] as const;
 export type ImportExportTaskStatus = (typeof IMPORT_EXPORT_TASK_STATUS)[number];
 
-export const REPORT_DELIVERY_TYPE = ["PREVIEW", "DOWNLOAD", "EMAIL", "BATCH_DOWNLOAD", "GREEN_CHANNEL"] as const;
+export const REPORT_DELIVERY_TYPE = ["PREVIEW", "OFFICIAL_DOWNLOAD", "INTERNAL_DOWNLOAD", "EMAIL", "BATCH_DOWNLOAD", "GREEN_CHANNEL_RELEASE", "PAYMENT_UNLOCK_RELEASE"] as const;
 export type ReportDeliveryType = (typeof REPORT_DELIVERY_TYPE)[number];
 
 export const WORK_CENTER_BLOCKER_SEVERITY = ["LOW", "MEDIUM", "HIGH"] as const;

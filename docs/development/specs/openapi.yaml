@@ -3304,7 +3304,14 @@ components:
           format: uuid
         deliveryType:
           type: string
-          enum: [PREVIEW, DOWNLOAD, EMAIL, BATCH_DOWNLOAD, GREEN_CHANNEL]
+          enum:
+            - PREVIEW
+            - OFFICIAL_DOWNLOAD
+            - INTERNAL_DOWNLOAD
+            - EMAIL
+            - BATCH_DOWNLOAD
+            - GREEN_CHANNEL_RELEASE
+            - PAYMENT_UNLOCK_RELEASE
         deliveredTo:
           type: string
         deliveredBy:

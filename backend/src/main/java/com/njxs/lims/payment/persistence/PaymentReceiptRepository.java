@@ -21,6 +21,8 @@ public interface PaymentReceiptRepository {
 
   boolean reportBelongsToProject(UUID reportId, UUID projectId);
 
+  List<UUID> findReportsForPaymentUnlockRelease(UUID projectId, UUID reportId);
+
   void markProjectPaid(UUID projectId, UUID actorUserId);
 
   void unlockReportsByProject(UUID projectId, UUID actorUserId);

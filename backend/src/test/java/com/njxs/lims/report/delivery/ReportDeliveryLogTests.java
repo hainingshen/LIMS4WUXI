@@ -32,6 +32,7 @@ class ReportDeliveryLogTests {
 
   private static final UUID ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000101");
   private static final UUID PORTAL_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000201");
+  private static final UUID FINANCE_ID = UUID.fromString("00000000-0000-0000-0000-000000000113");
 
   @Container
   static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -83,17 +84,25 @@ class ReportDeliveryLogTests {
             .header(HttpHeaders.AUTHORIZATION, bearer(portalToken)))
         .andExpect(status().isOk());
 
-    mockMvc.perform(get("/report-delivery-logs")
+    MvcResult logs = mockMvc.perform(get("/report-delivery-logs")
             .queryParam("reportId", reportId.toString())
             .header(HttpHeaders.AUTHORIZATION, bearer(qualityToken)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.total").value(1))
-        .andExpect(jsonPath("$.items[0].reportId").value(reportId.toString()))
-        .andExpect(jsonPath("$.items[0].deliveryType").value("DOWNLOAD"))
-        .andExpect(jsonPath("$.items[0].deliveredBy").value(PORTAL_ADMIN_ID.toString()))
-        .andExpect(jsonPath("$.items[0].clientType").value("PORTAL"))
-        .andExpect(jsonPath("$.items[0].paymentGateStatus").value("UNLOCKED"))
-        .andExpect(jsonPath("$.items[0].fileId").isString());
+        .andExpect(jsonPath("$.total").value(2))
+        .andReturn();
+    JsonNode items = objectMapper.readTree(logs.getResponse().getContentAsString()).path("items");
+    JsonNode downloadLog = logItem(items, "OFFICIAL_DOWNLOAD");
+    assertThat(downloadLog.path("reportId").asText()).isEqualTo(reportId.toString());
+    assertThat(downloadLog.path("deliveredBy").asText()).isEqualTo(PORTAL_ADMIN_ID.toString());
+    assertThat(downloadLog.path("clientType").asText()).isEqualTo("PORTAL");
+    assertThat(downloadLog.path("paymentGateStatus").asText()).isEqualTo("UNLOCKED");
+    assertThat(downloadLog.path("fileId").isTextual()).isTrue();
+
+    JsonNode unlockLog = logItem(items, "PAYMENT_UNLOCK_RELEASE");
+    assertThat(unlockLog.path("reportId").asText()).isEqualTo(reportId.toString());
+    assertThat(unlockLog.path("deliveredBy").asText()).isEqualTo(FINANCE_ID.toString());
+    assertThat(unlockLog.path("clientType").asText()).isEqualTo("INTERNAL");
+    assertThat(unlockLog.path("paymentGateStatus").asText()).isEqualTo("UNLOCKED");
 
     assertDeliveryLog(reportId);
   }
@@ -185,15 +194,41 @@ class ReportDeliveryLogTests {
         from report_delivery_log dl
         join report_version rv on rv.id = dl.report_version_id
         where dl.report_id = ?
+          and dl.delivery_type = 'OFFICIAL_DOWNLOAD'
         """,
         reportId
     );
     assertThat(log)
-        .containsEntry("delivery_type", "DOWNLOAD")
+        .containsEntry("delivery_type", "OFFICIAL_DOWNLOAD")
         .containsEntry("delivered_by", PORTAL_ADMIN_ID)
         .containsEntry("client_type", "PORTAL")
         .containsEntry("payment_gate_status", "UNLOCKED");
     assertThat(log.get("file_id")).isNotNull().isEqualTo(log.get("pdf_file_id"));
+
+    Integer paymentUnlockLogs = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report_delivery_log
+        where report_id = ?
+          and delivery_type = 'PAYMENT_UNLOCK_RELEASE'
+          and delivered_by = ?
+          and client_type = 'INTERNAL'
+          and payment_gate_status = 'UNLOCKED'
+        """,
+        Integer.class,
+        reportId,
+        FINANCE_ID
+    );
+    assertThat(paymentUnlockLogs).isEqualTo(1);
+  }
+
+  private JsonNode logItem(JsonNode items, String deliveryType) {
+    for (JsonNode item : items) {
+      if (deliveryType.equals(item.path("deliveryType").asText())) {
+        return item;
+      }
+    }
+    throw new AssertionError("Missing delivery log type " + deliveryType);
   }
 
   private String login(String channel, String username, String password) throws Exception {

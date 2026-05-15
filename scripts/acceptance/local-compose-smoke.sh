@@ -783,11 +783,16 @@ jq -e --arg id "$nonstandard_project_id" \
 
 request GET "/report-delivery-logs?reportId=$report_id&page=1&pageSize=20" 200 "$admin_token"
 jq -e --arg id "$report_id" \
-  '.items[] | select(.reportId == $id and .deliveryType == "GREEN_CHANNEL" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
+  '.items[] | select(.reportId == $id and .deliveryType == "GREEN_CHANNEL_RELEASE" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
   || fail "green channel approval did not write delivery log"
 
 request GET "/reports/$report_id/official-pdf" 200 "$portal_token"
 grep -q "%PDF-1.4" "$LAST_BODY" || fail "green channel official PDF did not return PDF bytes"
+
+request GET "/report-delivery-logs?reportId=$report_id&page=1&pageSize=20" 200 "$admin_token"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.reportId == $id and .deliveryType == "OFFICIAL_DOWNLOAD" and .paymentGateStatus == "GREEN_UNLOCKED" and .clientType == "PORTAL")' "$LAST_BODY" >/dev/null \
+  || fail "green channel official PDF download did not write portal delivery log"
 
 payment_payload="$(jq -nc --arg project_id "$nonstandard_project_id" --arg report_id "$report_id" '{
   projectId: $project_id,
@@ -822,7 +827,10 @@ jq -e --arg id "$nonstandard_project_id" \
 
 request GET "/report-delivery-logs?reportId=$report_id&page=1&pageSize=20" 200 "$admin_token"
 jq -e --arg id "$report_id" \
-  '.items[] | select(.reportId == $id and .deliveryType == "DOWNLOAD" and .paymentGateStatus == "UNLOCKED")' "$LAST_BODY" >/dev/null \
+  '.items[] | select(.reportId == $id and .deliveryType == "PAYMENT_UNLOCK_RELEASE" and .paymentGateStatus == "UNLOCKED" and .clientType == "INTERNAL")' "$LAST_BODY" >/dev/null \
+  || fail "payment receipt did not write unlock release log"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.reportId == $id and .deliveryType == "OFFICIAL_DOWNLOAD" and .paymentGateStatus == "UNLOCKED" and .clientType == "PORTAL")' "$LAST_BODY" >/dev/null \
   || fail "official PDF download did not write delivery log"
 
 request GET "/report-registry/search?projectId=$nonstandard_project_id&status=RELEASED&page=1&pageSize=20" 200 "$admin_token"

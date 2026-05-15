@@ -125,6 +125,17 @@ jq -e --slurpfile projects "$TMP_DIR/portal-projects.json" \
   '($projects[0].items | map(.id)) as $ids | all(.items[]?; .projectId as $project_id | ($ids | index($project_id) != null))' \
   "$LAST_BODY" >/dev/null || fail "/reports returned data outside visible portal projects"
 
+request GET "/reports?page=1&pageSize=100" 200 "$internal_token"
+cross_report_id="$(jq -r --slurpfile projects "$TMP_DIR/portal-projects.json" '
+  ($projects[0].items | map(.id)) as $ids
+  | [.items[]? | .projectId as $project_id | select(($ids | index($project_id)) == null) | .id][0] // empty
+' "$LAST_BODY")"
+if [[ -n "$cross_report_id" ]]; then
+  request GET "/reports/$cross_report_id/official-pdf" 403 "$portal_token"
+  jq -e '.code == "FORBIDDEN" and .details.actionCode == "REPORT_OFFICIAL_DOWNLOAD"' "$LAST_BODY" >/dev/null \
+    || fail "cross-customer official PDF did not return REPORT_OFFICIAL_DOWNLOAD forbidden"
+fi
+
 request GET "/contracts?page=1&pageSize=100" 200 "$portal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/contracts did not return a portal-scoped paged response"

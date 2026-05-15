@@ -2113,7 +2113,7 @@ export interface components {
             /** Format: uuid */
             reportVersionId?: string;
             /** @enum {string} */
-            deliveryType: "PREVIEW" | "DOWNLOAD" | "EMAIL" | "BATCH_DOWNLOAD" | "GREEN_CHANNEL";
+            deliveryType: "PREVIEW" | "OFFICIAL_DOWNLOAD" | "INTERNAL_DOWNLOAD" | "EMAIL" | "BATCH_DOWNLOAD" | "GREEN_CHANNEL_RELEASE" | "PAYMENT_UNLOCK_RELEASE";
             deliveredTo?: string;
             /** Format: uuid */
             deliveredBy: string;

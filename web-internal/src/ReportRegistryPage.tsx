@@ -406,11 +406,14 @@ function gateColor(status: ReportRegistryItem["paymentGateStatus"] | ReportDeliv
 }
 
 function deliveryColor(value: ReportDeliveryLog["deliveryType"]) {
-  if (value === "GREEN_CHANNEL") {
+  if (value === "GREEN_CHANNEL_RELEASE") {
     return "cyan";
   }
-  if (value === "DOWNLOAD" || value === "BATCH_DOWNLOAD") {
+  if (value === "OFFICIAL_DOWNLOAD" || value === "INTERNAL_DOWNLOAD" || value === "BATCH_DOWNLOAD") {
     return "green";
+  }
+  if (value === "PAYMENT_UNLOCK_RELEASE") {
+    return "gold";
   }
   return "blue";
 }

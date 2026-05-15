@@ -231,6 +231,33 @@ class PaymentGateTests {
         .containsEntry("status", "RELEASED")
         .containsEntry("payment_gate_status", "UNLOCKED");
     assertThat(state.get("pdf_file_id")).isNotNull();
+
+    Integer paymentReleaseLogs = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report_delivery_log
+        where report_id = ?
+          and delivery_type = 'PAYMENT_UNLOCK_RELEASE'
+          and payment_gate_status = 'UNLOCKED'
+        """,
+        Integer.class,
+        reportId
+    );
+    assertThat(paymentReleaseLogs).isEqualTo(1);
+
+    Integer downloadLogs = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report_delivery_log
+        where report_id = ?
+          and delivery_type = 'OFFICIAL_DOWNLOAD'
+          and client_type = 'PORTAL'
+          and payment_gate_status = 'UNLOCKED'
+        """,
+        Integer.class,
+        reportId
+    );
+    assertThat(downloadLogs).isEqualTo(1);
   }
 
   private String login(String channel, String username, String password) throws Exception {

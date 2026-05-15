@@ -1,10 +1,12 @@
 package com.njxs.lims.report.service;
 
 import com.njxs.lims.auth.domain.AuthPrincipal;
+import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.common.exception.BusinessException;
 import com.njxs.lims.file.domain.StoredFile;
 import com.njxs.lims.payment.service.PaymentGateService;
 import com.njxs.lims.payment.service.PaymentGateStatus;
+import com.njxs.lims.permission.PermissionService;
 import com.njxs.lims.report.conversion.DocumentConversionService;
 import com.njxs.lims.report.delivery.service.ReportDeliveryLogService;
 import com.njxs.lims.report.domain.ReportRecord;
@@ -32,21 +34,25 @@ public class ReportPdfService {
   private final DocumentConversionService documentConversionService;
   private final PaymentGateService paymentGateService;
   private final ReportDeliveryLogService reportDeliveryLogService;
+  private final PermissionService permissionService;
 
   public ReportPdfService(
       ReportRepository reportRepository,
       DocumentConversionService documentConversionService,
       PaymentGateService paymentGateService,
-      ReportDeliveryLogService reportDeliveryLogService
+      ReportDeliveryLogService reportDeliveryLogService,
+      PermissionService permissionService
   ) {
     this.reportRepository = reportRepository;
     this.documentConversionService = documentConversionService;
     this.paymentGateService = paymentGateService;
     this.reportDeliveryLogService = reportDeliveryLogService;
+    this.permissionService = permissionService;
   }
 
   @Transactional
   public StoredFile downloadOfficialPdf(UUID reportId, AuthPrincipal principal) {
+    permissionService.assertAllowed(principal, "REPORT_OFFICIAL_DOWNLOAD", new Object[] {reportId});
     PaymentGateStatus gateStatus = paymentGateService.gateForReport(reportId);
     if (gateStatus == PaymentGateStatus.LOCKED) {
       throw new BusinessException("PAYMENT_GATE_LOCKED");
@@ -54,7 +60,7 @@ public class ReportPdfService {
     StoredFile pdf = generateOfficialPdf(reportId, principal);
     reportDeliveryLogService.recordForCurrentVersion(
         reportId,
-        "DOWNLOAD",
+        deliveryType(principal),
         principal,
         gateStatus,
         pdf.fileId()
@@ -111,5 +117,12 @@ public class ReportPdfService {
             HttpStatus.NOT_FOUND,
             Map.of("entityType", "report", "entityId", id)
         ));
+  }
+
+  private String deliveryType(AuthPrincipal principal) {
+    if (principal.clientType() == ClientType.INTERNAL) {
+      return "INTERNAL_DOWNLOAD";
+    }
+    return "OFFICIAL_DOWNLOAD";
   }
 }

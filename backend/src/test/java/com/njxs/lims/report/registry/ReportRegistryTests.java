@@ -207,7 +207,7 @@ class ReportRegistryTests {
           id, report_id, report_version_id, delivery_type, delivered_by, delivered_at,
           client_type, payment_gate_status, file_id, created_at, created_by,
           updated_at, updated_by, version, source_type, data_quality_score
-        ) values (?, ?, ?, 'DOWNLOAD', ?, now(),
+        ) values (?, ?, ?, 'INTERNAL_DOWNLOAD', ?, now(),
           'INTERNAL', 'UNLOCKED', ?, now(), ?, now(), ?, 0, 'NEW', 100)
         """,
         UUID.randomUUID(),

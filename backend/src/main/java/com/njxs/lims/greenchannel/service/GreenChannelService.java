@@ -114,7 +114,7 @@ public class GreenChannelService {
       greenChannelRepository.greenUnlockReport(record.reportId(), principal.userId());
       reportDeliveryLogService.recordForCurrentVersion(
           record.reportId(),
-          "GREEN_CHANNEL",
+          "GREEN_CHANNEL_RELEASE",
           principal,
           PaymentGateStatus.GREEN_UNLOCKED,
           null

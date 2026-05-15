@@ -166,6 +166,50 @@ public class JdbcPaymentReceiptRepository implements PaymentReceiptRepository {
   }
 
   @Override
+  public List<UUID> findReportsForPaymentUnlockRelease(UUID projectId, UUID reportId) {
+    if (reportId != null) {
+      return jdbcTemplate.query(
+          """
+          select r.id
+          from report r
+          join report_version rv on rv.report_id = r.id
+            and rv.version_no = r.current_version_no
+            and rv.deleted_at is null
+          where r.project_id = ?
+            and r.id = ?
+            and (
+              r.status in ('ISSUED_PAYMENT_LOCKED', 'GREEN_RELEASED')
+              or r.payment_gate_status <> 'UNLOCKED'
+            )
+            and r.deleted_at is null
+          order by r.created_at, r.id
+          """,
+          (rs, rowNum) -> rs.getObject("id", UUID.class),
+          projectId,
+          reportId
+      );
+    }
+    return jdbcTemplate.query(
+        """
+        select r.id
+        from report r
+        join report_version rv on rv.report_id = r.id
+          and rv.version_no = r.current_version_no
+          and rv.deleted_at is null
+        where r.project_id = ?
+          and (
+            r.status in ('ISSUED_PAYMENT_LOCKED', 'GREEN_RELEASED')
+            or r.payment_gate_status <> 'UNLOCKED'
+          )
+          and r.deleted_at is null
+        order by r.created_at, r.id
+        """,
+        (rs, rowNum) -> rs.getObject("id", UUID.class),
+        projectId
+    );
+  }
+
+  @Override
   public void markProjectPaid(UUID projectId, UUID actorUserId) {
     jdbcTemplate.update(
         """

@@ -11,7 +11,9 @@ import com.njxs.lims.project.domain.Project;
 import com.njxs.lims.project.domain.ProjectStatus;
 import com.njxs.lims.project.persistence.ProjectRepository;
 import com.njxs.lims.project.service.ProjectStatusTransitionService;
+import com.njxs.lims.report.delivery.service.ReportDeliveryLogService;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -30,15 +32,18 @@ public class PaymentReceiptService {
   private final PaymentReceiptRepository paymentReceiptRepository;
   private final ProjectRepository projectRepository;
   private final ProjectStatusTransitionService projectStatusTransitionService;
+  private final ReportDeliveryLogService reportDeliveryLogService;
 
   public PaymentReceiptService(
       PaymentReceiptRepository paymentReceiptRepository,
       ProjectRepository projectRepository,
-      ProjectStatusTransitionService projectStatusTransitionService
+      ProjectStatusTransitionService projectStatusTransitionService,
+      ReportDeliveryLogService reportDeliveryLogService
   ) {
     this.paymentReceiptRepository = paymentReceiptRepository;
     this.projectRepository = projectRepository;
     this.projectStatusTransitionService = projectStatusTransitionService;
+    this.reportDeliveryLogService = reportDeliveryLogService;
   }
 
   public PageResponse<PaymentReceiptResponse> list(UUID projectId, int page, int pageSize) {
@@ -84,14 +89,29 @@ public class PaymentReceiptService {
         "RECORDED"
     );
     PaymentReceiptRecord saved = paymentReceiptRepository.save(record, principal.userId());
+    List<UUID> releaseReportIds =
+        paymentReceiptRepository.findReportsForPaymentUnlockRelease(saved.projectId(), saved.reportId());
     paymentReceiptRepository.markProjectPaid(saved.projectId(), principal.userId());
     if (saved.reportId() == null) {
       paymentReceiptRepository.unlockReportsByProject(saved.projectId(), principal.userId());
     } else {
       paymentReceiptRepository.unlockReport(saved.reportId(), principal.userId());
     }
+    recordPaymentUnlockRelease(releaseReportIds, principal);
     advanceProjectAfterPayment(saved.projectId(), principal.userId());
     return PaymentReceiptResponse.from(saved);
+  }
+
+  private void recordPaymentUnlockRelease(List<UUID> reportIds, AuthPrincipal principal) {
+    for (UUID reportId : reportIds) {
+      reportDeliveryLogService.recordForCurrentVersion(
+          reportId,
+          "PAYMENT_UNLOCK_RELEASE",
+          principal,
+          PaymentGateStatus.UNLOCKED,
+          null
+      );
+    }
   }
 
   private void advanceProjectAfterPayment(UUID projectId, UUID actorUserId) {

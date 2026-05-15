@@ -23,10 +23,12 @@ public class ReportDeliveryLogService {
 
   private static final Set<String> DELIVERY_TYPES = Set.of(
       "PREVIEW",
-      "DOWNLOAD",
+      "OFFICIAL_DOWNLOAD",
+      "INTERNAL_DOWNLOAD",
       "EMAIL",
       "BATCH_DOWNLOAD",
-      "GREEN_CHANNEL"
+      "GREEN_CHANNEL_RELEASE",
+      "PAYMENT_UNLOCK_RELEASE"
   );
 
   private final ReportDeliveryLogRepository reportDeliveryLogRepository;

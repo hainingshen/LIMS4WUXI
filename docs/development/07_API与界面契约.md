@@ -300,7 +300,7 @@ GET /api/v1/projects?page=1&pageSize=20&sort=createdAt,desc
 - 按项目、客户、报告编号、模板、签发日期、发放状态检索报告。
 - `GET /report-registry/search` 的筛选参数必须至少覆盖 `keyword`、`customerOrgId`、`projectId`、`reportBizNo`、`templateType`、`status`、`issuedFrom`、`issuedTo`。
 - 查看当前有效版本和历史版本，`ReportRegistryItem.versions` 返回当前报告的版本列表。
-- 查看预览、下载、邮件、绿色通道等发放日志。
+- 查看预览、客户正式下载、内部下载、邮件、绿色通道放行、付款解锁放行等发放日志。
 - 支持授权批量下载，批量包通过导出任务生成。
 - 已签发报告的内容变更必须走重新签发流程。
 

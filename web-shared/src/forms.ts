@@ -21,6 +21,9 @@ export type ReportDeliveryLog = components["schemas"]["ReportDeliveryLog"];
 export type ImportExportTask = components["schemas"]["ImportExportTask"];
 export type CustomerOrg = components["schemas"]["CustomerOrg"];
 export type PortalUser = components["schemas"]["PortalUser"];
+export type SystemConfig = components["schemas"]["SystemConfig"];
+export type BusinessRule = components["schemas"]["BusinessRule"];
+export type AuditLog = components["schemas"]["AuditLog"];
 export type Device = components["schemas"]["Device"];
 export type DeviceBooking = components["schemas"]["DeviceBooking"];
 export type DeviceFile = components["schemas"]["DeviceFile"];
@@ -72,6 +75,9 @@ export type CustomerOrgPage = Omit<components["schemas"]["PageResponse"], "items
 export type PortalUserPage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: PortalUser[];
 };
+export type AuditLogPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: AuditLog[];
+};
 export type DevicePage = Omit<components["schemas"]["PageResponse"], "items"> & {
   items: Device[];
 };
@@ -108,6 +114,8 @@ export type GreenChannelCreateRequest = components["schemas"]["GreenChannelCreat
 export type ReportRegistryBatchDownloadRequest = components["schemas"]["ReportRegistryBatchDownloadRequest"];
 export type CustomerOrgUpsertRequest = components["schemas"]["CustomerOrgUpsertRequest"];
 export type PortalUserCreateRequest = components["schemas"]["PortalUserCreateRequest"];
+export type SystemConfigUpsertRequest = components["schemas"]["SystemConfigUpsertRequest"];
+export type BusinessRuleUpsertRequest = components["schemas"]["BusinessRuleUpsertRequest"];
 export type DeviceBookingCreateRequest = components["schemas"]["DeviceBookingCreateRequest"];
 export type DeviceBookingOverrideRequest = components["schemas"]["DeviceBookingOverrideRequest"];
 export type DeviceFileUploadRequest = components["schemas"]["DeviceFileUploadRequest"];
@@ -413,6 +421,31 @@ export async function listPortalUsers(params: { page?: number; pageSize?: number
 
 export async function createPortalUser(request: PortalUserCreateRequest) {
   const response = await http.post<PortalUser>("/portal-users", request);
+  return response.data;
+}
+
+export async function listSystemConfigs() {
+  const response = await http.get<SystemConfig[]>("/system-configs");
+  return response.data;
+}
+
+export async function upsertSystemConfig(request: SystemConfigUpsertRequest) {
+  const response = await http.post<SystemConfig>("/system-configs", request);
+  return response.data;
+}
+
+export async function listBusinessRules() {
+  const response = await http.get<BusinessRule[]>("/business-rules");
+  return response.data;
+}
+
+export async function upsertBusinessRule(request: BusinessRuleUpsertRequest) {
+  const response = await http.post<BusinessRule>("/business-rules", request);
+  return response.data;
+}
+
+export async function listAuditLogs(params: { page?: number; pageSize?: number } = {}) {
+  const response = await http.get<AuditLogPage>("/audit-logs", { params });
   return response.data;
 }
 

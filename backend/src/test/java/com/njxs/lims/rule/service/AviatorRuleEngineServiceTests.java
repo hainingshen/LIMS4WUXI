@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,7 +22,22 @@ class AviatorRuleEngineServiceTests {
   void expiresCachedRuleWithinConfiguredTtl() {
     AtomicReference<String> expression = new AtomicReference<>("requiresGlp == true");
     MutableClock clock = new MutableClock(Instant.parse("2026-05-14T15:10:00Z"));
-    BusinessRuleRepository repository = ruleCode -> Optional.of(rule(ruleCode, expression.get()));
+    BusinessRuleRepository repository = new BusinessRuleRepository() {
+      @Override
+      public Optional<BusinessRule> findEnabledByRuleCode(String ruleCode) {
+        return Optional.of(rule(ruleCode, expression.get()));
+      }
+
+      @Override
+      public List<BusinessRule> list() {
+        return List.of();
+      }
+
+      @Override
+      public BusinessRule upsert(BusinessRule rule) {
+        return rule;
+      }
+    };
     RuleEngineService ruleEngineService = new AviatorRuleEngineService(repository, Duration.ofMinutes(1), clock);
 
     assertThat(ruleEngineService.evaluate("PLAN_REQUIRES_QA", Map.of("requiresGlp", true))).isTrue();

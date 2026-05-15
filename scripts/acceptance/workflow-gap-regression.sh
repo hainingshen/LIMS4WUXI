@@ -80,6 +80,9 @@ for path in \
   /inventory-transactions \
   /customer-orgs \
   /portal-users \
+  /system-configs \
+  /business-rules \
+  /audit-logs \
   /report-templates \
   /projects \
   /quotations \
@@ -95,6 +98,16 @@ do
   jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
     || fail "$path did not return a paged response"
 done
+
+for path in /system-configs /business-rules
+do
+  request GET "$path" 200 "$internal_token"
+  jq -e 'type == "array"' "$LAST_BODY" >/dev/null || fail "$path did not return an array response"
+done
+
+request GET "/audit-logs" 200 "$internal_token"
+jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
+  || fail "/audit-logs did not return a paged response"
 
 missing_blocker_id="00000000-0000-0000-0000-00000000ffff"
 request POST "/work-center/blockers/$missing_blocker_id/close" 404 "$internal_token" \

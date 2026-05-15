@@ -156,6 +156,16 @@ test("system admin can open customer master data page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "新增门户账号" })).toBeVisible();
 });
 
+test("system admin can open system governance page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.admin");
+  await page.locator("#password").fill("Internal123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("系统治理").first().click();
+  await expect(page.getByText("SYSTEM GOVERNANCE")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "审计日志" })).toBeVisible();
+});
+
 test("archive manager can open archive page", async ({ page }) => {
   await page.goto("/internal/");
   await page.locator("#username").fill("internal.archive");

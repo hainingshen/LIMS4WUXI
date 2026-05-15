@@ -140,6 +140,7 @@ internal_token="$(login internal internal.sales Sales123!)"
 tech_token="$(login internal internal.tech Sales123!)"
 business_token="$(login internal internal.business Sales123!)"
 sample_token="$(login internal internal.sample Sales123!)"
+sd_token="$(login internal internal.sd Sales123!)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
@@ -297,6 +298,35 @@ jq -e --arg id "$nonstandard_project_id" \
   '.items[] | select(.id == $id and .status == "SAMPLE_RECEIVED")' "$LAST_BODY" >/dev/null \
   || fail "sample stock-in did not move project to SAMPLE_RECEIVED"
 
+plan_payload="$(jq -nc --arg project_id "$nonstandard_project_id" '{
+  projectId: $project_id,
+  requiresConditioning: false,
+  plannedStartAt: "2026-05-20T00:00:00Z",
+  plannedFinishAt: "2026-05-30T00:00:00Z"
+}')"
+request POST "/study-plans" 201 "$tech_token" "$plan_payload"
+plan_id="$(jq -er '.id' "$LAST_BODY")"
+jq -e --arg project_id "$nonstandard_project_id" \
+  '.projectId == $project_id and .status == "DRAFT" and .requiresConditioning == false' "$LAST_BODY" >/dev/null \
+  || fail "study plan creation did not return DRAFT plan"
+
+request POST "/study-plans/$plan_id/submit-review" 200 "$sd_token"
+jq -e '.status == "READY_TO_DISPATCH"' "$LAST_BODY" >/dev/null \
+  || fail "study plan review did not move to READY_TO_DISPATCH"
+
+request POST "/study-plans/$plan_id/dispatch" 200 "$sd_token"
+jq -e '.status == "DISPATCHED"' "$LAST_BODY" >/dev/null || fail "study plan dispatch did not return DISPATCHED"
+
+request GET "/work-orders?page=1&pageSize=100" 200 "$sd_token"
+work_order_id="$(jq -er --arg project_id "$nonstandard_project_id" \
+  '.items[] | select(.projectId == $project_id) | .id' "$LAST_BODY" | head -n 1)"
+[[ -n "$work_order_id" ]] || fail "work order list does not contain project work order for $nonstandard_project_id"
+
+request GET "/projects?page=1&pageSize=100" 200 "$internal_token"
+jq -e --arg id "$nonstandard_project_id" \
+  '.items[] | select(.id == $id and .status == "IN_TESTING")' "$LAST_BODY" >/dev/null \
+  || fail "study plan dispatch did not move project to IN_TESTING"
+
 locked_payload="$(submission_payload "$suffix-locked")"
 request PATCH "/submissions/$nonstandard_submission_id" 409 "$portal_token" "$locked_payload"
 jq -e '.code == "FIELD_CHANGE_REQUIRES_CHANGE_REQUEST"' "$LAST_BODY" >/dev/null \
@@ -306,4 +336,5 @@ audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$sub
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"
 
-printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s\n' "$submission_id" "$project_id" "$quotation_id" "$contract_id"
+printf 'LOCAL COMPOSE SMOKE PASSED: submission %s project %s quotation %s contract %s plan %s work_order %s\n' \
+  "$submission_id" "$project_id" "$quotation_id" "$contract_id" "$plan_id" "$work_order_id"

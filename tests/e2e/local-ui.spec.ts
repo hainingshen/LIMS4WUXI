@@ -106,6 +106,16 @@ test("report preparer can open report workbench", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "报告列表" })).toBeVisible();
 });
 
+test("quality manager can open report registry page", async ({ page }) => {
+  await page.goto("/internal/");
+  await page.locator("#username").fill("internal.admin");
+  await page.locator("#password").fill("Internal123!");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByText("报告注册中心").first().click();
+  await expect(page.getByText("REPORT REGISTRY")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "发放日志" })).toBeVisible();
+});
+
 test("sample manager can open sample retention page", async ({ page }) => {
   await page.goto("/internal/");
   await page.locator("#username").fill("internal.sample");

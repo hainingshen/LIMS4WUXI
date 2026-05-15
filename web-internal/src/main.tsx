@@ -31,6 +31,7 @@ import "@lims4wuxi/shared/theme/limsTheme.css";
 import { ContractListPage } from "./ContractListPage";
 import { GreenChannelPage } from "./GreenChannelPage";
 import { ProjectListPage } from "./ProjectListPage";
+import { ReportRegistryPage } from "./ReportRegistryPage";
 import { ReportWorkbenchPage } from "./ReportWorkbenchPage";
 import { SampleRetentionPage } from "./SampleRetentionPage";
 import { SampleReceivingDesk } from "./SampleReceivingDesk";
@@ -86,6 +87,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     label: "报告管理",
     detail: "草稿、审核、签发和收款",
     roles: ["REPORT_PREPARER", "QC", "QA", "SD", "AUTHORIZED_SIGNATORY", "FINANCE_CASHIER"],
+  },
+  {
+    key: "report-registry",
+    label: "报告注册中心",
+    detail: "版本、发放和批量下载",
+    roles: ["REPORT_PREPARER", "QC", "QA", "SD", "AUTHORIZED_SIGNATORY", "ARCHIVE_MANAGER", "QUALITY_MANAGER"],
+    actionCode: "REPORT_REGISTRY_READ",
   },
   {
     key: "green-channels",
@@ -301,6 +309,13 @@ function renderRoute(
   }
   if (activeRoute?.key === "reports") {
     return <ReportWorkbenchPage />;
+  }
+  if (activeRoute?.key === "report-registry") {
+    return (
+      <RequireAction action="REPORT_REGISTRY_READ">
+        <ReportRegistryPage />
+      </RequireAction>
+    );
   }
   if (activeRoute?.key === "green-channels") {
     return <GreenChannelPage />;

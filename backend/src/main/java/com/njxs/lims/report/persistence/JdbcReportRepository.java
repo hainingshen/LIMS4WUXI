@@ -22,6 +22,8 @@ public class JdbcReportRepository implements ReportRepository {
       id, biz_no, project_id, report_template_id, template_code, template_version, status,
       current_version_no, is_official, watermark_type, payment_gate_status
       """;
+  private static final String SELECT_REPORT_COLUMNS = "r."
+      + SELECT_COLUMNS.strip().replaceAll("\\s+", " ").replace(", ", ", r.");
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -170,6 +172,82 @@ public class JdbcReportRepository implements ReportRepository {
     Integer count = jdbcTemplate.queryForObject(
         "select count(*) from report where deleted_at is null",
         Integer.class
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
+  public List<ReportRecord> listForCustomerOrg(UUID customerOrgId, int limit, int offset) {
+    return jdbcTemplate.query(
+        "select " + SELECT_REPORT_COLUMNS + " " + """
+        from report r
+        join project p on p.id = r.project_id
+        where p.customer_org_id = ?
+          and r.deleted_at is null
+          and p.deleted_at is null
+        order by r.created_at desc, r.biz_no desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> report(rs),
+        customerOrgId,
+        limit,
+        offset
+    );
+  }
+
+  @Override
+  public int countForCustomerOrg(UUID customerOrgId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report r
+        join project p on p.id = r.project_id
+        where p.customer_org_id = ?
+          and r.deleted_at is null
+          and p.deleted_at is null
+        """,
+        Integer.class,
+        customerOrgId
+    );
+    return count == null ? 0 : count;
+  }
+
+  @Override
+  public List<ReportRecord> listForApplicant(UUID applicantUserId, int limit, int offset) {
+    return jdbcTemplate.query(
+        "select " + SELECT_REPORT_COLUMNS + " " + """
+        from report r
+        join project p on p.id = r.project_id
+        join submission s on s.id = p.submission_id
+        where s.applicant_user_id = ?
+          and r.deleted_at is null
+          and p.deleted_at is null
+          and s.deleted_at is null
+        order by r.created_at desc, r.biz_no desc
+        limit ? offset ?
+        """,
+        (rs, rowNum) -> report(rs),
+        applicantUserId,
+        limit,
+        offset
+    );
+  }
+
+  @Override
+  public int countForApplicant(UUID applicantUserId) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from report r
+        join project p on p.id = r.project_id
+        join submission s on s.id = p.submission_id
+        where s.applicant_user_id = ?
+          and r.deleted_at is null
+          and p.deleted_at is null
+          and s.deleted_at is null
+        """,
+        Integer.class,
+        applicantUserId
     );
     return count == null ? 0 : count;
   }

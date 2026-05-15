@@ -594,6 +594,11 @@ jq -e --arg id "$nonstandard_project_id" \
   '.items[] | select(.id == $id and .status == "PAYMENT_HOLD")' "$LAST_BODY" >/dev/null \
   || fail "issued report did not move project to PAYMENT_HOLD"
 
+request GET "/reports?page=1&pageSize=100" 200 "$portal_token"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.id == $id and .status == "ISSUED_PAYMENT_LOCKED" and .paymentGateStatus == "LOCKED")' "$LAST_BODY" >/dev/null \
+  || fail "portal report list does not show own locked issued report"
+
 request GET "/reports/$report_id/official-pdf" 423 "$portal_token"
 jq -e '.code == "PAYMENT_GATE_LOCKED"' "$LAST_BODY" >/dev/null \
   || fail "locked official PDF did not return PAYMENT_GATE_LOCKED"
@@ -626,6 +631,11 @@ request GET "/reports?page=1&pageSize=100" 200 "$report_token"
 jq -e --arg id "$report_id" \
   '.items[] | select(.id == $id and .status == "GREEN_RELEASED" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
   || fail "green channel did not unlock report"
+
+request GET "/reports?page=1&pageSize=100" 200 "$portal_token"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.id == $id and .status == "GREEN_RELEASED" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
+  || fail "portal report list does not show green-unlocked report"
 
 request GET "/projects?page=1&pageSize=100" 200 "$internal_token"
 jq -e --arg id "$nonstandard_project_id" \
@@ -660,6 +670,11 @@ request GET "/reports?page=1&pageSize=100" 200 "$report_token"
 jq -e --arg id "$report_id" \
   '.items[] | select(.id == $id and .status == "RELEASED" and .paymentGateStatus == "UNLOCKED")' "$LAST_BODY" >/dev/null \
   || fail "payment receipt did not release report"
+
+request GET "/reports?page=1&pageSize=100" 200 "$portal_token"
+jq -e --arg id "$report_id" \
+  '.items[] | select(.id == $id and .status == "RELEASED" and .paymentGateStatus == "UNLOCKED")' "$LAST_BODY" >/dev/null \
+  || fail "portal report list does not show paid released report"
 
 request GET "/projects?page=1&pageSize=100" 200 "$internal_token"
 jq -e --arg id "$nonstandard_project_id" \

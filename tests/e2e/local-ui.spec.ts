@@ -54,6 +54,17 @@ test("portal projects page shows customer progress", async ({ page }) => {
   await expect(page.getByText(/P-\d{4}-/).first()).toBeVisible();
 });
 
+test("portal report preview deeplink shows watermarked report state", async ({ page }) => {
+  await page.goto("/portal/projects");
+  await page.getByRole("button", { name: /登\s*录/ }).click();
+  await page.getByRole("button", { name: "预览报告" }).first().click();
+  await expect(page.getByText("REPORT PREVIEW")).toBeVisible();
+  await expect(page).toHaveURL(/\/portal\/reports\/[^/]+\/preview$/);
+  await expect(page.getByText("报告状态")).toBeVisible();
+  await expect(page.getByText(/RPT-\d{4}-/).first()).toBeVisible();
+  await page.screenshot({ path: `${screenshotDir}/portal-report-preview-desktop.png`, fullPage: true });
+});
+
 test("internal deeplink opens master data page after login", async ({ page }) => {
   await page.goto("/internal/master-data");
   await page.locator("#username").fill("internal.admin");

@@ -28,6 +28,14 @@ public interface ReportRepository {
 
   int count();
 
+  List<ReportRecord> listForCustomerOrg(UUID customerOrgId, int limit, int offset);
+
+  int countForCustomerOrg(UUID customerOrgId);
+
+  List<ReportRecord> listForApplicant(UUID applicantUserId, int limit, int offset);
+
+  int countForApplicant(UUID applicantUserId);
+
   List<ReportWorkOrderRecord> findWorkOrders(UUID projectId, List<UUID> workOrderIds);
 
   boolean workOrdersBelongToProject(UUID projectId, List<UUID> workOrderIds);

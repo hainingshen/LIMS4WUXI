@@ -364,6 +364,19 @@ body {
   font-weight: 600;
 }
 
+.portalReportRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--lims-line-soft);
+}
+
+.portalReportTags {
+  margin-top: 6px;
+}
+
 .portalEmptyState {
   padding: 24px;
 }
@@ -387,6 +400,87 @@ body {
   min-height: 260px;
   display: grid;
   place-items: center;
+}
+
+.portalReportPreviewPage {
+  max-width: 980px;
+}
+
+.portalReportSheet {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+  border: 1px solid var(--lims-line);
+  border-radius: var(--lims-radius);
+  background: var(--lims-card-bg);
+  box-shadow: var(--lims-card-shadow);
+}
+
+.portalReportWatermark {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%) rotate(-26deg);
+  color: rgba(0, 82, 82, .08);
+  font-family: Inter, sans-serif;
+  font-size: clamp(56px, 14vw, 140px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.portalReportHeading,
+.portalReportMetaGrid,
+.portalReportBody {
+  position: relative;
+  z-index: 1;
+}
+
+.portalReportHeading {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+.portalReportHeading h4 {
+  margin: 0;
+}
+
+.portalReportMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.portalReportMetaGrid div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--lims-line-soft);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .82);
+}
+
+.portalReportMetaGrid dt {
+  color: var(--lims-ink-500);
+  font-size: 12px;
+}
+
+.portalReportMetaGrid dd {
+  overflow-wrap: anywhere;
+  margin: 4px 0 0;
+  color: var(--lims-ink-900);
+  font-size: 13px;
+}
+
+.portalReportBody {
+  min-height: 180px;
+  padding: 18px;
+  border: 1px solid var(--lims-line-soft);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .72);
 }
 
 .mobileSurface {
@@ -423,6 +517,14 @@ body {
 
   .portalProjectTopline {
     display: grid;
+  }
+
+  .portalReportRow {
+    display: grid;
+  }
+
+  .portalReportMetaGrid {
+    grid-template-columns: 1fr;
   }
 
   .portalSubmissionItem {

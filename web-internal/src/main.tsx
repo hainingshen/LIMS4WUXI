@@ -31,6 +31,7 @@ import "@lims4wuxi/shared/theme/limsTheme.css";
 import { ContractListPage } from "./ContractListPage";
 import { DeviceFilePage } from "./DeviceFilePage";
 import { GreenChannelPage } from "./GreenChannelPage";
+import { ImportExportTaskPage } from "./ImportExportTaskPage";
 import { ProjectListPage } from "./ProjectListPage";
 import { ReportRegistryPage } from "./ReportRegistryPage";
 import { ReportWorkbenchPage } from "./ReportWorkbenchPage";
@@ -102,6 +103,13 @@ const INTERNAL_ROUTES: readonly InternalRoute[] = [
     detail: "台账、证书和 SOP 有效性",
     roles: ["INSPECTOR", "EQUIPMENT_MANAGER", "QUALITY_MANAGER"],
     actionCode: "DEVICE_FILE_READ",
+  },
+  {
+    key: "import-export-tasks",
+    label: "导入导出任务",
+    detail: "预校验、执行和结果文件",
+    roles: ["SYSTEM_ADMIN", "QUALITY_MANAGER", "ARCHIVE_MANAGER"],
+    actionCode: "IMPORT_EXPORT_TASK_CREATE",
   },
   {
     key: "green-channels",
@@ -329,6 +337,13 @@ function renderRoute(
     return (
       <RequireAction action="DEVICE_FILE_READ">
         <DeviceFilePage />
+      </RequireAction>
+    );
+  }
+  if (activeRoute?.key === "import-export-tasks") {
+    return (
+      <RequireAction action="IMPORT_EXPORT_TASK_CREATE">
+        <ImportExportTaskPage />
       </RequireAction>
     );
   }

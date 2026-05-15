@@ -559,6 +559,18 @@ registry_task_id="$(jq -er '.id' "$LAST_BODY")"
 jq -e '.taskType == "REPORT_BATCH_DOWNLOAD" and .entityType == "REPORT" and .status == "PENDING"' "$LAST_BODY" >/dev/null \
   || fail "report registry batch download did not create pending report export task"
 
+request GET "/import-export-tasks?page=1&pageSize=100" 200 "$admin_token"
+jq -e --arg id "$registry_task_id" \
+  '.items[] | select(.id == $id and .taskType == "REPORT_BATCH_DOWNLOAD" and .entityType == "REPORT" and .status == "PENDING")' "$LAST_BODY" >/dev/null \
+  || fail "import/export task list did not contain report batch task"
+
+request POST "/import-export-tasks/$registry_task_id/run" 202 "$admin_token"
+jq -e '.status == "SUCCESS" and .resultFileId != null and .errorSummary == "SUCCESS: REPORT_BATCH_DOWNLOAD completed"' "$LAST_BODY" >/dev/null \
+  || fail "import/export report batch task did not complete with result file"
+
+request GET "/import-export-tasks/$registry_task_id/result-file" 200 "$admin_token"
+grep -q "$registry_task_id" "$LAST_BODY" || fail "import/export result file did not contain task id"
+
 device_id="$(cat /proc/sys/kernel/random/uuid)"
 device_file_source_id="$(cat /proc/sys/kernel/random/uuid)"
 db_scalar "

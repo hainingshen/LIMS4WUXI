@@ -2,6 +2,7 @@ package com.njxs.lims.submission;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -89,6 +90,33 @@ class SubmissionDraftFlowTests {
             .map(item -> item.get("id").asText())
             .toList())
         .contains(validDraftId.toString());
+  }
+
+  @Test
+  void draftCanBeUpdatedWithoutFullRequiredFieldsBeforeSubmit() throws Exception {
+    String applicantToken = login("portal", "portal.applicant", "Applicant123!");
+    UUID draftId = createDraft(applicantToken, completeSubmissionData());
+
+    ObjectNode partialData = objectMapper.createObjectNode();
+    partialData.put("sponsorNameZh", "Partial Draft Sponsor");
+    ObjectNode request = objectMapper.createObjectNode();
+    request.put("formCode", "SUBMISSION_VER15");
+    request.put("schemaVersion", 1);
+    request.set("data", partialData);
+
+    mockMvc.perform(patch("/submissions/{id}", draftId)
+            .header(HttpHeaders.AUTHORIZATION, bearer(applicantToken))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(draftId.toString()))
+        .andExpect(jsonPath("$.status").value("DRAFT"));
+
+    mockMvc.perform(post("/submissions/{id}/submit", draftId)
+            .header(HttpHeaders.AUTHORIZATION, bearer(applicantToken)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.details.missingFields").isArray());
   }
 
   private UUID createDraft(String accessToken, ObjectNode data) throws Exception {

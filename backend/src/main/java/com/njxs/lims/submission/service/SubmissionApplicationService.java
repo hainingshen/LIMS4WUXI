@@ -159,7 +159,6 @@ public class SubmissionApplicationService {
         ));
     FormSchemaRecord schema = formSchemaService.current(request.formCode(), request.schemaVersion());
     JsonNode data = request.data();
-    formSchemaValidator.validate(schema.schemaJson(), data);
 
     if (current.changeLockedAt() != null) {
       FormSchemaRecord lockedSchema = formSchemaService.current(current.formCode(), current.schemaVersion());

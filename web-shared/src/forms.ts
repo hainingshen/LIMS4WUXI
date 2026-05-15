@@ -4,6 +4,9 @@ import { DICTIONARY_ITEMS, type DictionaryCode } from "./generated/dictionaries"
 
 export type FormSchema = components["schemas"]["FormSchema"];
 export type Submission = components["schemas"]["Submission"];
+export type SubmissionPage = Omit<components["schemas"]["PageResponse"], "items"> & {
+  items: Submission[];
+};
 export type SubmissionCreateRequest = components["schemas"]["SubmissionCreateRequest"];
 export type SubmissionFormCode = SubmissionCreateRequest["formCode"];
 export type RuntimeDictionaryItem = components["schemas"]["DictionaryItem"];
@@ -43,6 +46,32 @@ export async function createSubmissionDraft(
 ) {
   const request: SubmissionCreateRequest = { formCode, schemaVersion, data };
   const response = await http.post<Submission>("/submissions", request);
+  return response.data;
+}
+
+export async function updateSubmissionDraft(
+  id: string,
+  formCode: SubmissionFormCode,
+  schemaVersion: number,
+  data: Record<string, unknown>,
+) {
+  const request: SubmissionCreateRequest = { formCode, schemaVersion, data };
+  const response = await http.patch<Submission>(`/submissions/${id}`, request);
+  return response.data;
+}
+
+export async function submitSubmission(id: string) {
+  const response = await http.post<Submission>(`/submissions/${id}/submit`);
+  return response.data;
+}
+
+export async function acceptSubmission(id: string) {
+  const response = await http.post<Submission>(`/submissions/${id}/accept`);
+  return response.data;
+}
+
+export async function listSubmissions(params: { page?: number; pageSize?: number } = {}) {
+  const response = await http.get<SubmissionPage>("/submissions", { params });
   return response.data;
 }
 

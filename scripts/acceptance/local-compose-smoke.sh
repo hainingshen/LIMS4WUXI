@@ -166,6 +166,9 @@ jq -e --arg id "$submission_id" '.items | map(.id) | index($id) != null' "$LAST_
 request POST "/submissions/$submission_id/accept" 403 "$portal_token"
 jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "portal accept did not return FORBIDDEN"
 
+request POST "/submissions/$submission_id/accept" 200 "$internal_token"
+jq -e '.status == "ACCEPTED"' "$LAST_BODY" >/dev/null || fail "sales accept did not return ACCEPTED"
+
 audit_count="$(db_scalar "select count(*) from audit_log where entity_id = '$submission_id' and action_code = 'SUBMISSION_CREATE' and result = 'SUCCESS';")"
 [[ "$audit_count" -ge 1 ]] || fail "expected at least one successful SUBMISSION_CREATE audit row, got $audit_count"
 printf 'OK: audit_log has %s successful SUBMISSION_CREATE rows for %s\n' "$audit_count" "$submission_id"

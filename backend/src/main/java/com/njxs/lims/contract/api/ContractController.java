@@ -7,6 +7,8 @@ import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.contract.persistence.ContractRepository;
 import com.njxs.lims.contract.service.ContractService;
+import com.njxs.lims.portal.PortalAccessPolicy;
+import com.njxs.lims.portal.PortalListScope;
 import com.njxs.lims.permission.RequiresAction;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -29,10 +31,16 @@ public class ContractController {
 
   private final ContractRepository contractRepository;
   private final ContractService contractService;
+  private final PortalAccessPolicy portalAccessPolicy;
 
-  public ContractController(ContractRepository contractRepository, ContractService contractService) {
+  public ContractController(
+      ContractRepository contractRepository,
+      ContractService contractService,
+      PortalAccessPolicy portalAccessPolicy
+  ) {
     this.contractRepository = contractRepository;
     this.contractService = contractService;
+    this.portalAccessPolicy = portalAccessPolicy;
   }
 
   @GetMapping
@@ -61,7 +69,8 @@ public class ContractController {
       int normalizedPageSize,
       int offset
   ) {
-    if (hasRole(principal, "CUSTOMER_APPLICANT")) {
+    PortalListScope scope = portalAccessPolicy.resolveListScope(principal);
+    if (scope == PortalListScope.OWN) {
       return new PageResponse<>(
           contractRepository.listForApplicant(principal.userId(), normalizedPageSize, offset)
               .stream()
@@ -72,8 +81,7 @@ public class ContractController {
           contractRepository.countForApplicant(principal.userId())
       );
     }
-    if (principal.orgId() != null
-        && (hasRole(principal, "CUSTOMER_ORG_ADMIN") || hasRole(principal, "CUSTOMER_VIEWER"))) {
+    if (scope == PortalListScope.ORG) {
       return new PageResponse<>(
           contractRepository.listForCustomerOrg(principal.orgId(), normalizedPageSize, offset)
               .stream()
@@ -85,10 +93,6 @@ public class ContractController {
       );
     }
     return new PageResponse<>(List.of(), normalizedPage, normalizedPageSize, 0);
-  }
-
-  private boolean hasRole(AuthPrincipal principal, String roleCode) {
-    return principal.roles().contains(roleCode);
   }
 
   @PostMapping

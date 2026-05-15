@@ -176,7 +176,12 @@ public class JdbcProjectRepository implements ProjectRepository {
         "select " + SELECT_PROJECT_COLUMNS + " " + """
         from project p
         join submission s on s.id = p.submission_id
+        join app_user u on u.id = s.applicant_user_id
         where s.applicant_user_id = ?
+          and p.customer_org_id = u.customer_org_id
+          and s.customer_org_id = u.customer_org_id
+          and u.client_type = 'PORTAL'
+          and u.customer_org_id is not null
           and p.deleted_at is null
           and s.deleted_at is null
         order by p.updated_at desc, p.created_at desc
@@ -196,7 +201,12 @@ public class JdbcProjectRepository implements ProjectRepository {
         select count(*)
         from project p
         join submission s on s.id = p.submission_id
+        join app_user u on u.id = s.applicant_user_id
         where s.applicant_user_id = ?
+          and p.customer_org_id = u.customer_org_id
+          and s.customer_org_id = u.customer_org_id
+          and u.client_type = 'PORTAL'
+          and u.customer_org_id is not null
           and p.deleted_at is null
           and s.deleted_at is null
         """,

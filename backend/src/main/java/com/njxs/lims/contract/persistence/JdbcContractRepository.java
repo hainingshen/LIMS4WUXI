@@ -159,7 +159,13 @@ public class JdbcContractRepository implements ContractRepository {
         from contract c
         join project p on p.id = c.project_id
         join submission s on s.id = p.submission_id
+        join app_user u on u.id = s.applicant_user_id
         where s.applicant_user_id = ?
+          and c.customer_org_id = u.customer_org_id
+          and p.customer_org_id = u.customer_org_id
+          and s.customer_org_id = u.customer_org_id
+          and u.client_type = 'PORTAL'
+          and u.customer_org_id is not null
           and c.deleted_at is null
           and p.deleted_at is null
           and s.deleted_at is null
@@ -181,7 +187,13 @@ public class JdbcContractRepository implements ContractRepository {
         from contract c
         join project p on p.id = c.project_id
         join submission s on s.id = p.submission_id
+        join app_user u on u.id = s.applicant_user_id
         where s.applicant_user_id = ?
+          and c.customer_org_id = u.customer_org_id
+          and p.customer_org_id = u.customer_org_id
+          and s.customer_org_id = u.customer_org_id
+          and u.client_type = 'PORTAL'
+          and u.customer_org_id is not null
           and c.deleted_at is null
           and p.deleted_at is null
           and s.deleted_at is null
@@ -243,8 +255,14 @@ public class JdbcContractRepository implements ContractRepository {
         from contract c
         join project p on p.id = c.project_id
         join submission s on s.id = p.submission_id
+        join app_user u on u.id = s.applicant_user_id
         where c.id = ?
           and s.applicant_user_id = ?
+          and c.customer_org_id = u.customer_org_id
+          and p.customer_org_id = u.customer_org_id
+          and s.customer_org_id = u.customer_org_id
+          and u.client_type = 'PORTAL'
+          and u.customer_org_id is not null
           and c.deleted_at is null
           and p.deleted_at is null
           and s.deleted_at is null

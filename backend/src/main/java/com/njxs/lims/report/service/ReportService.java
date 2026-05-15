@@ -8,6 +8,8 @@ import com.njxs.lims.auth.domain.AuthPrincipal;
 import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.exception.BusinessException;
+import com.njxs.lims.portal.PortalAccessPolicy;
+import com.njxs.lims.portal.PortalListScope;
 import com.njxs.lims.project.domain.Project;
 import com.njxs.lims.project.domain.ProjectStatus;
 import com.njxs.lims.project.persistence.ProjectRepository;
@@ -51,6 +53,7 @@ public class ReportService {
   private final ProjectRepository projectRepository;
   private final ProjectStatusTransitionService projectStatusTransitionService;
   private final ObjectMapper objectMapper;
+  private final PortalAccessPolicy portalAccessPolicy;
 
   public ReportService(
       ReportRepository reportRepository,
@@ -61,7 +64,8 @@ public class ReportService {
       ReportStateMachine reportStateMachine,
       ProjectRepository projectRepository,
       ProjectStatusTransitionService projectStatusTransitionService,
-      ObjectMapper objectMapper
+      ObjectMapper objectMapper,
+      PortalAccessPolicy portalAccessPolicy
   ) {
     this.reportRepository = reportRepository;
     this.reportTemplateRepository = reportTemplateRepository;
@@ -72,6 +76,7 @@ public class ReportService {
     this.projectRepository = projectRepository;
     this.projectStatusTransitionService = projectStatusTransitionService;
     this.objectMapper = objectMapper;
+    this.portalAccessPolicy = portalAccessPolicy;
   }
 
   public PageResponse<ReportResponse> list(int page, int pageSize) {
@@ -105,7 +110,8 @@ public class ReportService {
       int normalizedPageSize
   ) {
     int offset = (normalizedPage - 1) * normalizedPageSize;
-    if (hasRole(principal, "CUSTOMER_APPLICANT")) {
+    PortalListScope scope = portalAccessPolicy.resolveListScope(principal);
+    if (scope == PortalListScope.OWN) {
       return new PageResponse<>(
           reportRepository.listForApplicant(principal.userId(), normalizedPageSize, offset)
               .stream()
@@ -116,8 +122,7 @@ public class ReportService {
           reportRepository.countForApplicant(principal.userId())
       );
     }
-    if (principal.orgId() != null
-        && (hasRole(principal, "CUSTOMER_ORG_ADMIN") || hasRole(principal, "CUSTOMER_VIEWER"))) {
+    if (scope == PortalListScope.ORG) {
       return new PageResponse<>(
           reportRepository.listForCustomerOrg(principal.orgId(), normalizedPageSize, offset)
               .stream()
@@ -137,10 +142,6 @@ public class ReportService {
 
   private int normalizedPageSize(int pageSize) {
     return Math.min(Math.max(pageSize, 1), 100);
-  }
-
-  private boolean hasRole(AuthPrincipal principal, String roleCode) {
-    return principal.roles().contains(roleCode);
   }
 
   @Transactional

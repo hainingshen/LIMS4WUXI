@@ -64,6 +64,17 @@ login() {
 
 internal_token="$(login internal internal.admin Internal123!)"
 portal_token="$(login portal portal.applicant Applicant123!)"
+portal_viewer_token="$(login portal portal.viewer Viewer123!)"
+
+request GET "/auth/me" 200 "$portal_token"
+portal_org_id="$(jq -er '.customerOrgId' "$LAST_BODY")"
+
+for path in /submissions /projects /reports /contracts
+do
+  request GET "$path?page=1&pageSize=100" 200 "$portal_viewer_token"
+  jq -e '.total == 0 and (.items | length == 0)' "$LAST_BODY" >/dev/null \
+    || fail "portal viewer without grants should not see $path"
+done
 
 for path in \
   /study-plans \
@@ -94,17 +105,31 @@ do
   jq -e '.code == "FORBIDDEN"' "$LAST_BODY" >/dev/null || fail "$path did not return FORBIDDEN"
 done
 
-request GET "/projects" 200 "$portal_token"
+request GET "/projects?page=1&pageSize=100" 200 "$portal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/projects did not return a portal-scoped paged response"
+jq -e --arg org_id "$portal_org_id" 'all(.items[]?; .customerOrgId == $org_id)' "$LAST_BODY" >/dev/null \
+  || fail "/projects returned data outside portal customer org $portal_org_id"
+cp "$LAST_BODY" "$TMP_DIR/portal-projects.json"
 
-request GET "/reports" 200 "$portal_token"
+request GET "/submissions?page=1&pageSize=100" 200 "$portal_token"
+jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
+  || fail "/submissions did not return a portal-scoped paged response"
+jq -e --arg org_id "$portal_org_id" 'all(.items[]?; .customerOrgId == $org_id)' "$LAST_BODY" >/dev/null \
+  || fail "/submissions returned data outside portal customer org $portal_org_id"
+
+request GET "/reports?page=1&pageSize=100" 200 "$portal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/reports did not return a portal-scoped paged response"
+jq -e --slurpfile projects "$TMP_DIR/portal-projects.json" \
+  '($projects[0].items | map(.id)) as $ids | all(.items[]?; .projectId as $project_id | ($ids | index($project_id) != null))' \
+  "$LAST_BODY" >/dev/null || fail "/reports returned data outside visible portal projects"
 
-request GET "/contracts" 200 "$portal_token"
+request GET "/contracts?page=1&pageSize=100" 200 "$portal_token"
 jq -e '.items and (.page >= 1) and (.pageSize >= 1) and (.total >= 0)' "$LAST_BODY" >/dev/null \
   || fail "/contracts did not return a portal-scoped paged response"
+jq -e --arg org_id "$portal_org_id" 'all(.items[]?; .customerOrgId == $org_id)' "$LAST_BODY" >/dev/null \
+  || fail "/contracts returned data outside portal customer org $portal_org_id"
 
 for path in /projects /quotations /contracts /archive-items /device-bookings /inventory-batches /inventory-transactions /customer-orgs /portal-users
 do

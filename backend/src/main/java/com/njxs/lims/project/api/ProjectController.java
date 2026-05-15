@@ -6,6 +6,8 @@ import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.auth.service.AuthContext;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.permission.RequiresAction;
+import com.njxs.lims.portal.PortalAccessPolicy;
+import com.njxs.lims.portal.PortalListScope;
 import com.njxs.lims.project.persistence.ProjectRepository;
 import com.njxs.lims.project.service.NonstandardReviewService;
 import com.njxs.lims.quotation.api.QuotationCreateRequest;
@@ -33,15 +35,18 @@ public class ProjectController {
   private final ProjectRepository projectRepository;
   private final NonstandardReviewService nonstandardReviewService;
   private final QuotationService quotationService;
+  private final PortalAccessPolicy portalAccessPolicy;
 
   public ProjectController(
       ProjectRepository projectRepository,
       NonstandardReviewService nonstandardReviewService,
-      QuotationService quotationService
+      QuotationService quotationService,
+      PortalAccessPolicy portalAccessPolicy
   ) {
     this.projectRepository = projectRepository;
     this.nonstandardReviewService = nonstandardReviewService;
     this.quotationService = quotationService;
+    this.portalAccessPolicy = portalAccessPolicy;
   }
 
   @GetMapping
@@ -70,7 +75,8 @@ public class ProjectController {
       int normalizedPageSize,
       int offset
   ) {
-    if (hasRole(principal, "CUSTOMER_APPLICANT")) {
+    PortalListScope scope = portalAccessPolicy.resolveListScope(principal);
+    if (scope == PortalListScope.OWN) {
       return new PageResponse<>(
           projectRepository.listForApplicant(principal.userId(), normalizedPageSize, offset)
               .stream()
@@ -81,8 +87,7 @@ public class ProjectController {
           projectRepository.countForApplicant(principal.userId())
       );
     }
-    if (principal.orgId() != null
-        && (hasRole(principal, "CUSTOMER_ORG_ADMIN") || hasRole(principal, "CUSTOMER_VIEWER"))) {
+    if (scope == PortalListScope.ORG) {
       return new PageResponse<>(
           projectRepository.listForCustomerOrg(principal.orgId(), normalizedPageSize, offset)
               .stream()
@@ -94,10 +99,6 @@ public class ProjectController {
       );
     }
     return new PageResponse<>(List.of(), normalizedPage, normalizedPageSize, 0);
-  }
-
-  private boolean hasRole(AuthPrincipal principal, String roleCode) {
-    return principal.roles().contains(roleCode);
   }
 
   @PostMapping("/{id}/nonstandard-review/start")

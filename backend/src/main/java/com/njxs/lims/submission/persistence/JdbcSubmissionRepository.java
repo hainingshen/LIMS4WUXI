@@ -38,6 +38,8 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
       sample_disposition_remark,
       change_locked_at
       """;
+  private static final String SELECT_SUBMISSION_COLUMNS = "s."
+      + SELECT_COLUMNS.strip().replaceAll("\\s+", " ").replace(", ", ", s.");
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -89,11 +91,15 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
   @Override
   public List<SubmissionRecord> listForApplicant(UUID applicantUserId, int limit, int offset) {
     return jdbcTemplate.query(
-        "select " + SELECT_COLUMNS + """
-        from submission
-        where applicant_user_id = ?
-          and deleted_at is null
-        order by updated_at desc, created_at desc
+        "select " + SELECT_SUBMISSION_COLUMNS + " " + """
+        from submission s
+        join app_user u on u.id = s.applicant_user_id
+        where s.applicant_user_id = ?
+          and s.customer_org_id = u.customer_org_id
+          and u.client_type = 'PORTAL'
+          and u.customer_org_id is not null
+          and s.deleted_at is null
+        order by s.updated_at desc, s.created_at desc
         limit ? offset ?
         """,
         (rs, rowNum) -> record(rs),
@@ -108,9 +114,13 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
     return count(
         """
         select count(*)
-        from submission
-        where applicant_user_id = ?
-          and deleted_at is null
+        from submission s
+        join app_user u on u.id = s.applicant_user_id
+        where s.applicant_user_id = ?
+          and s.customer_org_id = u.customer_org_id
+          and u.client_type = 'PORTAL'
+          and u.customer_org_id is not null
+          and s.deleted_at is null
         """,
         applicantUserId
     );
@@ -183,10 +193,14 @@ public class JdbcSubmissionRepository implements SubmissionRepository {
     return count(
         """
         select count(*)
-        from submission
-        where id = ?
-          and applicant_user_id = ?
-          and deleted_at is null
+        from submission s
+        join app_user u on u.id = s.applicant_user_id
+        where s.id = ?
+          and s.applicant_user_id = ?
+          and s.customer_org_id = u.customer_org_id
+          and u.client_type = 'PORTAL'
+          and u.customer_org_id is not null
+          and s.deleted_at is null
         """,
         id,
         applicantUserId

@@ -187,6 +187,7 @@ suffix="$(date +%s)"
 
 request GET "/auth/me" 200 "$portal_token"
 jq -e '.clientType == "PORTAL"' "$LAST_BODY" >/dev/null || fail "portal auth/me did not return PORTAL clientType"
+portal_org_id="$(jq -er '.customerOrgId' "$LAST_BODY")"
 
 request GET "/auth/me" 200 "$internal_token"
 jq -e '.clientType == "INTERNAL"' "$LAST_BODY" >/dev/null || fail "internal auth/me did not return INTERNAL clientType"
@@ -318,6 +319,8 @@ payload="$(submission_payload "$suffix")"
 request POST "/submissions" 201 "$portal_token" "$payload"
 submission_id="$(jq -er '.id' "$LAST_BODY")"
 jq -e '.status == "DRAFT"' "$LAST_BODY" >/dev/null || fail "created submission is not DRAFT"
+jq -e --arg org_id "$portal_org_id" '.customerOrgId == $org_id' "$LAST_BODY" >/dev/null \
+  || fail "created portal submission is not bound to portal customer org $portal_org_id"
 
 request POST "/submissions/$submission_id/submit" 200 "$portal_token"
 jq -e '.status == "SUBMITTED"' "$LAST_BODY" >/dev/null || fail "submitted submission is not SUBMITTED"
@@ -360,6 +363,8 @@ jq -e --arg id "$project_id" '.items | map(.id) | index($id) != null' "$LAST_BOD
 request GET "/projects?page=1&pageSize=20" 200 "$portal_token"
 jq -e --arg id "$project_id" '.items | map(.id) | index($id) != null' "$LAST_BODY" >/dev/null \
   || fail "portal project list does not contain own project $project_id"
+jq -e --arg org_id "$portal_org_id" 'all(.items[]?; .customerOrgId == $org_id)' "$LAST_BODY" >/dev/null \
+  || fail "portal project list returned data outside portal customer org $portal_org_id"
 
 blocker_expected_at="$(date -u -d '+1 day' '+%Y-%m-%dT%H:%M:%SZ')"
 blocker_payload="$(jq -nc --arg project_id "$project_id" --arg expected_at "$blocker_expected_at" '{
@@ -482,6 +487,8 @@ request GET "/contracts?page=1&pageSize=100" 200 "$portal_token"
 jq -e --arg id "$contract_id" \
   '.items[] | select(.id == $id and .status == "PENDING_SIGN")' "$LAST_BODY" >/dev/null \
   || fail "portal contract list does not show own pending contract"
+jq -e --arg org_id "$portal_org_id" 'all(.items[]?; .customerOrgId == $org_id)' "$LAST_BODY" >/dev/null \
+  || fail "portal contract list returned data outside portal customer org $portal_org_id"
 
 signed_payload="$(jq -nc '{signedAt:"2026-05-15T00:00:00Z"}')"
 request POST "/contracts/$contract_id/mark-signed" 200 "$portal_token" "$signed_payload"
@@ -492,6 +499,8 @@ request GET "/contracts?page=1&pageSize=100" 200 "$portal_token"
 jq -e --arg id "$contract_id" \
   '.items[] | select(.id == $id and .status == "SIGNED")' "$LAST_BODY" >/dev/null \
   || fail "portal contract list does not show signed contract"
+jq -e --arg org_id "$portal_org_id" 'all(.items[]?; .customerOrgId == $org_id)' "$LAST_BODY" >/dev/null \
+  || fail "portal signed contract list returned data outside portal customer org $portal_org_id"
 
 request GET "/projects?page=1&pageSize=20" 200 "$internal_token"
 jq -e --arg id "$nonstandard_project_id" \
@@ -712,10 +721,16 @@ jq -e --arg id "$nonstandard_project_id" \
   '.items[] | select(.id == $id and .status == "PAYMENT_HOLD")' "$LAST_BODY" >/dev/null \
   || fail "issued report did not move project to PAYMENT_HOLD"
 
+request GET "/projects?page=1&pageSize=100" 200 "$portal_token"
+cp "$LAST_BODY" "$TMP_DIR/portal-projects.json"
 request GET "/reports?page=1&pageSize=100" 200 "$portal_token"
 jq -e --arg id "$report_id" \
   '.items[] | select(.id == $id and .status == "ISSUED_PAYMENT_LOCKED" and .paymentGateStatus == "LOCKED")' "$LAST_BODY" >/dev/null \
   || fail "portal report list does not show own locked issued report"
+jq -e --slurpfile projects "$TMP_DIR/portal-projects.json" \
+  '($projects[0].items | map(.id)) as $ids | all(.items[]?; .projectId as $project_id | ($ids | index($project_id) != null))' \
+  "$LAST_BODY" >/dev/null \
+  || fail "portal report list returned data outside the visible portal project"
 
 request GET "/reports/$report_id/official-pdf" 423 "$portal_token"
 jq -e '.code == "PAYMENT_GATE_LOCKED"' "$LAST_BODY" >/dev/null \
@@ -750,10 +765,16 @@ jq -e --arg id "$report_id" \
   '.items[] | select(.id == $id and .status == "GREEN_RELEASED" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
   || fail "green channel did not unlock report"
 
+request GET "/projects?page=1&pageSize=100" 200 "$portal_token"
+cp "$LAST_BODY" "$TMP_DIR/portal-projects.json"
 request GET "/reports?page=1&pageSize=100" 200 "$portal_token"
 jq -e --arg id "$report_id" \
   '.items[] | select(.id == $id and .status == "GREEN_RELEASED" and .paymentGateStatus == "GREEN_UNLOCKED")' "$LAST_BODY" >/dev/null \
   || fail "portal report list does not show green-unlocked report"
+jq -e --slurpfile projects "$TMP_DIR/portal-projects.json" \
+  '($projects[0].items | map(.id)) as $ids | all(.items[]?; .projectId as $project_id | ($ids | index($project_id) != null))' \
+  "$LAST_BODY" >/dev/null \
+  || fail "portal green-unlocked report list returned data outside the visible portal project"
 
 request GET "/projects?page=1&pageSize=100" 200 "$internal_token"
 jq -e --arg id "$nonstandard_project_id" \

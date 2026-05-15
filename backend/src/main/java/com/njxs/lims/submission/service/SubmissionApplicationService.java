@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.njxs.lims.auth.domain.AuthPrincipal;
+import com.njxs.lims.auth.domain.ClientType;
 import com.njxs.lims.common.api.PageResponse;
 import com.njxs.lims.common.domain.BaseEntity;
 import com.njxs.lims.common.exception.BusinessException;
@@ -14,6 +15,8 @@ import com.njxs.lims.customer.persistence.CustomerRepository;
 import com.njxs.lims.form.domain.FormSchemaRecord;
 import com.njxs.lims.form.service.FormSchemaService;
 import com.njxs.lims.form.service.FormSchemaValidator;
+import com.njxs.lims.portal.PortalAccessPolicy;
+import com.njxs.lims.portal.PortalListScope;
 import com.njxs.lims.submission.api.SubmissionDraftRequest;
 import com.njxs.lims.submission.api.SubmissionResponse;
 import com.njxs.lims.submission.domain.Submission;
@@ -42,6 +45,7 @@ public class SubmissionApplicationService {
   private final FormSchemaService formSchemaService;
   private final FormSchemaValidator formSchemaValidator;
   private final ObjectMapper objectMapper;
+  private final PortalAccessPolicy portalAccessPolicy;
 
   public SubmissionApplicationService(
       SubmissionRepository submissionRepository,
@@ -49,7 +53,8 @@ public class SubmissionApplicationService {
       CustomerRepository customerRepository,
       FormSchemaService formSchemaService,
       FormSchemaValidator formSchemaValidator,
-      ObjectMapper objectMapper
+      ObjectMapper objectMapper,
+      PortalAccessPolicy portalAccessPolicy
   ) {
     this.submissionRepository = submissionRepository;
     this.submissionBaseRepository = submissionBaseRepository;
@@ -57,6 +62,7 @@ public class SubmissionApplicationService {
     this.formSchemaService = formSchemaService;
     this.formSchemaValidator = formSchemaValidator;
     this.objectMapper = objectMapper;
+    this.portalAccessPolicy = portalAccessPolicy;
   }
 
   @Transactional
@@ -64,7 +70,7 @@ public class SubmissionApplicationService {
     FormSchemaRecord schema = formSchemaService.current(request.formCode(), request.schemaVersion());
     JsonNode data = request.data();
 
-    UUID customerOrgId = UUID.randomUUID();
+    UUID customerOrgId = customerOrgIdForDraft(principal);
     UUID customerContactId = UUID.randomUUID();
     UUID manufacturerId = UUID.randomUUID();
     UUID submissionId = UUID.randomUUID();
@@ -72,7 +78,9 @@ public class SubmissionApplicationService {
     Instant now = Instant.now();
     int year = Year.now().getValue();
 
-    customerRepository.saveCustomerOrg(customerOrg(customerOrgId, data, principal.userId(), now));
+    if (principal.clientType() != ClientType.PORTAL) {
+      customerRepository.saveCustomerOrg(customerOrg(customerOrgId, data, principal.userId(), now));
+    }
     customerRepository.saveCustomerContact(
         customerContact(customerContactId, customerOrgId, data, principal.userId(), now)
     );
@@ -106,15 +114,16 @@ public class SubmissionApplicationService {
 
     List<SubmissionRecord> records;
     int total;
-    if (hasRole(principal, "SALES_REP")) {
-      records = submissionRepository.listSubmittedForAssignedSales(principal.userId(), normalizedPageSize, offset);
-      total = submissionRepository.countSubmittedForAssignedSales(principal.userId());
-    } else if (hasRole(principal, "CUSTOMER_ORG_ADMIN") && principal.orgId() != null) {
+    PortalListScope portalScope = portalAccessPolicy.resolveListScope(principal);
+    if (portalScope == PortalListScope.ORG) {
       records = submissionRepository.listForCustomerOrg(principal.orgId(), normalizedPageSize, offset);
       total = submissionRepository.countForCustomerOrg(principal.orgId());
-    } else if (hasRole(principal, "CUSTOMER_APPLICANT")) {
+    } else if (portalScope == PortalListScope.OWN) {
       records = submissionRepository.listForApplicant(principal.userId(), normalizedPageSize, offset);
       total = submissionRepository.countForApplicant(principal.userId());
+    } else if (hasRole(principal, "SALES_REP")) {
+      records = submissionRepository.listSubmittedForAssignedSales(principal.userId(), normalizedPageSize, offset);
+      total = submissionRepository.countSubmittedForAssignedSales(principal.userId());
     } else {
       records = List.of();
       total = 0;
@@ -219,6 +228,29 @@ public class SubmissionApplicationService {
     org.setAddressEn(text(data, "sponsorAddressEn"));
     org.setStatus("ACTIVE");
     return org;
+  }
+
+  private UUID customerOrgIdForDraft(AuthPrincipal principal) {
+    if (principal.clientType() != ClientType.PORTAL) {
+      return UUID.randomUUID();
+    }
+    if (principal.orgId() == null) {
+      throw new BusinessException(
+          "PORTAL_CUSTOMER_ORG_REQUIRED",
+          "客户账号未绑定委托单位，不能创建送检单",
+          HttpStatus.CONFLICT,
+          Map.of("userId", principal.userId())
+      );
+    }
+    if (!customerRepository.existsCustomerOrg(principal.orgId())) {
+      throw new BusinessException(
+          "PORTAL_CUSTOMER_ORG_NOT_FOUND",
+          "客户账号绑定的委托单位不存在",
+          HttpStatus.CONFLICT,
+          Map.of("customerOrgId", principal.orgId())
+      );
+    }
+    return principal.orgId();
   }
 
   private CustomerContact customerContact(UUID id, UUID customerOrgId, JsonNode data, UUID actorUserId, Instant now) {

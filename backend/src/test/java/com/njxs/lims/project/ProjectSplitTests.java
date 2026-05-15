@@ -94,6 +94,14 @@ class ProjectSplitTests {
     assertThat(project.get("submissionId").asText()).isEqualTo(submissionId.toString());
     assertThat(project.get("customerOrgId").asText()).isEqualTo(customerOrgId);
     assertThat(project.get("status").asText()).isEqualTo("ACCEPTED");
+
+    String portalProjectListResponse = mockMvc.perform(get("/projects")
+            .header(HttpHeaders.AUTHORIZATION, bearer(applicantToken)))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+    assertThat(portalProjectListResponse).contains(project.get("id").asText(), submissionId.toString());
   }
 
   private UUID createDraft(String accessToken) throws Exception {

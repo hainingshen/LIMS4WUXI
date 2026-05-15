@@ -17,6 +17,14 @@ public interface ProjectRepository {
 
   int count();
 
+  List<Project> listForCustomerOrg(UUID customerOrgId, int limit, int offset);
+
+  int countForCustomerOrg(UUID customerOrgId);
+
+  List<Project> listForApplicant(UUID applicantUserId, int limit, int offset);
+
+  int countForApplicant(UUID applicantUserId);
+
   void updateStatus(Project project, UUID actorUserId);
 
   boolean existsByAssignedSales(UUID projectId, UUID userId);

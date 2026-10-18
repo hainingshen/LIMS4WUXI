@@ -17,106 +17,108 @@
 </head>
 <body>
 <h1>安卓系统内部链接（点击直接跳转）</h1>
-<p>在安卓手机浏览器中打开本页，点击下方按钮即可跳转到对应系统界面。</p>
+<p>在安卓手机浏览器中打开本页，点击下方按钮即可跳转到对应系统界面。按钮已显式指定 <code>com.android.settings</code> 组件，并带失败兜底（无效时自动回到本页）。</p>
 
 <h2>系统信息</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;end">关于手机</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.SYSTEM_UPDATE_SETTINGS;end">系统更新</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.SHOW_REGULATORY_INFO;end">监管信息</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.WEBVIEW_SETTINGS;end">WebView 实现</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;component=com.android.settings/.Settings$DeviceInfoSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">关于手机</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SYSTEM_UPDATE_SETTINGS;component=com.android.settings/.Settings$SystemUpdateSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">系统更新</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SHOW_REGULATORY_INFO;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">监管信息</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.WEBVIEW_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">WebView 实现</a>
 </div>
 
 <h2>设置主菜单</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.SETTINGS;end">设置主页</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.SEARCH_SETTINGS;end">搜索设置</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.HOME_SETTINGS;end">主屏幕设置</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.QUICK_LAUNCH_SETTINGS;end">快捷启动</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.DREAM_SETTINGS;end">屏保</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SETTINGS;component=com.android.settings/.Settings$SystemDashboardActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">设置主页</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.HOME_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">主屏幕设置</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DREAM_SETTINGS;component=com.android.settings/.Settings$DreamSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">屏保</a>
 </div>
 
 <h2>网络与连接</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.WIFI_SETTINGS;end">Wi-Fi</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.BLUETOOTH_SETTINGS;end">蓝牙</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.ACTION_PAIRING_SETTINGS;end">蓝牙配对</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.AIRPLANE_MODE_SETTINGS;end">飞行模式</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.WIRELESS_SETTINGS;end">更多连接</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.NETWORK_OPERATOR_SETTINGS;end">移动网络</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.DATA_ROAMING_SETTINGS;end">数据漫游</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.DATA_USAGE_SETTINGS;end">流量使用</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.APN_SETTINGS;end">APN 接入点</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.VPN_SETTINGS;end">VPN</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.NFC_SETTINGS;end">NFC</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.NFC_PAYMENT_SETTINGS;end">NFC 付款</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.CAST_SETTINGS;end">投屏</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.WIFI_SETTINGS;component=com.android.settings/.Settings$WifiSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">Wi-Fi</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.BLUETOOTH_SETTINGS;component=com.android.settings/.Settings$BluetoothSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">蓝牙</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.AIRPLANE_MODE_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">飞行模式</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.WIRELESS_SETTINGS;component=com.android.settings/.Settings$NetworkDashboardActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">更多连接</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DATA_USAGE_SETTINGS;component=com.android.settings/.Settings$DataUsageSummaryActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">流量使用</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.APN_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">APN 接入点</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.VPN_SETTINGS;component=com.android.settings/.Settings$VpnSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">VPN</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.NFC_SETTINGS;component=com.android.settings/.Settings$NfcSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">NFC</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.CAST_SETTINGS;component=com.android.settings/.Settings$CastSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">投屏</a>
 </div>
 
 <h2>显示与声音</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.DISPLAY_SETTINGS;end">显示</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.NIGHT_DISPLAY_SETTINGS;end">夜间模式</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.SOUND_SETTINGS;end">声音</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.ZEN_MODE_SETTINGS;end">勿扰模式</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DISPLAY_SETTINGS;component=com.android.settings/.Settings$DisplaySettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">显示</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.NIGHT_DISPLAY_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">夜间模式</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SOUND_SETTINGS;component=com.android.settings/.Settings$SoundSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">声音</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ZEN_MODE_SETTINGS;component=com.android.settings/.Settings$ZenModeSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">勿扰模式</a>
 </div>
 
 <h2>应用与通知</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_APPLICATIONS_SETTINGS;end">应用管理</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_ALL_APPLICATIONS_SETTINGS;end">所有应用</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_DEFAULT_APPS_SETTINGS;end">默认应用</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.APP_USAGE_SETTINGS;end">应用使用情况</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.NOTIFICATION_SETTINGS;end">通知设置</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.ALL_APPS_NOTIFICATION_SETTINGS;end">全部应用通知</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.USAGE_ACCESS_SETTINGS;end">使用情况访问</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_OVERLAY_PERMISSION;end">悬浮窗权限</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_WRITE_SETTINGS;end">修改系统设置权限</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS;end">通知使用权</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_APPLICATIONS_SETTINGS;component=com.android.settings/.Settings$ManageApplicationsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">应用管理</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_DEFAULT_APPS_SETTINGS;component=com.android.settings/.Settings$ManageDefaultAppsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">默认应用</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.USAGE_ACCESS_SETTINGS;component=com.android.settings/.Settings$UsageAccessSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">使用情况访问</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_OVERLAY_PERMISSION;component=com.android.settings/.Settings$OverlaySettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">悬浮窗权限</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_WRITE_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">修改系统设置权限</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">通知使用权</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.APP_USAGE_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">应用使用情况</a>
 </div>
 
 <h2>电池与存储</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.BATTERY_SAVER_SETTINGS;end">省电模式</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS;end">电池优化白名单</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.INTERNAL_STORAGE_SETTINGS;end">内部存储</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.MEMORY_CARD_SETTINGS;end">SD 卡</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.BATTERY_SAVER_SETTINGS;component=com.android.settings/.Settings$BatterySaverSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">省电模式</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS;component=com.android.settings/.Settings$HighPowerApplicationsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">电池优化白名单</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.INTERNAL_STORAGE_SETTINGS;component=com.android.settings/.Settings$StorageDashboardActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">存储</a>
 </div>
 
 <h2>安全与隐私</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.SECURITY_SETTINGS;end">安全</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.LOCATION_SOURCE_SETTINGS;end">位置信息</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.PRIVACY_SETTINGS;end">隐私</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SECURITY_SETTINGS;component=com.android.settings/.Settings$SecuritySettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">安全</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.LOCATION_SOURCE_SETTINGS;component=com.android.settings/.Settings$LocationSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">位置信息</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.PRIVACY_SETTINGS;component=com.android.settings/.Settings$PrivacySettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">隐私</a>
 </div>
 
 <h2>系统与输入</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.DATE_SETTINGS;end">日期和时间</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.LOCALE_SETTINGS;end">语言和地区</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.INPUT_METHOD_SETTINGS;end">输入法</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.HARD_KEYBOARD_SETTINGS;end">实体键盘</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.VOICE_INPUT_SETTINGS;end">语音输入</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.USER_DICTIONARY_SETTINGS;end">用户词典</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.CAPTIONING_SETTINGS;end">字幕</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.ACCESSIBILITY_SETTINGS;end">无障碍</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.APPLICATION_DEVELOPMENT_SETTINGS;end">开发者选项</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DATE_SETTINGS;component=com.android.settings/.Settings$DateTimeSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">日期和时间</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.LOCALE_SETTINGS;component=com.android.settings/.Settings$LocalePickerActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">语言和地区</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.INPUT_METHOD_SETTINGS;component=com.android.settings/.Settings$InputMethodAndLanguageSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">输入法</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.VOICE_INPUT_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">语音输入</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.USER_DICTIONARY_SETTINGS;component=com.android.settings/.Settings$UserDictionarySettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">用户词典</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.CAPTIONING_SETTINGS;component=com.android.settings/.Settings$CaptioningSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">字幕</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ACCESSIBILITY_SETTINGS;component=com.android.settings/.Settings$AccessibilitySettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">无障碍</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.APPLICATION_DEVELOPMENT_SETTINGS;component=com.android.settings/.Settings$DevelopmentSettingsDashboardActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">开发者选项</a>
 </div>
 
-<h2>账户与同步</h2>
+<h2>账户与其他</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.SYNC_SETTINGS;end">账户同步</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.ADD_ACCOUNT_SETTINGS;end">添加账户</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SYNC_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">账户同步</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ADD_ACCOUNT_SETTINGS;package=com.android.settings;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">添加账户</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.PRINT_SETTINGS;component=com.android.settings/.Settings$PrintSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">打印服务</a>
 </div>
 
-<h2>其他</h2>
+<h2>应用商店（market:// 与 https://）</h2>
 <div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.PRINT_SETTINGS;end">打印服务</a>
+  <a class="btn" href="market://details?id=com.tencent.mm">market:// 应用详情（微信）</a>
+  <a class="btn" href="market://search?q=微信">market:// 商店搜索</a>
+  <a class="btn" href="https://play.google.com/store/apps/details?id=com.tencent.mm">https:// Play 应用页</a>
+</div>
+
+<h2>其他常用协议</h2>
+<div class="grid">
+  <a class="btn" href="tel:10086">tel: 拨号</a>
+  <a class="btn" href="sms:10086">sms: 短信</a>
+  <a class="btn" href="mailto:test@example.com">mailto: 邮件</a>
+  <a class="btn" href="geo:31.57,120.30?q=无锡">geo: 地图</a>
 </div>
 
 <p class="note">
-提示：不同品牌 ROM（MIUI、ColorOS、OneUI、EMUI 等）对个别菜单支持有差异，部分按钮在某些机型上可能无效。<br>
-带参数的链接（如指定应用详情的 <code>package:包名</code> 形式）请参见仓库 README。
+说明：<br>
+1. 按钮使用 <code>component=com.android.settings/.Settings$...Activity</code> 显式指定系统设置组件，并附 <code>browser_fallback_url</code>——若本机不支持该菜单会自动回到本页（表现为页面刷新一下）。<br>
+2. 厂商 ROM（MIUI、ColorOS、OneUI、EMUI 等）的类名与 AOSP 略有差异，个别按钮可能无效。<br>
+3. market:// 需要本机装有 Google Play 或支持该协议的应用商店；国内机型可能唤起自带商店或无反应。
 </p>
 </body>
 </html>

@@ -1,9 +1,13 @@
-# LIMS4WUXI
+# 安卓系统内部链接（可点击跳转）
 
-LIMS4WUXI planning docs and specs.
+本仓库通过 GitHub Pages 提供可点击的安卓系统内部链接页面。
 
-## 工具链接
+**页面地址：<https://hainingshen.github.io/LIMS4WUXI/>**
 
-- 安卓系统内部链接（可点击跳转页）：https://cdn.statically.io/gist/hainingshen/94195a1dc33c8d9af0d4949a6c8b1a0d/raw/index.html
-  - 在安卓手机浏览器中打开，点击按钮即可跳转到对应系统设置界面
-  - 链接清单与格式说明见私有仓库 [android-intent-links](https://github.com/hainingshen/android-intent-links)
+在安卓手机浏览器中打开上述地址，点击页面上的按钮即可直接跳转到对应系统设置界面（关于手机、设置主页、Wi-Fi、蓝牙、应用管理、通知、电池、开发者选项等约 60 个菜单）。
+
+## 说明
+
+- 链接格式：`intent:#Intent;action=<动作名>;end`
+- 完整的链接清单与格式说明见 [android-intent-links](https://github.com/hainingshen/android-intent-links) 仓库
+- 不同品牌 ROM（MIUI、ColorOS、OneUI、EMUI 等）对个别菜单支持有差异，部分按钮可能无效

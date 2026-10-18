@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>安卓系统内部链接</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 720px; margin: 0 auto; padding: 16px; background: #f6f8fa; color: #1f2328; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.05rem; margin-top: 1.6em; border-bottom: 1px solid #d1d9e0; padding-bottom: 4px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  a.btn { display: inline-block; padding: 10px 14px; background: #fff; border: 1px solid #d1d9e0; border-radius: 8px; text-decoration: none; color: #0969da; font-size: 0.95rem; }
+  a.btn:active { background: #eaeef2; }
+  .note { font-size: 0.85rem; color: #59636e; margin-top: 24px; line-height: 1.6; }
+  code { background: #eaeef2; padding: 1px 5px; border-radius: 4px; font-size: 0.85em; word-break: break-all; }
+</style>
+</head>
+<body>
+<h1>安卓系统内部链接（点击直接跳转）</h1>
+<p>在安卓手机浏览器中打开本页，点击下方按钮即可跳转到对应系统界面。</p>
+
+<h2>系统信息</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;end">关于手机</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SYSTEM_UPDATE_SETTINGS;end">系统更新</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SHOW_REGULATORY_INFO;end">监管信息</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.WEBVIEW_SETTINGS;end">WebView 实现</a>
+</div>
+
+<h2>设置主菜单</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.SETTINGS;end">设置主页</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SEARCH_SETTINGS;end">搜索设置</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.HOME_SETTINGS;end">主屏幕设置</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.QUICK_LAUNCH_SETTINGS;end">快捷启动</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DREAM_SETTINGS;end">屏保</a>
+</div>
+
+<h2>网络与连接</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.WIFI_SETTINGS;end">Wi-Fi</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.BLUETOOTH_SETTINGS;end">蓝牙</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ACTION_PAIRING_SETTINGS;end">蓝牙配对</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.AIRPLANE_MODE_SETTINGS;end">飞行模式</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.WIRELESS_SETTINGS;end">更多连接</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.NETWORK_OPERATOR_SETTINGS;end">移动网络</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DATA_ROAMING_SETTINGS;end">数据漫游</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DATA_USAGE_SETTINGS;end">流量使用</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.APN_SETTINGS;end">APN 接入点</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.VPN_SETTINGS;end">VPN</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.NFC_SETTINGS;end">NFC</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.NFC_PAYMENT_SETTINGS;end">NFC 付款</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.CAST_SETTINGS;end">投屏</a>
+</div>
+
+<h2>显示与声音</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.DISPLAY_SETTINGS;end">显示</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.NIGHT_DISPLAY_SETTINGS;end">夜间模式</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.SOUND_SETTINGS;end">声音</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ZEN_MODE_SETTINGS;end">勿扰模式</a>
+</div>
+
+<h2>应用与通知</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_APPLICATIONS_SETTINGS;end">应用管理</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_ALL_APPLICATIONS_SETTINGS;end">所有应用</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_DEFAULT_APPS_SETTINGS;end">默认应用</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.APP_USAGE_SETTINGS;end">应用使用情况</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.NOTIFICATION_SETTINGS;end">通知设置</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ALL_APPS_NOTIFICATION_SETTINGS;end">全部应用通知</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.USAGE_ACCESS_SETTINGS;end">使用情况访问</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_OVERLAY_PERMISSION;end">悬浮窗权限</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_WRITE_SETTINGS;end">修改系统设置权限</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS;end">通知使用权</a>
+</div>
+
+<h2>电池与存储</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.BATTERY_SAVER_SETTINGS;end">省电模式</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS;end">电池优化白名单</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.INTERNAL_STORAGE_SETTINGS;end">内部存储</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.MEMORY_CARD_SETTINGS;end">SD 卡</a>
+</div>
+
+<h2>安全与隐私</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.SECURITY_SETTINGS;end">安全</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.LOCATION_SOURCE_SETTINGS;end">位置信息</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.PRIVACY_SETTINGS;end">隐私</a>
+</div>
+
+<h2>系统与输入</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.DATE_SETTINGS;end">日期和时间</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.LOCALE_SETTINGS;end">语言和地区</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.INPUT_METHOD_SETTINGS;end">输入法</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.HARD_KEYBOARD_SETTINGS;end">实体键盘</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.VOICE_INPUT_SETTINGS;end">语音输入</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.USER_DICTIONARY_SETTINGS;end">用户词典</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.CAPTIONING_SETTINGS;end">字幕</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ACCESSIBILITY_SETTINGS;end">无障碍</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.APPLICATION_DEVELOPMENT_SETTINGS;end">开发者选项</a>
+</div>
+
+<h2>账户与同步</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.SYNC_SETTINGS;end">账户同步</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.ADD_ACCOUNT_SETTINGS;end">添加账户</a>
+</div>
+
+<h2>其他</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.PRINT_SETTINGS;end">打印服务</a>
+</div>
+
+<p class="note">
+提示：不同品牌 ROM（MIUI、ColorOS、OneUI、EMUI 等）对个别菜单支持有差异，部分按钮在某些机型上可能无效。<br>
+带参数的链接（如指定应用详情的 <code>package:包名</code> 形式）请参见仓库 README。
+</p>
+</body>
+</html>

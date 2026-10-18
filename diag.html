@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>车机浏览器能力探测</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 16px; background: #f6f8fa; color: #1f2328; }
+  h1 { font-size: 1.3rem; }
+  h2 { font-size: 1rem; margin-top: 1.4em; border-bottom: 1px solid #d1d9e0; padding-bottom: 4px; }
+  .ua { background: #fff; border: 2px solid #cf222e; border-radius: 8px; padding: 12px; font-size: 0.9rem; word-break: break-all; }
+  .grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  a.btn { display: inline-block; padding: 10px 14px; background: #fff; border: 1px solid #d1d9e0; border-radius: 8px; text-decoration: none; color: #0969da; font-size: 0.95rem; }
+  a.btn:active { background: #eaeef2; }
+  .expect { font-size: 0.82rem; color: #59636e; margin: 4px 0 10px; }
+  .note { font-size: 0.85rem; color: #59636e; margin-top: 24px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<h1>车机浏览器能力探测页</h1>
+
+<h2>第 0 步：浏览器身份（最重要，截图或抄给我）</h2>
+<div class="ua" id="ua">（需要开启 JavaScript 才会显示）</div>
+<div class="expect">把上面红框里的文字原样发给我，它能告诉我这是 Chrome 还是 WebView、内核版本是多少。</div>
+
+<h2>第 1 步：基础 scheme 转发能力（逐个点击，记录现象）</h2>
+<div class="expect">现象三选一：A. 跳转到对应应用　B. 报错页（记下报错原文）　C. 完全没反应</div>
+<div class="grid">
+  <a class="btn" href="tel:10086">1. tel: 拨号</a>
+  <a class="btn" href="sms:10086">2. sms: 短信</a>
+  <a class="btn" href="mailto:test@test.com">3. mailto: 邮件</a>
+  <a class="btn" href="geo:31.57,120.30">4. geo: 地图</a>
+  <a class="btn" href="market://details?id=com.android.settings">5. market:// 商店</a>
+  <a class="btn" href="wtai://wp/mc;10086">6. wtai: 老式拨号</a>
+</div>
+
+<h2>第 2 步：intent: 解析能力（WebView 通常不支持，试三种变体）</h2>
+<div class="grid">
+  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;end">7. intent 纯 action</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;component=com.android.settings/.Settings$DeviceInfoSettingsActivity;end">8. intent+组件(com.android.settings)</a>
+  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;package=com.android.car.settings;end">9. intent+包名(com.android.car.settings)</a>
+</div>
+
+<h2>第 3 步：其他协议行为</h2>
+<div class="grid">
+  <a class="btn" href="file:///system/build.prop">10. file:// 系统文件</a>
+  <a class="btn" href="javascript:alert('JS_OK')">11. javascript: 弹窗</a>
+  <a class="btn" href="content://settings/system">12. content:// 协议</a>
+  <a class="btn" href="about:blank">13. about:blank</a>
+</div>
+
+<h2>第 4 步：JS 桥探测（自动进行）</h2>
+<div class="ua" id="jsbridge">检测中…</div>
+<div class="expect">如果上面列出了对象名（如 xxxBridge、app 等），原样发给我——JS 桥是绕过 scheme 限制直接调起应用的最强通道。</div>
+
+<script>
+document.getElementById('ua').textContent = navigator.userAgent;
+var found = [];
+for (var k in window) {
+  if (/bridge|app|native|android|hiphi|hmi|car|vehicle/i.test(k) && typeof window[k] === 'object') found.push(k);
+}
+document.getElementById('jsbridge').textContent =
+  '可疑 JS 对象: ' + (found.length ? found.join(', ') : '（未发现）') +
+  '\nwindow 对象总数: ' + Object.keys(window).length;
+</script>
+
+<p class="note">
+<b>请回报给我：</b><br>
+① 第 0 步的 UA 全文和第 4 步的检测结果（截图最佳）<br>
+② 第 1-3 步每个按钮的现象（A/B/C + 报错原文）<br>
+③ 这个浏览器有没有地址栏？能不能手动输入网址？<br>
+④ 车机能否通过 USB / WiFi 连接 adb？（能的话一切好办）<br>
+⑤ 车机界面风格：平板式 Android 还是 Android Automotive？
+</p>
+</body>
+</html>

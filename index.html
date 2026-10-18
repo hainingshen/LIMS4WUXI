@@ -3,91 +3,98 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>车机浏览器探测 + 安卓内部链接</title>
+<title>车机探测台</title>
 <style>
-  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 16px; background: #f6f8fa; color: #1f2328; }
-  h1 { font-size: 1.3rem; }
-  h2 { font-size: 1rem; margin-top: 1.4em; border-bottom: 1px solid #d1d9e0; padding-bottom: 4px; }
-  .ua { background: #fff; border: 2px solid #cf222e; border-radius: 8px; padding: 12px; font-size: 0.9rem; word-break: break-all; }
-  .grid { display: flex; flex-wrap: wrap; gap: 8px; }
-  a.btn { display: inline-block; padding: 10px 14px; background: #fff; border: 1px solid #d1d9e0; border-radius: 8px; text-decoration: none; color: #0969da; font-size: 0.95rem; }
-  a.btn:active { background: #eaeef2; }
-  .expect { font-size: 0.82rem; color: #59636e; margin: 4px 0 10px; }
-  .note { font-size: 0.85rem; color: #59636e; margin-top: 24px; line-height: 1.7; }
-  code { background: #eaeef2; padding: 1px 5px; border-radius: 4px; font-size: 0.85em; word-break: break-all; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 16px; background: #101214; color: #e6e6e6; }
+  h1 { font-size: 1.25rem; }
+  h2 { font-size: 1rem; margin-top: 1.4em; border-bottom: 1px solid #333; padding-bottom: 4px; }
+  .ua { background: #1c1f22; border: 2px solid #e5534b; border-radius: 8px; padding: 10px; font-size: 0.85rem; word-break: break-all; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  td { padding: 6px 4px; border-bottom: 1px solid #26292d; vertical-align: middle; }
+  a.btn, button.btn { display: inline-block; padding: 6px 12px; background: #1f6feb; border: none; border-radius: 6px; text-decoration: none; color: #fff; font-size: 0.85rem; margin-right: 6px; cursor: pointer; }
+  a.jump { background: #6e40c9; }
+  #log { background: #000; color: #7ee787; font-family: monospace; font-size: 0.8rem; padding: 10px; border-radius: 8px; height: 160px; overflow-y: scroll; white-space: pre-wrap; word-break: break-all; }
+  .hint { font-size: 0.8rem; color: #9da7b1; }
+  iframe#probe { width: 1px; height: 1px; border: 0; position: absolute; left: -9999px; }
 </style>
 </head>
 <body>
-<h1>车机浏览器探测 + 安卓内部链接</h1>
+<h1>车机探测台（iframe 模式，点测不跳页）</h1>
 
-<h2>第 0 步：浏览器身份（最重要，截图或抄下来）</h2>
-<div class="ua" id="ua">（需要开启 JavaScript 才会显示）</div>
-<div class="expect">把红框里的文字原样发出，它能判断这是 Chrome 还是 WebView、内核版本。</div>
+<h2>浏览器身份</h2>
+<div class="ua" id="ua">检测中…</div>
 
-<h2>第 1 步：基础 scheme 转发能力（逐个点，记录现象）</h2>
-<div class="expect">现象三选一：A. 跳转到对应应用　B. 报错页（记下报错原文）　C. 完全没反应</div>
-<div class="grid">
-  <a class="btn" href="tel:10086">1. tel: 拨号</a>
-  <a class="btn" href="sms:10086">2. sms: 短信</a>
-  <a class="btn" href="mailto:test@test.com">3. mailto: 邮件</a>
-  <a class="btn" href="geo:31.57,120.30">4. geo: 地图</a>
-  <a class="btn" href="market://details?id=com.android.settings">5. market:// 商店</a>
-  <a class="btn" href="wtai://wp/mc;10086">6. wtai: 老式拨号</a>
-</div>
-
-<h2>第 2 步：intent: 解析能力（三种变体）</h2>
-<div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;end">7. intent 纯 action</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;component=com.android.settings/.Settings$DeviceInfoSettingsActivity;end">8. intent+组件(com.android.settings)</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;package=com.android.car.settings;end">9. intent+包名(com.android.car.settings)</a>
-</div>
-
-<h2>第 3 步：其他协议行为</h2>
-<div class="grid">
-  <a class="btn" href="file:///system/build.prop">10. file:// 系统文件</a>
-  <a class="btn" href="javascript:alert('JS_OK')">11. javascript: 弹窗</a>
-  <a class="btn" href="content://settings/system">12. content:// 协议</a>
-  <a class="btn" href="about:blank">13. about:blank</a>
-</div>
-
-<h2>第 4 步：JS 桥探测（自动进行）</h2>
+<h2>JS 桥探测</h2>
 <div class="ua" id="jsbridge">检测中…</div>
-<div class="expect">若列出对象名（如 xxxBridge、app 等），原样发出——JS 桥是绕过 scheme 限制直接调起应用的最强通道。</div>
 
-<h2>第 5 步：系统设置链接（手机用，车机可能无效）</h2>
-<div class="expect">以下为标准安卓设置跳转，带组件与兜底，无效时会自动回本页。</div>
+<h2>协议探测（蓝色=iframe 试，不跳页；紫色=直跳，会离开本页）</h2>
+<p class="hint">先点蓝色按钮连测。若某个链接让车机真的弹出了应用/界面，记下编号发我。全部无效再考虑紫色直跳。</p>
+<table id="tests"></table>
 
-<div class="grid">
-  <a class="btn" href="intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;component=com.android.settings/.Settings$DeviceInfoSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">关于手机</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.SETTINGS;component=com.android.settings/.Settings$SystemDashboardActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">设置主页</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.WIFI_SETTINGS;component=com.android.settings/.Settings$WifiSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">Wi-Fi</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.BLUETOOTH_SETTINGS;component=com.android.settings/.Settings$BluetoothSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">蓝牙</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.DISPLAY_SETTINGS;component=com.android.settings/.Settings$DisplaySettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">显示</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.SOUND_SETTINGS;component=com.android.settings/.Settings$SoundSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">声音</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.MANAGE_APPLICATIONS_SETTINGS;component=com.android.settings/.Settings$ManageApplicationsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">应用管理</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.DATE_SETTINGS;component=com.android.settings/.Settings$DateTimeSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">日期和时间</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.LOCALE_SETTINGS;component=com.android.settings/.Settings$LocalePickerActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">语言和地区</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.ACCESSIBILITY_SETTINGS;component=com.android.settings/.Settings$AccessibilitySettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">无障碍</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.APPLICATION_DEVELOPMENT_SETTINGS;component=com.android.settings/.Settings$DevelopmentSettingsDashboardActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">开发者选项</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.SECURITY_SETTINGS;component=com.android.settings/.Settings$SecuritySettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">安全</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.LOCATION_SOURCE_SETTINGS;component=com.android.settings/.Settings$LocationSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">位置信息</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.BATTERY_SAVER_SETTINGS;component=com.android.settings/.Settings$BatterySaverSettingsActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">省电模式</a>
-  <a class="btn" href="intent:#Intent;action=android.settings.INTERNAL_STORAGE_SETTINGS;component=com.android.settings/.Settings$StorageDashboardActivity;S.browser_fallback_url=https%3A%2F%2Fhainingshen.github.io%2FLIMS4WUXI%2F;end">存储</a>
+<h2>JS 对话框能力</h2>
+<div>
+  <button class="btn" onclick="alert('ALERT_OK')">alert</button>
+  <button class="btn" onclick="var r=prompt('PROMPT_TEST','');log('prompt 返回: '+r)">prompt</button>
+  <button class="btn" onclick="log('confirm 返回: '+confirm('CONFIRM_TEST'))">confirm</button>
 </div>
+<p class="hint">若 prompt 弹出了系统原生输入框，说明宿主没禁用 JS 对话框，可能有 prompt 桥可用。</p>
+
+<h2>尝试日志</h2>
+<div id="log"></div>
+<button class="btn" onclick="document.getElementById('log').textContent=''">清空日志</button>
+
+<iframe id="probe" src="about:blank"></iframe>
 
 <script>
+var TESTS = [
+  ['tel:10086', '拨号'],
+  ['sms:10086', '短信'],
+  ['mailto:test@test.com', '邮件'],
+  ['geo:31.57,120.30', '地图'],
+  ['market://details?id=com.android.settings', '商店'],
+  ['wtai://wp/mc;10086', '老式拨号wtai'],
+  ['intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;end', 'intent 关于(纯action)'],
+  ['intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;component=com.android.settings/.Settings$DeviceInfoSettingsActivity;end', 'intent 关于(手机组件)'],
+  ['intent:#Intent;action=android.settings.DEVICE_INFO_SETTINGS;package=com.android.car.settings;end', 'intent 关于(车机包)'],
+  ['intent:#Intent;component=com.android.settings/.Settings;end', 'intent 设置主页(组件)'],
+  ['file:///system/build.prop', 'file 系统文件'],
+  ['file:///android_asset/', 'file 资产目录'],
+  ['content://settings/system', 'content 协议'],
+  ['about:blank', 'about:blank'],
+  ['javascript:void(0)', 'javascript: 空操作']
+];
+
+function log(msg) {
+  var el = document.getElementById('log');
+  var t = new Date().toLocaleTimeString();
+  el.textContent += '[' + t + '] ' + msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+function iframeTry(url, name) {
+  var f = document.getElementById('probe');
+  log('iframe 尝试: ' + name + ' -> ' + url);
+  try { f.src = url; } catch (e) { log('异常: ' + e.message); }
+  setTimeout(function(){ try { f.src = 'about:blank'; } catch(e){} }, 2000);
+}
+
+var html = '';
+TESTS.forEach(function(t, i) {
+  html += '<tr><td>' + (i+1) + '. ' + t[1] + '</td>' +
+    '<td><button class="btn" onclick="iframeTry(\'' + t[0].replace(/'/g, "\\'") + '\',\'' + t[1] + '\')">iframe试</button>' +
+    '<a class="btn jump" href="' + t[0].replace(/"/g, '&quot;') + '">直跳</a></td></tr>';
+});
+document.getElementById('tests').innerHTML = html;
+
 document.getElementById('ua').textContent = navigator.userAgent;
+
 var found = [];
 for (var k in window) {
-  if (/bridge|app|native|android|hiphi|hmi|car|vehicle/i.test(k) && typeof window[k] === 'object') found.push(k);
+  if (/bridge|app|native|android|hiphi|hmi|car|vehicle|jsi|exec/i.test(k) && typeof window[k] === 'object') found.push(k);
 }
 document.getElementById('jsbridge').textContent =
-  '可疑 JS 对象: ' + (found.length ? found.join(', ') : '（未发现）') +
-  ' | window 对象总数: ' + Object.keys(window).length;
+  '可疑 JS 对象: ' + (found.length ? found.join(', ') : '（未发现）');
+log('页面加载完成，UA 与 JS 桥已检测');
 </script>
-
-<p class="note">
-<b>请回报：</b>① 第 0 步 UA 全文和第 4 步结果（截图最佳）② 第 1-3 步每个按钮的现象（A/B/C + 报错原文）③ 浏览器有无地址栏 ④ 车机能否连 adb ⑤ 界面是平板式 Android 还是 Android Automotive。
-</p>
 </body>
 </html>

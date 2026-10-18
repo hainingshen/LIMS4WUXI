@@ -39,6 +39,33 @@
 </div>
 <p class="hint">若 prompt 弹出了系统原生输入框，说明宿主没禁用 JS 对话框，可能有 prompt 桥可用。</p>
 
+<h2>利用面测试（重点：第 1 项）</h2>
+<table>
+  <tr>
+    <td>A. 下载并安装工具 APK<br><span class="hint">点击后若弹出下载/安装提示＝突破口！装上 ActivityLauncher 即可列出并启动车机所有应用的所有界面（含工程模式）</span></td>
+    <td>
+      <a class="btn" href="ActivityLauncher.apk" download>下载(down)</a>
+      <a class="btn jump" href="ActivityLauncher.apk">直跳下载</a>
+    </td>
+  </tr>
+  <tr>
+    <td>B. target=_blank 新窗口<br><span class="hint">若打开了新窗口或外部浏览器，记下现象</span></td>
+    <td><a class="btn" href="about:blank" target="_blank">_blank 试</a></td>
+  </tr>
+  <tr>
+    <td>C. prompt 桥探测<br><span class="hint">若 prompt 不弹框却直接有返回值，说明宿主拦截了 prompt 当 JS 桥</span></td>
+    <td>
+      <button class="btn" onclick="bridgeProbe('hiphi://ping')">hiphi://</button>
+      <button class="btn" onclick="bridgeProbe('jsbridge://ping')">jsbridge://</button>
+      <button class="btn" onclick="bridgeProbe('wvjb://ping')">wvjb://</button>
+    </td>
+  </tr>
+  <tr>
+    <td>D. file:// 越权读取<br><span class="hint">若日志里打出 build.prop 内容开头，说明能读系统文件</span></td>
+    <td><button class="btn" onclick="fileReadProbe()">XHR 读 build.prop</button></td>
+  </tr>
+</table>
+
 <h2>尝试日志</h2>
 <div id="log"></div>
 <button class="btn" onclick="document.getElementById('log').textContent=''">清空日志</button>
@@ -94,6 +121,23 @@ for (var k in window) {
 }
 document.getElementById('jsbridge').textContent =
   '可疑 JS 对象: ' + (found.length ? found.join(', ') : '（未发现）');
+
+function bridgeProbe(scheme) {
+  log('prompt 桥探测: ' + scheme);
+  var t0 = Date.now();
+  var r = prompt(scheme, '');
+  log('返回: ' + JSON.stringify(r) + '，耗时 ' + (Date.now() - t0) + 'ms（瞬间返回且无弹框＝可能被拦截当桥）');
+}
+
+function fileReadProbe() {
+  log('XHR 尝试读取 file:///system/build.prop');
+  var x = new XMLHttpRequest();
+  x.onload = function() { log('读取成功! 长度 ' + x.responseText.length + ': ' + x.responseText.substring(0, 80)); };
+  x.onerror = function() { log('读取被拒（预期行为）'); };
+  try { x.open('GET', 'file:///system/build.prop'); x.send(); }
+  catch (e) { log('异常: ' + e.message); }
+}
+
 log('页面加载完成，UA 与 JS 桥已检测');
 </script>
 </body>
